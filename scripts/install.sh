@@ -1,0 +1,190 @@
+#!/bin/sh
+# Install the bentro binary.
+#
+#   curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh -s -- --with-zsh
+#   curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh -s -- --no-zsh
+#   sh scripts/install.sh [--with-zsh|--no-zsh]
+#
+# Default and --no-zsh install the binary only. --with-zsh appends PATH and a
+# bentro function to ~/.zshrc and does not change the theme or prompt.
+#
+# A published release asset is the install path that does not need a Go
+# toolchain. Asset names are bentro_<os>_<arch>, for example
+# bentro_darwin_arm64 and bentro_darwin_amd64. When that asset is missing, the
+# script builds from source and requires git and go on PATH.
+
+set -eu
+
+REPO="${BENTRO_REPO:-trishiraj/bentro}"
+REPO_URL="${BENTRO_REPO_URL:-https://github.com/${REPO}.git}"
+INSTALL_DIR="${BENTRO_INSTALL_DIR:-${HOME:-}/.local/bin}"
+
+WITH_ZSH=0
+NO_ZSH=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --with-zsh) WITH_ZSH=1 ;;
+    --no-zsh) NO_ZSH=1 ;;
+    -h|--help)
+      echo "Usage: install.sh [--with-zsh|--no-zsh]"
+      echo "  (default)   install the binary only"
+      echo "  --no-zsh    install the binary only"
+      echo "  --with-zsh  also append PATH and a bentro function to ~/.zshrc"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [ "$WITH_ZSH" = 1 ] && [ "$NO_ZSH" = 1 ]; then
+  echo "Choose only one of --with-zsh or --no-zsh" >&2
+  exit 1
+fi
+
+if [ -z "${HOME:-}" ]; then
+  echo "HOME is not set" >&2
+  exit 1
+fi
+
+os=$(uname -s)
+arch=$(uname -m)
+case "$os" in
+  Darwin) goos=darwin ;;
+  Linux) goos=linux ;;
+  *)
+    echo "Unsupported operating system: $os" >&2
+    echo "Bentro's first platform is macOS Terminal." >&2
+    exit 1
+    ;;
+esac
+case "$arch" in
+  arm64|aarch64) goarch=arm64 ;;
+  x86_64|amd64) goarch=amd64 ;;
+  *)
+    echo "Unsupported architecture: $arch" >&2
+    exit 1
+    ;;
+esac
+
+if [ "$goos" != "darwin" ]; then
+  echo "Bentro's supported terminal is macOS Terminal. This host can still build from source."
+fi
+
+asset="bentro_${goos}_${goarch}"
+dest="${INSTALL_DIR}/bentro"
+mkdir -p "$INSTALL_DIR"
+
+is_binary() {
+  sig=$(od -An -t x1 -N 4 "$1" 2>/dev/null | tr -d ' \n')
+  case "$sig" in
+    7f454c46|cffaedfe|feedfacf|cefaedfe|feedface|cafebabe) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+download_release() {
+  url="https://github.com/${REPO}/releases/latest/download/${asset}"
+  tmp="${dest}.partial"
+  echo "Looking for a release binary: ${asset}"
+  if curl -fsSL --connect-timeout 8 --max-time 60 "$url" -o "$tmp"; then
+    if is_binary "$tmp"; then
+      mv "$tmp" "$dest"
+      chmod +x "$dest"
+      return 0
+    fi
+    rm -f "$tmp"
+  fi
+  rm -f "$tmp"
+  return 1
+}
+
+build_tree() {
+  tree=$1
+  if ! command -v go >/dev/null 2>&1; then
+    echo "No release binary is available for ${goos}/${goarch}." >&2
+    echo "Building from source requires Go on PATH." >&2
+    echo "The install path without a toolchain is a published release binary (${asset})." >&2
+    exit 1
+  fi
+  echo "Building bentro from ${tree}"
+  (cd "$tree" && go build -o "$dest" ./cmd/bentro)
+  chmod +x "$dest"
+}
+
+checkout_root() {
+  case "$0" in
+    /*|*/*)
+      if [ -f "$0" ]; then
+        base=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+        if [ -f "${base}/go.mod" ] && [ -d "${base}/cmd/bentro" ]; then
+          echo "$base"
+          return 0
+        fi
+      fi
+      ;;
+  esac
+  return 1
+}
+
+clone_and_build() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "git is required to clone ${REPO_URL} and build from source" >&2
+    exit 1
+  fi
+  tmp=$(mktemp -d)
+  echo "Cloning ${REPO_URL}"
+  git clone --depth 1 "$REPO_URL" "$tmp/src"
+  build_tree "$tmp/src"
+  rm -rf "$tmp"
+}
+
+if download_release; then
+  echo "Installed the published release binary."
+else
+  echo "No release binary named ${asset} is published."
+  echo "A published release binary is the install path that does not need Go."
+  src=""
+  if src=$(checkout_root); then
+    build_tree "$src"
+  else
+    clone_and_build
+  fi
+fi
+
+if [ ! -x "$dest" ]; then
+  echo "Install failed: ${dest} is not executable" >&2
+  exit 1
+fi
+
+echo "Installed bentro to ${dest}"
+
+if [ "$WITH_ZSH" = 1 ]; then
+  zshrc="${HOME}/.zshrc"
+  marker="# >>> bentro >>>"
+  touch "$zshrc"
+  if grep -q "$marker" "$zshrc" 2>/dev/null; then
+    echo "zsh snippet already present in ${zshrc}"
+  else
+    cat >> "$zshrc" <<EOF
+
+${marker}
+export PATH="${INSTALL_DIR}:\$PATH"
+bentro() {
+  command bentro "\$@"
+}
+# <<< bentro <<<
+EOF
+    echo "Appended PATH and a bentro function to ${zshrc}"
+    echo "The snippet does not change your theme or prompt."
+    echo "Open a new terminal, or run: . \"${zshrc}\""
+  fi
+else
+  echo "Binary only. Shell startup files were not changed."
+  echo "Run: ${dest}"
+  echo "Or add ${INSTALL_DIR} to PATH."
+fi

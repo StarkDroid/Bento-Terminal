@@ -1,0 +1,8 @@
+task hello {
+    doLast {
+        println 'hi'
+    }
+}
+
+tasks.register("integrationTest") {
+}
