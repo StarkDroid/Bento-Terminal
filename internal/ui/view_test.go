@@ -11,8 +11,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/trishiraj/bentro/internal/build"
-	"github.com/trishiraj/bentro/internal/files"
+	"github.com/StarkDroid/Bento-Terminal/internal/build"
+	"github.com/StarkDroid/Bento-Terminal/internal/files"
 )
 
 func TestViewEmptyStates(t *testing.T) {
@@ -25,7 +25,7 @@ func TestViewEmptyStates(t *testing.T) {
 		t.Fatalf("size %dx%d\n%s", lipgloss.Width(view), lipgloss.Height(view), view)
 	}
 	plain := stripANSI(view)
-	for _, want := range []string{"≡ Files", "⎇ History", "Build", "Empty directory", "Not a git repository", "No commands detected", "Idle. Select a command and press enter.", "bentro"} {
+	for _, want := range []string{"≡ Files", "⎇ History", "Build", "Empty directory", "Not a git repository", "No commands detected", "Idle. Select a command and press enter.", "bento"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("missing %q\n%s", want, plain)
 		}

@@ -1,4 +1,4 @@
-// Package ui is the Bentro full-screen terminal interface.
+// Package ui is the full-screen interface for Bento terminal.
 package ui
 
 import (
@@ -7,9 +7,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/trishiraj/bentro/internal/build"
-	"github.com/trishiraj/bentro/internal/files"
-	"github.com/trishiraj/bentro/internal/git"
+	"github.com/StarkDroid/Bento-Terminal/internal/build"
+	"github.com/StarkDroid/Bento-Terminal/internal/files"
+	"github.com/StarkDroid/Bento-Terminal/internal/git"
 )
 
 type previewKind int
@@ -30,7 +30,7 @@ const (
 	stateCanceled
 )
 
-// Model is the Bubble Tea model for Bentro.
+// Model is the Bubble Tea model for Bento terminal.
 type Model struct {
 	root          string
 	width, height int

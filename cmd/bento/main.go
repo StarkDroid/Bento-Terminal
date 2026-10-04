@@ -5,28 +5,28 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/StarkDroid/Bento-Terminal/internal/ui"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/trishiraj/bentro/internal/ui"
 )
 
 var version = "0.1.0"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintf(os.Stderr, "bentro: %s\n", err)
+		fmt.Fprintf(os.Stderr, "bento: %s\n", err)
 		os.Exit(1)
 	}
 }
 
 func run(args []string) error {
 	if len(args) > 1 {
-		return fmt.Errorf("usage: bentro [directory]")
+		return fmt.Errorf("usage: bento [directory]")
 	}
 	root := ""
 	if len(args) == 1 {
 		switch args[0] {
 		case "-h", "--help":
-			fmt.Printf("bentro %s\n\nUsage: bentro [directory]\n\nOpen Bentro for a project. With no argument, the current directory is the project root.\n", version)
+			fmt.Printf("bento %s\n\nUsage: bento [directory]\n\nOpen Bento terminal for a project. With no argument, the current directory is the project root.\n", version)
 			return nil
 		case "-v", "--version":
 			fmt.Println(version)

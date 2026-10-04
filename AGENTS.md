@@ -1,12 +1,12 @@
-# Bentro
+# Bento terminal
 
-Bentro is a full-screen terminal workspace for one project directory. It previews files, lists the tree and the current branch's commits, and runs detected build commands. The first supported terminal is macOS Terminal. The UI draws its own lagoon palette and does not read the user's theme.
+Bento terminal is a full-screen terminal workspace for one project directory. It previews files, lists the tree and the current branch's commits, and runs detected build commands. The first supported terminal is macOS Terminal. The UI draws its own lagoon palette and does not read the user's theme.
 
 When you change packages, focus order, theme tokens, keybindings, or the install flow, update this file in the same change.
 
 ## Package map
 
-- `cmd/bentro` — process entry. Uses the working directory, or one optional directory argument, as the project root.
+- `cmd/bento` — process entry. Uses the working directory, or one optional directory argument, as the project root.
 - `internal/ui` — Bubble Tea model, bento layout, theme, focus, keys, and rendering. Scroll position for the preview and the build output is a Bubbles viewport. The running indicator is a Bubbles spinner. Bindings are Bubbles keys.
 - `internal/git` — parses `git status --porcelain=v2 --branch` and `git log` lines (`hash`, unix time, subject, tab-separated). `Load` shells out to git. Untracked paths count as unstaged.
 - `internal/files` — lazy directory tree and a bounded text preview. Dot entries are hidden. `node_modules`, `vendor`, `target`, `__pycache__`, `dist`, `.next`, `.venv`, and `venv` are skipped. Symlinks are not followed.
@@ -25,7 +25,7 @@ make darwin-arm64
 make darwin-amd64
 ```
 
-Go 1.23 or newer. Dependencies are Go modules. `make darwin-arm64` and `make darwin-amd64` set `GOOS=darwin` and write `dist/bentro_darwin_arm64` and `dist/bentro_darwin_amd64`, which are the installer's release asset names.
+Go 1.23 or newer. Dependencies are Go modules. `make darwin-arm64` and `make darwin-amd64` set `GOOS=darwin` and write `dist/bento_darwin_arm64` and `dist/bento_darwin_amd64`, which are the installer's release asset names.
 
 Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, focus cycling, layout size, empty views, file preview, and a real `echo` run. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
 
@@ -55,6 +55,6 @@ Build mode defaults to automatic. `a` switches to manual. `c` cancels the proces
 
 ## Install
 
-`scripts/install.sh` accepts `--with-zsh` and `--no-zsh`. The default and `--no-zsh` install the binary only, to `~/.local/bin` unless `BENTRO_INSTALL_DIR` is set. `--with-zsh` appends a marked PATH export and a `bentro` function to `~/.zshrc` and does not edit the prompt. Both flags together is an error.
+`scripts/install.sh` accepts `--with-zsh` and `--no-zsh`. The default and `--no-zsh` install the binary only, to `~/.local/bin` unless `BENTO_INSTALL_DIR` is set. `--with-zsh` appends a marked PATH export and a `bento` function to `~/.zshrc` and does not edit the prompt. Both flags together is an error.
 
-The script prefers `https://github.com/$BENTRO_REPO/releases/latest/download/bentro_<os>_<arch>` (`BENTRO_REPO` defaults to `trishiraj/bentro`). If that asset is not a Mach-O or ELF binary, it builds with Go. That fallback is the only path that needs a toolchain. Say so in the README if the asset names or the fallback change.
+The script prefers `https://github.com/$BENTO_REPO/releases/latest/download/bento_<os>_<arch>` (`BENTO_REPO` defaults to `StarkDroid/Bento-Terminal`). If that asset is not a Mach-O or ELF binary, it builds with Go. That fallback is the only path that needs a toolchain. Say so in the README if the asset names or the fallback change.

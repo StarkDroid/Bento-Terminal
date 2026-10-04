@@ -13,8 +13,8 @@ func TestLoadRepository(t *testing.T) {
 	}
 	dir := t.TempDir()
 	gitCmd(t, dir, "init", "-b", "main")
-	gitCmd(t, dir, "config", "user.email", "bentro@example.com")
-	gitCmd(t, dir, "config", "user.name", "Bentro")
+	gitCmd(t, dir, "config", "user.email", "bento@example.com")
+	gitCmd(t, dir, "config", "user.name", "Bento terminal")
 	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("hello\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

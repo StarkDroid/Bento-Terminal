@@ -8,14 +8,14 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/trishiraj/bentro/internal/build"
-	"github.com/trishiraj/bentro/internal/files"
-	"github.com/trishiraj/bentro/internal/git"
+	"github.com/StarkDroid/Bento-Terminal/internal/build"
+	"github.com/StarkDroid/Bento-Terminal/internal/files"
+	"github.com/StarkDroid/Bento-Terminal/internal/git"
 )
 
 func (m Model) View() string {
 	if m.width <= 0 || m.height <= 0 {
-		return "Bentro"
+		return "Bento terminal"
 	}
 	if m.helpOpen {
 		return m.helpView()
@@ -333,13 +333,13 @@ func (m Model) outputBlock(width, height int) string {
 func (m Model) renderStatus(width int) string {
 	line := m.statusLine(width)
 	if lipgloss.Width(line) != width {
-		line = lipgloss.NewStyle().Background(colorStatus).Foreground(colorSand).Width(width).Render(" bentro")
+		line = lipgloss.NewStyle().Background(colorStatus).Foreground(colorSand).Width(width).Render(" bento")
 	}
 	return line
 }
 
 func (m Model) statusLine(width int) string {
-	brand := pieceText("bentro", colorLagoon, colorStatus)
+	brand := pieceText("bento", colorLagoon, colorStatus)
 	left := m.statusLeft()
 	used := 0
 	for _, p := range left {
@@ -464,7 +464,7 @@ func (m Model) helpView() string {
 }
 
 func (m Model) tooSmall() string {
-	msg := "Make the terminal larger to use Bentro.\nPress q to quit."
+	msg := "Make the terminal larger to use Bento terminal.\nPress q to quit."
 	box := lipgloss.NewStyle().
 		Foreground(colorSand).
 		Background(colorPanel).

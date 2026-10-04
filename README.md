@@ -1,8 +1,8 @@
-# Bentro
+# Bento terminal
 
-Bentro is an open-source terminal tool that feels like a small IDE. It opens the project in the current directory as a full-screen workspace: a text preview, a directory tree, commit history, and a build window.
+Bento terminal is an open-source terminal tool that feels like a small IDE. It opens the project in the current directory as a full-screen workspace: a text preview, a directory tree, commit history, and a build window.
 
-The interface is an island-themed bento layout. Panels are separate rounded islands with gaps between them. Bentro paints its own colors, so the macOS Terminal theme does not change the UI. The first platform is macOS Terminal with its default font (Menlo or SF Mono). Bentro does not need a Nerd Font.
+The interface is an island-themed bento layout. Panels are separate rounded islands with gaps between them. Bento terminal paints its own colors, so the macOS Terminal theme does not change the UI. The first platform is macOS Terminal with its default font (Menlo or SF Mono). Bento terminal does not need a Nerd Font.
 
 ## Layout
 
@@ -42,7 +42,7 @@ Each pane has its own focus and selection. The focused pane has a bright lagoon 
 - No detected commands: the build list says none were found. If the other mode has commands, it says to press `a`.
 - Build idle: the output area says to select a command and press enter.
 
-`bentro` with no arguments uses the working directory as the project root. `bentro /path/to/project` opens that directory.
+`bento` with no arguments uses the working directory as the project root. `bento /path/to/project` opens that directory.
 
 ## Keys
 
@@ -75,27 +75,27 @@ Manual mode keeps a shorter list: `npm start`, `npm test`, and `npm run build` w
 
 ## Install
 
-The end-user install is a shell script. It does not use Homebrew or npm. A published release binary is the path that does not need Go. The script looks for a release asset named `bentro_darwin_arm64` or `bentro_darwin_amd64` (and the matching Linux name if you run it there). When that asset is missing, it builds from source and requires `git` and `go` on `PATH`.
+The end-user install is a shell script. It does not use Homebrew or npm. A published release binary is the path that does not need Go. The script looks for a release asset named `bento_darwin_arm64` or `bento_darwin_amd64` (and the matching Linux name if you run it there). When that asset is missing, it builds from source and requires `git` and `go` on `PATH`.
 
 Binary only, the default:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh
 ```
 
 The same binary-only install, stated explicitly:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh -s -- --no-zsh
+curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh -s -- --no-zsh
 ```
 
-Install the binary and append a small snippet to `~/.zshrc`. The snippet adds `~/.local/bin` (or `BENTRO_INSTALL_DIR`) to `PATH` and defines a `bentro` function. It does not replace your theme or prompt:
+Install the binary and append a small snippet to `~/.zshrc`. The snippet adds `~/.local/bin` (or `BENTO_INSTALL_DIR`) to `PATH` and defines a `bento` function. It does not replace your theme or prompt:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh -s -- --with-zsh
+curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh -s -- --with-zsh
 ```
 
-The binary is installed to `~/.local/bin/bentro`. Override the directory with `BENTRO_INSTALL_DIR`, and the GitHub repo with `BENTRO_REPO` (default `trishiraj/bentro`) or `BENTRO_REPO_URL`.
+The binary is installed to `~/.local/bin/bento`. Override the directory with `BENTO_INSTALL_DIR`, and the GitHub repo with `BENTO_REPO` (default `StarkDroid/Bento-Terminal`) or `BENTO_REPO_URL`.
 
 Passing both `--with-zsh` and `--no-zsh` is an error. Running the script again with `--with-zsh` does not duplicate the snippet.
 
@@ -104,13 +104,13 @@ Passing both `--with-zsh` and `--no-zsh` is an error. Running the script again w
 Contributors can build without the release asset:
 
 ```sh
-go install ./cmd/bentro
+go install ./cmd/bento
 make install
 ```
 
-`make install` copies `bentro` to `~/.local/bin`. `PREFIX` changes that root (`PREFIX=$HOME/.local` by default, binary at `$PREFIX/bin/bentro`).
+`make install` copies `bento` to `~/.local/bin`. `PREFIX` changes that root (`PREFIX=$HOME/.local` by default, binary at `$PREFIX/bin/bento`).
 
-`go install github.com/trishiraj/bentro/cmd/bentro@latest` works once the module is published.
+`go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` works once the module is published.
 
 ### macOS release binaries
 
@@ -121,26 +121,26 @@ make darwin-arm64
 make darwin-amd64
 ```
 
-That writes `dist/bentro_darwin_arm64` and `dist/bentro_darwin_amd64`. The same commands are:
+That writes `dist/bento_darwin_arm64` and `dist/bento_darwin_amd64`. The same commands are:
 
 ```sh
-GOOS=darwin GOARCH=arm64 go build -o dist/bentro_darwin_arm64 ./cmd/bentro
-GOOS=darwin GOARCH=amd64 go build -o dist/bentro_darwin_amd64 ./cmd/bentro
+GOOS=darwin GOARCH=arm64 go build -o dist/bento_darwin_arm64 ./cmd/bento
+GOOS=darwin GOARCH=amd64 go build -o dist/bento_darwin_amd64 ./cmd/bento
 ```
 
 Publish those files as GitHub release assets to make `curl | sh` install without a toolchain.
 
 ## Develop
 
-Bentro is Go. Tests do not call macOS-only APIs, so `go test ./...` runs on Linux.
+Bento terminal is Go. Tests do not call macOS-only APIs, so `go test ./...` runs on Linux.
 
 ```sh
 go test ./...
 make build
-./bentro
+./bento
 ```
 
-`bentro -h` and `bentro -v` print usage and the version.
+`bento -h` and `bento -v` print usage and the version.
 
 ## License
 

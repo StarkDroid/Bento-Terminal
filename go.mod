@@ -1,4 +1,4 @@
-module github.com/trishiraj/bentro
+module github.com/StarkDroid/Bento-Terminal
 
 go 1.23.0
 

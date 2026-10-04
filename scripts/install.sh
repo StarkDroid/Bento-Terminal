@@ -1,24 +1,24 @@
 #!/bin/sh
-# Install the bentro binary.
+# Install the bento binary.
 #
-#   curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh
-#   curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh -s -- --with-zsh
-#   curl -fsSL https://raw.githubusercontent.com/trishiraj/bentro/main/scripts/install.sh | sh -s -- --no-zsh
+#   curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh -s -- --with-zsh
+#   curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh -s -- --no-zsh
 #   sh scripts/install.sh [--with-zsh|--no-zsh]
 #
 # Default and --no-zsh install the binary only. --with-zsh appends PATH and a
-# bentro function to ~/.zshrc and does not change the theme or prompt.
+# bento function to ~/.zshrc and does not change the theme or prompt.
 #
 # A published release asset is the install path that does not need a Go
-# toolchain. Asset names are bentro_<os>_<arch>, for example
-# bentro_darwin_arm64 and bentro_darwin_amd64. When that asset is missing, the
+# toolchain. Asset names are bento_<os>_<arch>, for example
+# bento_darwin_arm64 and bento_darwin_amd64. When that asset is missing, the
 # script builds from source and requires git and go on PATH.
 
 set -eu
 
-REPO="${BENTRO_REPO:-trishiraj/bentro}"
-REPO_URL="${BENTRO_REPO_URL:-https://github.com/${REPO}.git}"
-INSTALL_DIR="${BENTRO_INSTALL_DIR:-${HOME:-}/.local/bin}"
+REPO="${BENTO_REPO:-StarkDroid/Bento-Terminal}"
+REPO_URL="${BENTO_REPO_URL:-https://github.com/${REPO}.git}"
+INSTALL_DIR="${BENTO_INSTALL_DIR:-${HOME:-}/.local/bin}"
 
 WITH_ZSH=0
 NO_ZSH=0
@@ -31,7 +31,7 @@ for arg in "$@"; do
       echo "Usage: install.sh [--with-zsh|--no-zsh]"
       echo "  (default)   install the binary only"
       echo "  --no-zsh    install the binary only"
-      echo "  --with-zsh  also append PATH and a bentro function to ~/.zshrc"
+      echo "  --with-zsh  also append PATH and a bento function to ~/.zshrc"
       exit 0
       ;;
     *)
@@ -58,7 +58,7 @@ case "$os" in
   Linux) goos=linux ;;
   *)
     echo "Unsupported operating system: $os" >&2
-    echo "Bentro's first platform is macOS Terminal." >&2
+    echo "Bento terminal's first platform is macOS Terminal." >&2
     exit 1
     ;;
 esac
@@ -72,11 +72,11 @@ case "$arch" in
 esac
 
 if [ "$goos" != "darwin" ]; then
-  echo "Bentro's supported terminal is macOS Terminal. This host can still build from source."
+  echo "Bento terminal's supported terminal is macOS Terminal. This host can still build from source."
 fi
 
-asset="bentro_${goos}_${goarch}"
-dest="${INSTALL_DIR}/bentro"
+asset="bento_${goos}_${goarch}"
+dest="${INSTALL_DIR}/bento"
 mkdir -p "$INSTALL_DIR"
 
 is_binary() {
@@ -111,8 +111,8 @@ build_tree() {
     echo "The install path without a toolchain is a published release binary (${asset})." >&2
     exit 1
   fi
-  echo "Building bentro from ${tree}"
-  (cd "$tree" && go build -o "$dest" ./cmd/bentro)
+  echo "Building bento from ${tree}"
+  (cd "$tree" && go build -o "$dest" ./cmd/bento)
   chmod +x "$dest"
 }
 
@@ -121,7 +121,7 @@ checkout_root() {
     /*|*/*)
       if [ -f "$0" ]; then
         base=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-        if [ -f "${base}/go.mod" ] && [ -d "${base}/cmd/bentro" ]; then
+        if [ -f "${base}/go.mod" ] && [ -d "${base}/cmd/bento" ]; then
           echo "$base"
           return 0
         fi
@@ -161,11 +161,11 @@ if [ ! -x "$dest" ]; then
   exit 1
 fi
 
-echo "Installed bentro to ${dest}"
+echo "Installed bento to ${dest}"
 
 if [ "$WITH_ZSH" = 1 ]; then
   zshrc="${HOME}/.zshrc"
-  marker="# >>> bentro >>>"
+  marker="# >>> bento >>>"
   touch "$zshrc"
   if grep -q "$marker" "$zshrc" 2>/dev/null; then
     echo "zsh snippet already present in ${zshrc}"
@@ -174,12 +174,12 @@ if [ "$WITH_ZSH" = 1 ]; then
 
 ${marker}
 export PATH="${INSTALL_DIR}:\$PATH"
-bentro() {
-  command bentro "\$@"
+bento() {
+  command bento "\$@"
 }
-# <<< bentro <<<
+# <<< bento <<<
 EOF
-    echo "Appended PATH and a bentro function to ${zshrc}"
+    echo "Appended PATH and a bento function to ${zshrc}"
     echo "The snippet does not change your theme or prompt."
     echo "Open a new terminal, or run: . \"${zshrc}\""
   fi

@@ -6,7 +6,7 @@ import (
 )
 
 func TestStartEcho(t *testing.T) {
-	cancel, events, err := Start(t.TempDir(), []string{"echo", "hello-bentro"})
+	cancel, events, err := Start(t.TempDir(), []string{"echo", "hello-bento"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -15,7 +15,7 @@ func TestStartEcho(t *testing.T) {
 	if done != nil {
 		t.Fatal(done)
 	}
-	if len(lines) != 1 || lines[0] != "hello-bentro" {
+	if len(lines) != 1 || lines[0] != "hello-bento" {
 		t.Fatalf("lines = %#v", lines)
 	}
 }

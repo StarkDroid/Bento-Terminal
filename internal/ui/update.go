@@ -9,9 +9,9 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/trishiraj/bentro/internal/build"
-	"github.com/trishiraj/bentro/internal/files"
-	"github.com/trishiraj/bentro/internal/git"
+	"github.com/StarkDroid/Bento-Terminal/internal/build"
+	"github.com/StarkDroid/Bento-Terminal/internal/files"
+	"github.com/StarkDroid/Bento-Terminal/internal/git"
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
