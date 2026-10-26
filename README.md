@@ -171,23 +171,44 @@ make install
 
 `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` works once the module is published.
 
-### macOS release binaries
+### macOS and Linux release binaries
 
 Cross-compile from any platform with Go:
 
 ```sh
 make darwin-arm64
 make darwin-amd64
+make linux-arm64
+make linux-amd64
 ```
 
-That writes `dist/bento_darwin_arm64` and `dist/bento_darwin_amd64`. The same commands are:
+That writes `dist/bento_darwin_arm64`, `dist/bento_darwin_amd64`, `dist/bento_linux_arm64`, and `dist/bento_linux_amd64`. The same commands are:
 
 ```sh
 GOOS=darwin GOARCH=arm64 go build -o dist/bento_darwin_arm64 ./cmd/bento
 GOOS=darwin GOARCH=amd64 go build -o dist/bento_darwin_amd64 ./cmd/bento
+GOOS=linux GOARCH=arm64 go build -o dist/bento_linux_arm64 ./cmd/bento
+GOOS=linux GOARCH=amd64 go build -o dist/bento_linux_amd64 ./cmd/bento
 ```
 
-Publish those files as GitHub release assets to make `curl | sh` install without a toolchain.
+The release workflow publishes those four files, plus `SHA256SUMS`, so `curl | sh` installs without a toolchain.
+
+## Releasing
+
+Every change lands on `main` through a pull request. The PR body carries the version and a changelog written for users:
+
+```markdown
+Release: 0.3.0
+
+## Changelog
+
+- The preview now follows the arrow keys and folds with [ and ].
+- Settings shows the running version.
+```
+
+When the PR is merged, `.github/workflows/release.yml` collects the `## Changelog` bullets from every PR merged since the last release, runs the tests, builds the four binaries with the version in the build metadata, and publishes `v0.3.0`. Commit subjects are only a fallback; the bullets in the PR body become the release notes.
+
+Leave `Release:` blank to bump the patch version automatically. The workflow can also be started by hand from **Actions → Release → Run workflow**.
 
 ## Develop
 
@@ -211,6 +232,7 @@ Issues and pull requests are welcome. Small, focused changes are easiest to revi
 2. Run `go vet ./...` and `go test ./...`.
 3. Add a test when you change behavior.
 4. Update the README or AGENTS.md when keys, layout, packages, or the install flow change.
+5. Fill in `Release:` and the user-facing `## Changelog` in the PR body. Those bullets become the release notes.
 
 ## License
 

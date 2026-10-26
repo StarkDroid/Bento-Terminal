@@ -29,13 +29,17 @@ make build
 make install
 make darwin-arm64
 make darwin-amd64
+make linux-arm64
+make linux-amd64
 ```
 
-Go 1.23 or newer. Dependencies are Go modules. `make darwin-arm64` and `make darwin-amd64` set `GOOS=darwin` and write `dist/bento_darwin_arm64` and `dist/bento_darwin_amd64`, which are the installer's release asset names.
+Go 1.23 or newer. Dependencies are Go modules. The platform targets set `GOOS` and `GOARCH` and write `dist/bento_<os>_<arch>`, which are the installer's release asset names.
 
-Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, language detection and highlighting, Go/Python/brace folding, focus cycling, layout size, empty views, file preview, per-box footers and command lists, keyboard and mouse folding, and a real `echo` run. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
+Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, per-box footers and command lists, keyboard and mouse folding, and a real `echo` run. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
 
 CI runs gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
+
+`.github/workflows/release.yml` runs on every push to `main`. It finds the merged pull request, reads `Release:` and the `## Changelog` bullets from the PR body, collects notes from every PR merged since the last release, runs the tests, builds `bento_<os>_<arch>` for macOS and Linux with `main.version` set, writes `SHA256SUMS`, and creates the GitHub release. The PR template asks for that format; commit subjects are only a fallback. Bump the version in `cmd/bento/main.go` and `Makefile` in the same change.
 
 ## UI conventions
 
