@@ -3,7 +3,7 @@ package ui
 import "testing"
 
 func TestComputeLayout(t *testing.T) {
-	sizes := []struct{ w, h int }{{100, 32}, {80, 24}, {72, 20}}
+	sizes := []struct{ w, h int }{{100, 32}, {80, 24}, {72, 22}}
 	for _, sz := range sizes {
 		l := computeLayout(sz.w, sz.h)
 		if !l.OK {
@@ -28,5 +28,8 @@ func TestComputeLayout(t *testing.T) {
 	}
 	if computeLayout(40, 10).OK {
 		t.Fatal("tiny terminal should not lay out")
+	}
+	if computeLayout(72, 20).OK {
+		t.Fatal("too-short terminal should not lay out")
 	}
 }

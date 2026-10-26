@@ -25,7 +25,7 @@ func TestCycleFocus(t *testing.T) {
 }
 
 func TestTabCyclesFocus(t *testing.T) {
-	m := New(t.TempDir())
+	m := New(t.TempDir(), "test")
 	if m.Focus() != PaneFiles {
 		t.Fatalf("initial focus %d", m.Focus())
 	}
@@ -44,28 +44,28 @@ func TestTabCyclesFocus(t *testing.T) {
 	}
 }
 
-func TestHelpBlocksFocusCycle(t *testing.T) {
-	m := New(t.TempDir())
+func TestPaletteBlocksFocusCycle(t *testing.T) {
+	m := New(t.TempDir(), "test")
 	next, _ := m.Update(keyMsg("?"))
 	m = next.(Model)
-	if !m.helpOpen {
-		t.Fatal("help should open")
+	if !m.paletteOpen {
+		t.Fatal("command list should open")
 	}
 	focus := m.Focus()
 	next, _ = m.Update(keyMsg("tab"))
 	m = next.(Model)
-	if m.Focus() != focus || !m.helpOpen {
-		t.Fatal("tab should not move focus while help is open")
+	if m.Focus() != focus || !m.paletteOpen {
+		t.Fatal("tab should not move focus while the command list is open")
 	}
 	next, _ = m.Update(keyMsg("esc"))
 	m = next.(Model)
-	if m.helpOpen {
-		t.Fatal("esc should close help")
+	if m.paletteOpen {
+		t.Fatal("esc should close the command list")
 	}
 }
 
 func TestQuit(t *testing.T) {
-	m := New(t.TempDir())
+	m := New(t.TempDir(), "test")
 	_, cmd := m.Update(keyMsg("q"))
 	if cmd == nil {
 		t.Fatal("expected quit command")

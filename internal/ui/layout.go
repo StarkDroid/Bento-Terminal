@@ -20,7 +20,7 @@ func computeLayout(width, height int) layout {
 		gap     = 1
 	)
 	var l layout
-	if width < 72 || height < 20 {
+	if width < 72 || height < 22 {
 		return l
 	}
 	sideW := width * 34 / 100
@@ -51,15 +51,15 @@ func computeLayout(width, height int) layout {
 		return l
 	}
 	filesH := topH * 55 / 100
-	if filesH < 5 {
-		filesH = 5
+	if filesH < 6 {
+		filesH = 6
 	}
 	histH := topH - gap - filesH
-	if histH < 4 {
-		filesH -= 4 - histH
-		histH = 4
+	if histH < 5 {
+		filesH -= 5 - histH
+		histH = 5
 	}
-	if filesH < 4 || histH < 4 {
+	if filesH < 5 || histH < 5 {
 		return l
 	}
 	l.OK = true
@@ -71,8 +71,36 @@ func computeLayout(width, height int) layout {
 	return l
 }
 
+// Body tops are the first content row of a pane, after its border and title.
+func (l layout) MainBodyTop() int { return 2 }
+
+// FilesBodyTop is the first content row of the files pane.
+func (l layout) FilesBodyTop() int { return 2 }
+
+// HistoryBodyTop is the first content row of the history pane.
+func (l layout) HistoryBodyTop() int { return l.Files.H + 1 + 2 }
+
+// BuildBodyTop is the first content row of the build pane.
+func (l layout) BuildBodyTop() int { return l.Main.H + 1 + 2 }
+
+// paneAt maps a screen cell to the pane that owns it. Gaps and the status bar
+// return false.
+func paneAt(l layout, x, y int) (Pane, bool) {
+	switch {
+	case x >= 0 && x < l.Main.W && y >= 0 && y < l.Main.H:
+		return PaneMain, true
+	case x > l.Main.W && x < l.Main.W+1+l.Files.W && y >= 0 && y < l.Files.H:
+		return PaneFiles, true
+	case x > l.Main.W && x < l.Main.W+1+l.Files.W && y > l.Files.H && y < l.Files.H+1+l.History.H:
+		return PaneHistory, true
+	case x >= 0 && x < l.Build.W && y > l.Main.H && y < l.Main.H+1+l.Build.H:
+		return PaneBuild, true
+	}
+	return 0, false
+}
+
 func buildParts(panelH int) (listH, outH int) {
-	body := panelH - 3
+	body := panelH - 4
 	if body <= 0 {
 		return 0, 0
 	}

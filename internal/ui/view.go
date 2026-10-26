@@ -17,8 +17,11 @@ func (m Model) View() string {
 	if m.width <= 0 || m.height <= 0 {
 		return "Bento terminal"
 	}
-	if m.helpOpen {
-		return m.helpView()
+	if m.paletteOpen {
+		return m.paletteView()
+	}
+	if m.settingsOpen {
+		return m.settingsView()
 	}
 	lay := computeLayout(m.width, m.height)
 	if !lay.OK {
@@ -37,7 +40,7 @@ func (m Model) View() string {
 func (m Model) renderMain(width, height int) string {
 	focused := m.focus == PaneMain
 	innerW := width - 2
-	bodyH := height - 3
+	bodyH := height - 4
 	if innerW < 1 {
 		innerW = 1
 	}
@@ -49,6 +52,13 @@ func (m Model) renderMain(width, height int) string {
 	switch m.previewKind {
 	case previewFile:
 		title = " ≡ " + m.previewTitle
+		if m.previewLang.Detected() {
+			lang := m.previewLang.Name
+			if !m.previewSyntax {
+				lang += " off"
+			}
+			title += "  ·  " + lang
+		}
 		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
 	case previewCommit:
 		title = " ⎇ " + m.previewTitle
@@ -56,6 +66,10 @@ func (m Model) renderMain(width, height int) string {
 	default:
 		body = m.homeBody(innerW, bodyH)
 	}
+	if bodyH > 0 {
+		body += "\n"
+	}
+	body += m.footer(PaneMain, innerW)
 	return renderPanel(paintTitle(title, innerW, focused), body, width, height, focused)
 }
 
@@ -107,9 +121,12 @@ func (m Model) homeBody(width, height int) string {
 func (m Model) renderFiles(width, height int) string {
 	focused := m.focus == PaneFiles
 	bodyW := width - 2
-	bodyH := height - 3
+	bodyH := height - 4
 	if bodyW < 1 {
 		bodyW = 1
+	}
+	if bodyH < 0 {
+		bodyH = 0
 	}
 	var lines []string
 	switch {
@@ -130,6 +147,13 @@ func (m Model) renderFiles(width, height int) string {
 			lines = append(lines, m.fileLine(rows[i], bodyW, i == m.fileCursor))
 		}
 	}
+	for len(lines) < bodyH {
+		lines = append(lines, noteLine("", bodyW))
+	}
+	if len(lines) > bodyH {
+		lines = lines[:bodyH]
+	}
+	lines = append(lines, m.footer(PaneFiles, bodyW))
 	return panel("≡ Files", strings.Join(lines, "\n"), width, height, focused)
 }
 
@@ -172,9 +196,12 @@ func (m Model) pathDirty(row files.Row) bool {
 func (m Model) renderHistory(width, height int) string {
 	focused := m.focus == PaneHistory
 	bodyW := width - 2
-	bodyH := height - 3
+	bodyH := height - 4
 	if bodyW < 1 {
 		bodyW = 1
+	}
+	if bodyH < 0 {
+		bodyH = 0
 	}
 	var lines []string
 	switch {
@@ -196,6 +223,13 @@ func (m Model) renderHistory(width, height int) string {
 			lines = append(lines, m.commitLine(m.gitSnap.Commits[i], bodyW, i == m.commitCursor))
 		}
 	}
+	for len(lines) < bodyH {
+		lines = append(lines, noteLine("", bodyW))
+	}
+	if len(lines) > bodyH {
+		lines = lines[:bodyH]
+	}
+	lines = append(lines, m.footer(PaneHistory, bodyW))
 	return panel("⎇ History", strings.Join(lines, "\n"), width, height, focused)
 }
 
@@ -267,6 +301,7 @@ func (m Model) renderBuild(width, height int) string {
 			body = append(body, strings.Split(block, "\n")...)
 		}
 	}
+	body = append(body, m.footer(PaneBuild, innerW))
 	return renderPanel(m.buildTitle(innerW), strings.Join(body, "\n"), width, height, focused)
 }
 
@@ -328,6 +363,42 @@ func (m Model) outputBlock(width, height int) string {
 		y = 0
 	}
 	return windowLines(stylePlain(m.outLines, width), y, width, height)
+}
+
+func (m Model) footer(p Pane, width int) string {
+	fg := colorSandDim
+	if m.focus == p {
+		fg = colorLagoon
+	}
+	text := " " + strings.Join(m.footerHints(p), " · ")
+	return lipgloss.NewStyle().
+		Foreground(fg).
+		Background(colorPanel).
+		Width(width).
+		Render(truncateCells(text, width))
+}
+
+func (m Model) footerHints(p Pane) []string {
+	switch p {
+	case PaneMain:
+		switch m.previewKind {
+		case previewFile:
+			if m.previewLang.Detected() {
+				return []string{"↑↓←→ move", "[ ] fold", "? keys"}
+			}
+			return []string{"↑↓←→ move", "? keys"}
+		case previewCommit:
+			return []string{"↑↓ scroll", "? keys"}
+		}
+		return []string{"? keys", "tab panes"}
+	case PaneFiles:
+		return []string{"↑↓", "enter open", "? keys"}
+	case PaneHistory:
+		return []string{"↑↓", "enter show", "? keys"}
+	case PaneBuild:
+		return []string{"↑↓ pick", "enter run", "a mode", "r rerun", "c cancel", "? keys"}
+	}
+	return []string{"? keys"}
 }
 
 func (m Model) renderStatus(width int) string {
@@ -417,50 +488,81 @@ func (m Model) statusLeft() []piece {
 	}
 }
 
-func (m Model) helpView() string {
+func (m Model) paletteView() string {
 	innerW := m.width - 6
-	if innerW > 76 {
-		innerW = 76
+	if innerW > 78 {
+		innerW = 78
 	}
-	if innerW < 20 {
-		innerW = m.width
-		if innerW < 1 {
-			innerW = 1
-		}
+	if innerW < 24 {
+		innerW = m.width - 2
 	}
+	if innerW < 8 {
+		innerW = 8
+	}
+	items := m.paletteItems()
 	var rows []string
-	for _, group := range m.keys.FullHelp() {
-		for _, binding := range group {
-			if !binding.Enabled() {
-				continue
+	section := ""
+	for i, it := range items {
+		if it.section != section {
+			if section != "" {
+				rows = append(rows, noteLine("", innerW))
 			}
-			help := binding.Help()
-			keyText := fmt.Sprintf(" %-12s", help.Key)
-			if lipgloss.Width(keyText) > innerW {
-				rows = append(rows, noteLine(" "+help.Key+" "+help.Desc, innerW))
-				continue
-			}
-			descW := innerW - lipgloss.Width(keyText)
-			row := lipgloss.NewStyle().Foreground(colorLagoonBright).Background(colorPanel).Bold(true).Render(keyText) +
-				lipgloss.NewStyle().Foreground(colorSand).Background(colorPanel).Width(descW).Render(truncateCells(help.Desc, descW))
-			rows = append(rows, row)
+			section = it.section
+			rows = append(rows, lipgloss.NewStyle().
+				Foreground(colorMoss).
+				Background(colorPanel).
+				Bold(true).
+				Width(innerW).
+				Render(" "+strings.ToUpper(section)))
 		}
-		rows = append(rows, noteLine("", innerW))
+		rows = append(rows, paletteRow(it, i == m.paletteCursor, innerW))
 	}
-	boxH := len(rows) + 4
-	if boxH > m.height-2 {
-		boxH = m.height - 2
+	rows = append(rows, noteLine("", innerW))
+	rows = append(rows, noteLine(" ↑↓ move · enter run · ? close", innerW))
+	boxH := len(rows) + 3
+	if boxH > m.height {
+		boxH = m.height
 	}
-	if boxH < 6 {
-		boxH = min(m.height, 6)
+	if boxH < 5 {
+		boxH = 5
 	}
-	boxW := innerW + 2
-	body := strings.Join(rows, "\n")
-	box := panel("? Help", body, boxW, boxH, true)
+	title := "? Keys · " + m.paneTitle(m.palettePane)
+	bodyH := boxH - 3
+	if bodyH < 0 {
+		bodyH = 0
+	}
+	if len(rows) > bodyH {
+		rows = rows[:bodyH]
+	}
+	box := renderPanel(paintTitle(" "+title, innerW, true), strings.Join(rows, "\n"), innerW+2, boxH, true)
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box,
 		lipgloss.WithWhitespaceChars(" "),
 		lipgloss.WithWhitespaceBackground(colorOcean),
 	)
+}
+
+func paletteRow(item paletteItem, selected bool, width int) string {
+	bg := lipgloss.TerminalColor(colorPanel)
+	if selected {
+		bg = colorSelect
+	}
+	keyText := fmt.Sprintf(" %-12s", keyLabel(item.action.binding))
+	keyStyle := lipgloss.NewStyle().Foreground(colorLagoonBright).Background(bg)
+	if selected {
+		keyStyle = keyStyle.Bold(true)
+	}
+	keyText = truncateCells(keyText, width)
+	descW := width - lipgloss.Width(keyText)
+	if descW < 1 {
+		return keyStyle.Width(width).Render(keyText)
+	}
+	desc := truncateCells(item.action.desc, descW)
+	return keyStyle.Render(keyText) +
+		lipgloss.NewStyle().
+			Foreground(colorSand).
+			Background(bg).
+			Width(descW).
+			Render(desc)
 }
 
 func (m Model) tooSmall() string {

@@ -10,6 +10,7 @@ import (
 	"github.com/StarkDroid/Bento-Terminal/internal/build"
 	"github.com/StarkDroid/Bento-Terminal/internal/files"
 	"github.com/StarkDroid/Bento-Terminal/internal/git"
+	"github.com/StarkDroid/Bento-Terminal/internal/syntax"
 )
 
 type previewKind int
@@ -35,7 +36,11 @@ type Model struct {
 	root          string
 	width, height int
 	focus         Pane
-	helpOpen      bool
+	paletteOpen   bool
+	palettePane   Pane
+	paletteCursor int
+	settingsOpen  bool
+	version       string
 
 	keys    keyMap
 	spinner spinner.Model
@@ -73,25 +78,36 @@ type Model struct {
 	previewTitle    string
 	previewRaw      string
 	previewNumbered bool
+	previewLang     syntax.Language
+	previewSyntax   bool
+	previewCursor   int
+	previewCol      int
+	previewFolds    map[int]bool
+	previewBlocks   []syntax.Block
+	previewSpans    [][]codeSpan
+	previewRows     []previewRow
+	previewVisible  []int
 	preview         viewport.Model
 	previewLines    []string
 }
 
 // New returns a TUI model rooted at the project directory.
-func New(root string) Model {
+func New(root, version string) Model {
 	sp := spinner.New(
 		spinner.WithSpinner(spinner.Line),
 		spinner.WithStyle(lipgloss.NewStyle().Foreground(colorPalm).Background(colorPanel)),
 	)
 	return Model{
-		root:    root,
-		focus:   PaneFiles,
-		keys:    newKeys(),
-		spinner: sp,
-		mode:    build.ModeAuto,
-		follow:  true,
-		preview: viewport.New(0, 0),
-		output:  viewport.New(0, 0),
+		root:         root,
+		version:      version,
+		focus:        PaneFiles,
+		keys:         newKeys(),
+		spinner:      sp,
+		mode:         build.ModeAuto,
+		follow:       true,
+		previewFolds: map[int]bool{},
+		preview:      viewport.New(0, 0),
+		output:       viewport.New(0, 0),
 	}
 }
 

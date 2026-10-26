@@ -9,7 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var version = "0.1.0"
+var version = "0.2.0"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -53,7 +53,7 @@ func run(args []string) error {
 	if !info.IsDir() {
 		return fmt.Errorf("%s is not a directory", abs)
 	}
-	p := tea.NewProgram(ui.New(abs), tea.WithAltScreen())
+	p := tea.NewProgram(ui.New(abs, version), tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, err = p.Run()
 	return err
 }

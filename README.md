@@ -1,8 +1,26 @@
 # Bento terminal
 
-Bento terminal is an open-source terminal tool that feels like a small IDE. It opens the project in the current directory as a full-screen workspace: a text preview, a directory tree, commit history, and a build window.
+**A full-screen terminal workspace for one project directory.**
 
-The interface is an island-themed bento layout. Panels are separate rounded islands with gaps between them. Bento terminal paints its own colors, so the macOS Terminal theme does not change the UI. The first platform is macOS Terminal with its default font (Menlo or SF Mono). Bento terminal does not need a Nerd Font.
+Bento terminal previews files with syntax highlighting, browses the tree and the current branch's commits, and runs detected build commands — all inside a set of island-themed bento boxes. It is written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and is designed for the macOS Terminal first (Menlo or SF Mono, no Nerd Font).
+
+[![CI](https://img.shields.io/github/actions/workflow/status/StarkDroid/Bento-Terminal/ci.yml?branch=main&style=flat-square&label=build&color=3DDECE)](https://github.com/StarkDroid/Bento-Terminal/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/StarkDroid/Bento-Terminal?style=flat-square&color=1F8F86)](https://github.com/StarkDroid/Bento-Terminal/releases/latest)
+[![Go version](https://img.shields.io/github/go-mod/go-version/StarkDroid/Bento-Terminal?style=flat-square&color=3DDECE)](go.mod)
+[![License](https://img.shields.io/github/license/StarkDroid/Bento-Terminal?style=flat-square&color=7DCE82)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-071E26?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal)
+[![Go Report Card](https://goreportcard.com/badge/github.com/StarkDroid/Bento-Terminal?style=flat-square)](https://goreportcard.com/report/github.com/StarkDroid/Bento-Terminal)
+[![Stars](https://img.shields.io/github/stars/StarkDroid/Bento-Terminal?style=flat-square&color=FF6F61)](https://github.com/StarkDroid/Bento-Terminal/stargazers)
+[![Issues](https://img.shields.io/github/issues/StarkDroid/Bento-Terminal?style=flat-square&color=E9C46A)](https://github.com/StarkDroid/Bento-Terminal/issues)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-3DDECE?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/pulls)
+
+## Why Bento
+
+- **One window, one project.** Open `bento` in a directory and the whole project is in view. No tabs to manage.
+- **Code-aware preview.** Files are detected by name or contents and highlighted with a palette that matches the app. Go, Python, and the common brace languages also get foldable functions and classes.
+- **Your shortcuts, in your box.** Every box has a footer with its own keys. Press `?` in any box to see the full list and run a command from it.
+- **Builds without setup.** Common project files become a run list. Automatic mode finds tests, builds, and lint commands; manual mode keeps a short, familiar set.
+- **Fun to look at.** Rounded islands, a lagoon palette, and no dependence on your terminal theme.
 
 ## Layout
 
@@ -14,6 +32,7 @@ The interface is an island-themed bento layout. Panels are separate rounded isla
 │                              │ ├──────────────────┤
 │  12 │ selected file preview  │ │ ⎇ History        │
 │                              │ │ abc1234 subject  │
+│ ↑↓←→ move · [ ] fold · ? keys │ │ ↑↓ move · ? keys │
 ╰──────────────────────────────╯ ╰──────────────────╯
 
 ╭──────────────────────────────────────────────────╮
@@ -21,46 +40,82 @@ The interface is an island-themed bento layout. Panels are separate rounded isla
 │ ▶ npm test                                       │
 │ ──────────────────────────────────────────────── │
 │ $ npm test                                       │
+│ ↑↓ pick · enter run · a mode · ? keys            │
 ╰──────────────────────────────────────────────────╯
  ⎇ main  ↑1 ↓0  ● staged 0  ● unstaged 1  stash 0
 ```
 
-- **Main pane.** A viewer for the selected text file, with line numbers. When nothing is selected, it shows an island home: project name, branch, and detected build system.
-- **Files.** The project tree. Scroll and select. Enter opens a file. Enter, or the left and right arrows, expands or collapses a directory.
-- **History.** Commits on the current branch: short hash, subject, and a relative or short date. Enter previews that commit in the main pane.
-- **Build.** A list of run commands and the streaming output of the selected run. Automatic mode detects commands from the project. Manual mode lists the primary commands for the ecosystems that are present. A running command can be cancelled.
-- **Status.** Branch name, ahead/behind versus upstream, staged count, unstaged count (untracked files included), and stash count.
+- **Main.** The selected file, with line numbers, syntax highlighting, a character cursor, and fold markers. With no selection it shows an island home: project name, branch, and detected build system.
+- **Files.** The project tree. Selection follows the cursor. Click a directory to open or close it; click a file to preview it.
+- **History.** Commits on the current branch: short hash, subject, and a relative or short date. Enter or click previews the commit in Main.
+- **Build.** Run commands in automatic or manual mode, plus the streaming output of the selected run.
+- **Status.** Branch, ahead/behind, staged and unstaged counts (untracked files included), and the stash count.
 
-Icons use Unicode that macOS Terminal can draw with Menlo or SF Mono: `⎇` branch, `↑` `↓` ahead/behind, `●` dirty, `▶` run, `✓` `✗` result, `▸` `▾` tree, `≡` files.
+Icons use Unicode that macOS Terminal can draw with Menlo or SF Mono: `⎇` branch, `↑` `↓` ahead/behind, `●` dirty, `▶` run, `✓` `✗` result, `▸` `▾` fold, `≡` files, `▌` cursor.
 
-Each pane has its own focus and selection. The focused pane has a bright lagoon border and a brighter title. Other panes use a muted border. The selected row is a filled highlight, separate from the border.
+Each box has its own focus and selection. The focused box has a bright lagoon border, a brighter title, and a footer that lists its shortcuts. The selected row is a filled highlight, separate from the border.
+
+Bento terminal needs a window of at least **72 × 22** cells.
 
 ### Empty states
 
-- Not a git repository: the history pane and the status bar say so. The home screen omits a branch name.
-- Empty tree: the files pane says the directory is empty.
+- Not a git repository: the history box and the status bar say so; the home screen omits a branch name.
+- Empty tree: the files box says the directory is empty.
 - No detected commands: the build list says none were found. If the other mode has commands, it says to press `a`.
 - Build idle: the output area says to select a command and press enter.
-
-`bento` with no arguments uses the working directory as the project root. `bento /path/to/project` opens that directory.
+- Very small window: a single panel asks you to enlarge the terminal.
 
 ## Keys
 
-Focus starts on the file tree. Tab moves Files → History → Build → Main, then back to Files.
+Focus starts on the file tree. `tab` moves Files → History → Build → Main, then back to Files.
+
+Every box shows its own shortcuts in the bottom row. Press `?` in a box to open **its** command list, then move with `↑` `↓` and run with `enter` — or press a listed shortcut directly. `?` or `esc` closes the list. Build commands work from any box, but they are listed under Build.
 
 | Key | Action |
 | --- | --- |
-| `tab` / `shift+tab` | Next or previous pane |
-| `↑` `↓` or `k` `j` | Move the selection, or scroll the focused preview |
-| `←` `→` or `h` `l` | Collapse or expand a directory |
+| `tab` / `shift+tab` | Next or previous box |
+| `↑` `↓` or `k` `j` | Move the selection or the preview caret by a line |
+| `←` `→` or `h` `l` | Move the preview caret by a character; close or open a directory in Files |
+| `[` / `]` | Fold or unfold a function or class in Main |
 | `pgup` / `pgdown` | Page the focused list, preview, or build output |
-| `enter` | Open a file, expand a directory, preview a commit, or run the selected command |
+| `enter` | Open a file, expand a directory, preview a commit, run a command, or toggle a fold |
+| `s` | Turn syntax highlighting on or off in Main |
 | `a` | Toggle automatic and manual build mode |
 | `r` | Rerun the last command |
 | `c` | Cancel the running command |
-| `?` | Toggle help |
-| `esc` | Close help |
+| `?` | Command list for the focused box |
+| `,` | Settings and about (version, links) |
+| `esc` | Close the command list or settings |
 | `q` or `ctrl+c` | Quit |
+
+### Mouse
+
+Bento terminal enables mouse reporting on start.
+
+- Click a box to focus it.
+- Click a file to preview it; click a directory to open or close it; click a commit to preview it.
+- Click a line in Main to put the caret there. Clicking a foldable line (one with `▸` or `▾`) folds or unfolds that function or class.
+- The scroll wheel scrolls the box under the pointer.
+
+### Settings
+
+Press `,` in any box for **Settings · About**. It shows the BENTO wordmark, the version of the running binary, a one-line description, and the repository link. `esc` or `,` closes it. `bento -v` prints the same version.
+
+## Code preview
+
+The preview shows at most 256 KB of a text file. When a language is detected, the title shows its name (for example `≡ main.go · Go`) and the code is highlighted. `s` turns highlighting off and the title says `Go off`; folding still works.
+
+Highlighting is capped at 8,000 lines per file. Larger files stay plain so scrolling remains quick. Detection uses the file name first, then the content (including `#!` lines), through [Chroma](https://github.com/alecthomas/chroma).
+
+Foldable blocks are found for:
+
+- Go: `func` and `type ... struct` / `interface`
+- Python: `def`, `async def`, and `class`, by indentation
+- JavaScript, JSX, TypeScript, Java, C, C++, C#, Rust, Swift, Kotlin, Scala, Dart, PHP, Groovy, Solidity, Zig, Bash, Zsh: declaration blocks, by matched braces
+
+Fold markers (`▾` open, `▸` closed) appear in the left margin. Folding a block hides its body and shows a `… N lines` summary.
+
+## Build commands
 
 Automatic mode is the default. It reads:
 
@@ -73,9 +128,11 @@ Automatic mode is the default. It reads:
 
 Manual mode keeps a shorter list: `npm start`, `npm test`, and `npm run build` when those scripts exist; `make`, plus `make test` and `make build` when those targets exist; `./gradlew test`, `build`, and `check`; `go test` and `go build`; `cargo test` and `cargo build`; `python -m pytest`.
 
+`bento` with no arguments uses the working directory as the project root. `bento /path/to/project` opens that directory.
+
 ## Install
 
-The end-user install is a shell script. It does not use Homebrew or npm. A published release binary is the path that does not need Go. The script looks for a release asset named `bento_darwin_arm64` or `bento_darwin_amd64` (and the matching Linux name if you run it there). When that asset is missing, it builds from source and requires `git` and `go` on `PATH`.
+The end-user install is a shell script. It does not use Homebrew or npm. A published release binary is the path that does not need Go. The script looks for a release asset named `bento_<os>_<arch>` — `bento_darwin_arm64`, `bento_darwin_amd64`, `bento_linux_arm64`, or `bento_linux_amd64`. When that asset is missing, it builds from source and requires `git` and `go` on `PATH`.
 
 Binary only, the default:
 
@@ -89,11 +146,13 @@ The same binary-only install, stated explicitly:
 curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh -s -- --no-zsh
 ```
 
-Install the binary and append a small snippet to `~/.zshrc`. The snippet adds `~/.local/bin` (or `BENTO_INSTALL_DIR`) to `PATH` and defines a `bento` function. It does not replace your theme or prompt:
+Install the binary and append a small snippet to `~/.zshrc`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh -s -- --with-zsh
 ```
+
+The snippet adds `~/.local/bin` (or `BENTO_INSTALL_DIR`) to `PATH` and defines a `bento` function. It does not replace your theme or prompt.
 
 The binary is installed to `~/.local/bin/bento`. Override the directory with `BENTO_INSTALL_DIR`, and the GitHub repo with `BENTO_REPO` (default `StarkDroid/Bento-Terminal`) or `BENTO_REPO_URL`.
 
@@ -112,27 +171,48 @@ make install
 
 `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` works once the module is published.
 
-### macOS release binaries
+### macOS and Linux release binaries
 
 Cross-compile from any platform with Go:
 
 ```sh
 make darwin-arm64
 make darwin-amd64
+make linux-arm64
+make linux-amd64
 ```
 
-That writes `dist/bento_darwin_arm64` and `dist/bento_darwin_amd64`. The same commands are:
+That writes `dist/bento_darwin_arm64`, `dist/bento_darwin_amd64`, `dist/bento_linux_arm64`, and `dist/bento_linux_amd64`. The same commands are:
 
 ```sh
 GOOS=darwin GOARCH=arm64 go build -o dist/bento_darwin_arm64 ./cmd/bento
 GOOS=darwin GOARCH=amd64 go build -o dist/bento_darwin_amd64 ./cmd/bento
+GOOS=linux GOARCH=arm64 go build -o dist/bento_linux_arm64 ./cmd/bento
+GOOS=linux GOARCH=amd64 go build -o dist/bento_linux_amd64 ./cmd/bento
 ```
 
-Publish those files as GitHub release assets to make `curl | sh` install without a toolchain.
+The release workflow publishes those four files, plus `SHA256SUMS`, so `curl | sh` installs without a toolchain.
+
+## Releasing
+
+Every change lands on `main` through a pull request. The PR body carries the version and a changelog written for users:
+
+```markdown
+Release: 0.3.0
+
+## Changelog
+
+- The preview now follows the arrow keys and folds with [ and ].
+- Settings shows the running version.
+```
+
+When the PR is merged, `.github/workflows/release.yml` collects the `## Changelog` bullets from every PR merged since the last release, runs the tests, builds the four binaries with the version in the build metadata, and publishes `v0.3.0`. Commit subjects are only a fallback; the bullets in the PR body become the release notes.
+
+Leave `Release:` blank to bump the patch version automatically. The workflow can also be started by hand from **Actions → Release → Run workflow**.
 
 ## Develop
 
-Bento terminal is Go. Tests do not call macOS-only APIs, so `go test ./...` runs on Linux.
+Bento terminal is Go, and the module version is Go 1.23 or newer. Tests do not call macOS-only APIs, so `go test ./...` runs on Linux and in CI.
 
 ```sh
 go test ./...
@@ -140,7 +220,19 @@ make build
 ./bento
 ```
 
-`bento -h` and `bento -v` print usage and the version.
+`bento -h` and `bento -v` print usage and the version. The UI lives in `internal/ui`; language detection, highlighting, and folding live in `internal/syntax`.
+
+Please read [AGENTS.md](AGENTS.md) before changing layout, focus order, theme tokens, or keybindings.
+
+## Contributing
+
+Issues and pull requests are welcome. Small, focused changes are easiest to review.
+
+1. Fork the repository and create a branch.
+2. Run `go vet ./...` and `go test ./...`.
+3. Add a test when you change behavior.
+4. Update the README or AGENTS.md when keys, layout, packages, or the install flow change.
+5. Fill in `Release:` and the user-facing `## Changelog` in the PR body. Those bullets become the release notes.
 
 ## License
 

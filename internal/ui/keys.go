@@ -15,6 +15,10 @@ type keyMap struct {
 	Mode     key.Binding
 	Rerun    key.Binding
 	Cancel   key.Binding
+	Syntax   key.Binding
+	Fold     key.Binding
+	Unfold   key.Binding
+	Settings key.Binding
 	Help     key.Binding
 	Close    key.Binding
 	Quit     key.Binding
@@ -26,29 +30,20 @@ func newKeys() keyMap {
 		Prev:     key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "previous pane")),
 		Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "move up")),
 		Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "move down")),
-		Left:     key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "collapse")),
-		Right:    key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→/l", "expand")),
+		Left:     key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "left")),
+		Right:    key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→/l", "right")),
 		PageUp:   key.NewBinding(key.WithKeys("pgup"), key.WithHelp("pgup", "page up")),
 		PageDown: key.NewBinding(key.WithKeys("pgdown"), key.WithHelp("pgdown", "page down")),
 		Enter:    key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "open or run")),
 		Mode:     key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "auto or manual")),
 		Rerun:    key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "rerun")),
 		Cancel:   key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "cancel run")),
-		Help:     key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
-		Close:    key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close help")),
+		Syntax:   key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "highlight")),
+		Fold:     key.NewBinding(key.WithKeys("["), key.WithHelp("[", "fold")),
+		Unfold:   key.NewBinding(key.WithKeys("]"), key.WithHelp("]", "unfold")),
+		Settings: key.NewBinding(key.WithKeys(","), key.WithHelp(",", "settings")),
+		Help:     key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "commands")),
+		Close:    key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close commands")),
 		Quit:     key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
-	}
-}
-
-func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Next, k.Up, k.Enter, k.Help, k.Quit}
-}
-
-func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Next, k.Prev, k.Up, k.Down, k.Left, k.Right},
-		{k.PageUp, k.PageDown, k.Enter},
-		{k.Mode, k.Rerun, k.Cancel},
-		{k.Help, k.Close, k.Quit},
 	}
 }

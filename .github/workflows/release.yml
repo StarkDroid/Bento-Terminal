@@ -1,0 +1,202 @@
+name: Release
+
+# Every change lands on main through a pull request. This workflow reads the
+# merged PR body for the release version and plain-language changelog, collects
+# the notes from every PR merged since the last release, builds the binaries,
+# and publishes a GitHub release.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, for example 0.2.0 (default: bump the patch)"
+        required: false
+      notes:
+        description: "Extra changelog bullets, one per line"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Work out the version and changelog
+        id: meta
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const { owner, repo } = context.repo
+            const manual = context.eventName === 'workflow_dispatch'
+            const inputs = context.payload.inputs || {}
+
+            let pr = null
+            if (!manual) {
+              const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner, repo, commit_sha: context.sha,
+              })
+              pr = data.find((p) => p.merged_at) || null
+              if (!pr) {
+                core.info('No merged pull request found for this commit; skipping the release.')
+                core.setOutput('skip', 'true')
+                return
+              }
+            }
+
+            let latest = null
+            try {
+              latest = (await github.rest.repos.getLatestRelease({ owner, repo })).data
+            } catch (err) {
+              if (err.status !== 404) throw err
+            }
+
+            const body = pr ? (pr.body || '') : ''
+            const releaseLine = body.match(/^\s*release:\s*v?([0-9]+\.[0-9]+\.[0-9]+)\s*$/im)
+            let version = (inputs.version || '').trim().replace(/^v/, '')
+            if (!version && releaseLine) version = releaseLine[1]
+            if (!version) {
+              if (!latest) {
+                version = '0.1.0'
+              } else {
+                const parts = latest.tag_name.replace(/^v/, '').split('.').map(Number)
+                parts[2] += 1
+                version = parts.join('.')
+              }
+            }
+            const tag = `v${version}`
+
+            try {
+              await github.rest.repos.getReleaseByTag({ owner, repo, tag })
+              core.info(`Release ${tag} already exists; nothing to do.`)
+              core.setOutput('skip', 'true')
+              return
+            } catch (err) {
+              if (err.status !== 404) throw err
+            }
+
+            const since = latest ? new Date(latest.published_at) : null
+            const merged = []
+            const pages = github.paginate.iterator(github.rest.pulls.list, {
+              owner, repo, state: 'closed', base: 'main',
+              sort: 'updated', direction: 'desc', per_page: 100,
+            })
+            for await (const page of pages) {
+              let sawOld = false
+              for (const p of page.data) {
+                if (!p.merged_at) continue
+                const at = new Date(p.merged_at)
+                if (since && at <= since) {
+                  sawOld = true
+                  continue
+                }
+                merged.push(p)
+              }
+              if (since && sawOld) break
+            }
+            if (pr && !merged.some((p) => p.number === pr.number)) merged.push(pr)
+            merged.sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at))
+
+            const bullets = []
+            const seen = new Set()
+            const add = (list) => {
+              for (const item of list) {
+                const text = String(item).trim()
+                const key = text.toLowerCase()
+                if (text && !seen.has(key)) {
+                  seen.add(key)
+                  bullets.push(text)
+                }
+              }
+            }
+
+            const changelog = (text) => {
+              if (!text) return []
+              const match = text.match(/##\s*changelog\s*\r?\n([\s\S]*?)(?=\r?\n##\s|$)/i)
+              if (!match) return []
+              return match[1]
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter((line) => /^[-*]\s+\S/.test(line))
+                .map((line) => line.replace(/^[-*]\s+/, '').trim())
+            }
+
+            const cleanTitle = (title) => {
+              let text = String(title || '')
+                .replace(/^(feat|fix|perf|refactor|docs|test|ci|build|chore|style)(\([^)]+\))?!?:\s*/i, '')
+                .replace(/^merge pull request #\d+ from \S+\s*/i, '')
+                .trim()
+              if (!text) return ''
+              return text.charAt(0).toUpperCase() + text.slice(1)
+            }
+
+            for (const p of merged) {
+              const fromBody = changelog(p.body)
+              if (fromBody.length) {
+                add(fromBody)
+              } else {
+                const title = cleanTitle(p.title)
+                if (title) add([title])
+              }
+            }
+            if (manual && inputs.notes) {
+              add(inputs.notes.split(/\r?\n/).map((line) => line.replace(/^[-*]\s+/, '')))
+            }
+            if (!bullets.length) add(['Maintenance and small fixes.'])
+
+            let notes = `## What's new in ${tag}\n\n`
+            notes += bullets.map((b) => `- ${b}`).join('\n') + '\n'
+            if (latest) {
+              notes += `\n**Full changelog**: https://github.com/${owner}/${repo}/compare/${latest.tag_name}...${tag}\n`
+            }
+            fs.writeFileSync('release-notes.md', notes)
+            core.info(notes)
+            core.setOutput('version', version)
+            core.setOutput('tag', tag)
+            core.setOutput('skip', 'false')
+
+      - name: Test
+        if: steps.meta.outputs.skip != 'true'
+        run: go test ./...
+
+      - name: Build release binaries
+        if: steps.meta.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          mkdir -p dist
+          for target in darwin/arm64 darwin/amd64 linux/arm64 linux/amd64; do
+            os="${target%/*}"
+            arch="${target#*/}"
+            GOOS="$os" GOARCH="$arch" go build -trimpath \
+              -ldflags "-s -w -X main.version=${VERSION}" \
+              -o "dist/bento_${os}_${arch}" ./cmd/bento
+          done
+          shasum -a 256 dist/bento_* | sed 's#dist/##' > dist/SHA256SUMS
+
+      - name: Publish the release
+        if: steps.meta.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          gh release create "$TAG" dist/bento_* dist/SHA256SUMS \
+            --title "Bento terminal $TAG" \
+            --notes-file release-notes.md \
+            --target "$GITHUB_SHA"
