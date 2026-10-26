@@ -40,7 +40,7 @@ func TestPaletteListsFocusedPaneCommands(t *testing.T) {
 	next, _ := m.Update(keyMsg("?"))
 	m = next.(Model)
 	plain := stripANSI(m.View())
-	for _, want := range []string{"? Keys · Files", "FILES", "GLOBAL", "preview file", "focus next pane"} {
+	for _, want := range []string{"? Keys · Files", "FILES", "GLOBAL", "preview file", "focus next pane", "settings and about"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("palette missing %q\n%s", want, plain)
 		}
@@ -335,6 +335,33 @@ func TestPlainTextHasNoLanguageBadge(t *testing.T) {
 	}
 	if len(m.previewBlocks) != 0 {
 		t.Fatalf("plain text should not have folds: %+v", m.previewBlocks)
+	}
+}
+
+func TestSettingsShowsAboutAndVersion(t *testing.T) {
+	m, _ := previewSample(t)
+	m.width = 120
+	m.height = 32
+	m.focus = PaneFiles
+	m.version = "9.9.9"
+	next, _ := m.Update(keyMsg(","))
+	m = next.(Model)
+	if !m.settingsOpen {
+		t.Fatal("comma should open settings")
+	}
+	plain := stripANSI(m.View())
+	for _, want := range []string{"Settings · About", "v9.9.9", "github.com/StarkDroid/Bento-Terminal", "esc  close"} {
+		if !strings.Contains(plain, want) {
+			t.Fatalf("settings missing %q\n%s", want, plain)
+		}
+	}
+	if !strings.Contains(plain, "████") {
+		t.Fatal("settings should draw the wordmark")
+	}
+	next, _ = m.Update(keyMsg("esc"))
+	m = next.(Model)
+	if m.settingsOpen {
+		t.Fatal("esc should close settings")
 	}
 }
 

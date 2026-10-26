@@ -11,6 +11,7 @@ const (
 	actNext actionID = iota
 	actPrev
 	actKeys
+	actSettings
 	actQuit
 
 	actFileUp
@@ -114,6 +115,7 @@ func (m Model) globalActions() []action {
 		{actNext, m.keys.Next, "focus next pane"},
 		{actPrev, m.keys.Prev, "focus previous pane"},
 		{actKeys, m.keys.Help, "command list for this pane"},
+		{actSettings, m.keys.Settings, "settings and about"},
 		{actQuit, m.keys.Quit, "quit Bento terminal"},
 	}
 }
@@ -150,6 +152,8 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.reflowPreview(false), nil
 	case actKeys:
 		return m.openPalette(), nil
+	case actSettings:
+		return m.openSettings(), nil
 	case actQuit:
 		return m.stopRun(), tea.Quit
 

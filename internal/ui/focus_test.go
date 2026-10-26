@@ -25,7 +25,7 @@ func TestCycleFocus(t *testing.T) {
 }
 
 func TestTabCyclesFocus(t *testing.T) {
-	m := New(t.TempDir())
+	m := New(t.TempDir(), "test")
 	if m.Focus() != PaneFiles {
 		t.Fatalf("initial focus %d", m.Focus())
 	}
@@ -45,7 +45,7 @@ func TestTabCyclesFocus(t *testing.T) {
 }
 
 func TestPaletteBlocksFocusCycle(t *testing.T) {
-	m := New(t.TempDir())
+	m := New(t.TempDir(), "test")
 	next, _ := m.Update(keyMsg("?"))
 	m = next.(Model)
 	if !m.paletteOpen {
@@ -65,7 +65,7 @@ func TestPaletteBlocksFocusCycle(t *testing.T) {
 }
 
 func TestQuit(t *testing.T) {
-	m := New(t.TempDir())
+	m := New(t.TempDir(), "test")
 	_, cmd := m.Update(keyMsg("q"))
 	if cmd == nil {
 		t.Fatal("expected quit command")

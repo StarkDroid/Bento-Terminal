@@ -20,6 +20,9 @@ func (m Model) View() string {
 	if m.paletteOpen {
 		return m.paletteView()
 	}
+	if m.settingsOpen {
+		return m.settingsView()
+	}
 	lay := computeLayout(m.width, m.height)
 	if !lay.OK {
 		return m.tooSmall()

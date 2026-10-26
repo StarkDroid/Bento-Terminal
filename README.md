@@ -84,7 +84,8 @@ Every box shows its own shortcuts in the bottom row. Press `?` in a box to open 
 | `r` | Rerun the last command |
 | `c` | Cancel the running command |
 | `?` | Command list for the focused box |
-| `esc` | Close the command list |
+| `,` | Settings and about (version, links) |
+| `esc` | Close the command list or settings |
 | `q` or `ctrl+c` | Quit |
 
 ### Mouse
@@ -95,6 +96,10 @@ Bento terminal enables mouse reporting on start.
 - Click a file to preview it; click a directory to open or close it; click a commit to preview it.
 - Click a line in Main to put the caret there. Clicking a foldable line (one with `▸` or `▾`) folds or unfolds that function or class.
 - The scroll wheel scrolls the box under the pointer.
+
+### Settings
+
+Press `,` in any box for **Settings · About**. It shows the BENTO wordmark, the version of the running binary, a one-line description, and the repository link. `esc` or `,` closes it. `bento -v` prints the same version.
 
 ## Code preview
 

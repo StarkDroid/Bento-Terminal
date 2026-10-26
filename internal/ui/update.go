@@ -69,6 +69,12 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, m.keys.Quit) {
 		return m.stopRun(), tea.Quit
 	}
+	if m.settingsOpen {
+		if key.Matches(msg, m.keys.Close, m.keys.Settings) {
+			m.settingsOpen = false
+		}
+		return m, nil
+	}
 	if m.paletteOpen {
 		return m.onPaletteKey(msg)
 	}
@@ -86,7 +92,7 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // onMouse focuses a pane on click and lets the pointer move the selection, fold
 // a block, or scroll a list.
 func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
-	if m.paletteOpen {
+	if m.paletteOpen || m.settingsOpen {
 		return m, nil
 	}
 	lay := computeLayout(m.width, m.height)

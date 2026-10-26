@@ -18,6 +18,7 @@ type keyMap struct {
 	Syntax   key.Binding
 	Fold     key.Binding
 	Unfold   key.Binding
+	Settings key.Binding
 	Help     key.Binding
 	Close    key.Binding
 	Quit     key.Binding
@@ -40,6 +41,7 @@ func newKeys() keyMap {
 		Syntax:   key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "highlight")),
 		Fold:     key.NewBinding(key.WithKeys("["), key.WithHelp("[", "fold")),
 		Unfold:   key.NewBinding(key.WithKeys("]"), key.WithHelp("]", "unfold")),
+		Settings: key.NewBinding(key.WithKeys(","), key.WithHelp(",", "settings")),
 		Help:     key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "commands")),
 		Close:    key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close commands")),
 		Quit:     key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),

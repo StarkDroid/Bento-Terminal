@@ -33,7 +33,7 @@ func TestViewEmptyStates(t *testing.T) {
 }
 
 func TestViewTooSmall(t *testing.T) {
-	m := New(t.TempDir())
+	m := New(t.TempDir(), "test")
 	m.width = 40
 	m.height = 12
 	plain := stripANSI(m.View())
@@ -83,7 +83,7 @@ func TestFileSelectionAndPreview(t *testing.T) {
 }
 
 func TestToggleBuildMode(t *testing.T) {
-	m := New(t.TempDir())
+	m := New(t.TempDir(), "test")
 	m.autoCmds = []build.Command{{Name: "go test ./...", Argv: []string{"go", "test", "./..."}}}
 	m.manualCmds = []build.Command{{Name: "go build ./...", Argv: []string{"go", "build", "./..."}}}
 	m.mode = build.ModeAuto
@@ -121,7 +121,7 @@ func TestRunEchoCommand(t *testing.T) {
 }
 
 func readyEmpty(dir string) Model {
-	m := New(dir)
+	m := New(dir, "0.2.0")
 	m.treeReady = true
 	m.gitReady = true
 	m.buildReady = true

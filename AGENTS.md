@@ -10,6 +10,7 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
 - `internal/ui` — Bubble Tea model, bento layout, theme, focus, keys, and rendering. Scroll position for the preview and the build output is a Bubbles viewport. The running indicator is a Bubbles spinner. Bindings are Bubbles keys.
   - `commands.go` — one action table per box. Actions carry their binding and a pane-specific description, and `runAction` is the single dispatcher. This table drives both key handling and the `?` command list.
   - `palette.go` — the per-box command list: open/close, cursor movement, enter to run, direct shortcut to run.
+  - `settings.go` — the settings overlay: wordmark, version, and about.
   - `codeview.go` — renders the file preview: gutter, fold markers, caret row and block, highlighted spans, and collapsed-block summaries.
   - `preview.go` — line numbering and wrapping helpers for plain previews.
 - `internal/syntax` — Chroma-based language detection, highlighting with the lagoon palette, and foldable block discovery. Go and Python use dedicated strategies; the common brace languages share a balanced-brace scanner. Highlighting is capped at 8,000 lines.
@@ -61,6 +62,8 @@ Each box reserves its last body row for a footer of its own shortcuts. Footer hi
 `?` opens the command list for the focused box (`? Keys · Files`). The list shows that box's commands and then a Global section. `↑` `↓` (or `k` `j`) move, `pgup`/`pgdown` jump, `enter` runs the selected row, and pressing a listed shortcut runs it directly and closes the list. `?` and `esc` close it. While the list is open, focus does not move, and mouse events are ignored.
 
 Build commands (`a`, `r`, `c`) are listed under Build but work from any box. `q` quits even while the list is open.
+
+`,` opens the settings overlay from any box. It draws the BENTO wordmark, the version passed to `ui.New` by `cmd/bento`, and a short about. `esc` or `,` closes it. Mouse events are ignored while it is open.
 
 To add a command: add the binding to `keyMap`, add an action to the right `paneActions` case (and `buildActions` if it must work globally), and handle its id in `runAction`. Update the footer hints if the command is important enough to show there.
 

@@ -17,6 +17,7 @@ func (m Model) openPalette() Model {
 		return m
 	}
 	m.paletteOpen = true
+	m.settingsOpen = false
 	m.palettePane = m.focus
 	m.paletteCursor = 0
 	return m

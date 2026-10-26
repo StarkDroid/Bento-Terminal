@@ -39,6 +39,8 @@ type Model struct {
 	paletteOpen   bool
 	palettePane   Pane
 	paletteCursor int
+	settingsOpen  bool
+	version       string
 
 	keys    keyMap
 	spinner spinner.Model
@@ -90,13 +92,14 @@ type Model struct {
 }
 
 // New returns a TUI model rooted at the project directory.
-func New(root string) Model {
+func New(root, version string) Model {
 	sp := spinner.New(
 		spinner.WithSpinner(spinner.Line),
 		spinner.WithStyle(lipgloss.NewStyle().Foreground(colorPalm).Background(colorPanel)),
 	)
 	return Model{
 		root:         root,
+		version:      version,
 		focus:        PaneFiles,
 		keys:         newKeys(),
 		spinner:      sp,
