@@ -188,7 +188,7 @@ jobs:
               -ldflags "-s -w -X main.version=${VERSION}" \
               -o "dist/bento_${os}_${arch}" ./cmd/bento
           done
-          shasum -a 256 dist/bento_* > dist/SHA256SUMS
+          shasum -a 256 dist/bento_* | sed 's#dist/##' > dist/SHA256SUMS
 
       - name: Publish the release
         if: steps.meta.outputs.skip != 'true'
