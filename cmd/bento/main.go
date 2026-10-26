@@ -53,7 +53,7 @@ func run(args []string) error {
 	if !info.IsDir() {
 		return fmt.Errorf("%s is not a directory", abs)
 	}
-	p := tea.NewProgram(ui.New(abs), tea.WithAltScreen())
+	p := tea.NewProgram(ui.New(abs), tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, err = p.Run()
 	return err
 }

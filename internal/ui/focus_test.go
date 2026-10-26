@@ -44,23 +44,23 @@ func TestTabCyclesFocus(t *testing.T) {
 	}
 }
 
-func TestHelpBlocksFocusCycle(t *testing.T) {
+func TestPaletteBlocksFocusCycle(t *testing.T) {
 	m := New(t.TempDir())
 	next, _ := m.Update(keyMsg("?"))
 	m = next.(Model)
-	if !m.helpOpen {
-		t.Fatal("help should open")
+	if !m.paletteOpen {
+		t.Fatal("command list should open")
 	}
 	focus := m.Focus()
 	next, _ = m.Update(keyMsg("tab"))
 	m = next.(Model)
-	if m.Focus() != focus || !m.helpOpen {
-		t.Fatal("tab should not move focus while help is open")
+	if m.Focus() != focus || !m.paletteOpen {
+		t.Fatal("tab should not move focus while the command list is open")
 	}
 	next, _ = m.Update(keyMsg("esc"))
 	m = next.(Model)
-	if m.helpOpen {
-		t.Fatal("esc should close help")
+	if m.paletteOpen {
+		t.Fatal("esc should close the command list")
 	}
 }
 
