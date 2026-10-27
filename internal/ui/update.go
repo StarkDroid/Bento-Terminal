@@ -127,7 +127,7 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) click(pane Pane, x, y int, lay layout) (tea.Model, tea.Cmd) {
-	if y == 1 && x >= lay.Main.W-3 && x <= lay.Main.W-2 && m.previewKind == previewFile && !m.previewEditing {
+	if y == 1 && m.previewKind == previewFile && !m.previewEditing && m.newFileTabAt(x-1, lay.Main.W-2) {
 		return m.openNewFile(), nil
 	}
 	if y == lay.HistoryBodyTop()-1 {
@@ -200,6 +200,18 @@ func (m Model) click(pane Pane, x, y int, lay layout) (tea.Model, tea.Cmd) {
 		m.cmdCursor = row
 	}
 	return m, nil
+}
+
+// newFileTabAt reports whether an inner title cell lands on the new-file tab.
+// The tab sits directly after the file tab, so its range depends on the name.
+// A long name can push the tab past the right edge; the clipped part is dead.
+func (m Model) newFileTabAt(rel, width int) bool {
+	start := m.fileTab(false).width
+	end := start + m.newFileTab(false).width
+	if end > width {
+		end = width
+	}
+	return rel >= start && rel < end
 }
 
 // historyTabAt maps an inner title cell to a history tab. Tabs are drawn as

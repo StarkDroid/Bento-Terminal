@@ -23,24 +23,34 @@ func TestFileTitleHasNewFileShortcut(t *testing.T) {
 	if !strings.Contains(plain, "≡ main.go") {
 		t.Fatalf("title missing the file name\n%s", plain)
 	}
-	if !strings.Contains(plain, "+") {
-		t.Fatalf("title missing the new-file shortcut\n%s", plain)
+	if !strings.Contains(plain, "Go  + new file") {
+		t.Fatalf("the new-file tab should sit right after the file tab\n%s", plain)
+	}
+}
+
+func TestTabsUseDistinctBackgrounds(t *testing.T) {
+	_, active := tabColors(true, true)
+	_, inactive := tabColors(false, true)
+	if active == inactive {
+		t.Fatal("active and inactive tabs share a background")
+	}
+	if active == colorPanel || inactive == colorPanel {
+		t.Fatal("tabs should stand apart from the title bar")
 	}
 }
 
 func TestNewFileFromPlusPromptSavesAndHighlights(t *testing.T) {
 	m, dir := previewSample(t)
 	m.focus = PaneMain
-	lay := computeLayout(m.width, m.height)
 	next, _ := m.Update(tea.MouseMsg{
-		X:      lay.Main.W - 3,
+		X:      1 + m.fileTab(false).width + m.newFileTab(false).width/2,
 		Y:      1,
 		Action: tea.MouseActionPress,
 		Button: tea.MouseButtonLeft,
 	})
 	m = next.(Model)
 	if !m.newFileOpen {
-		t.Fatal("the + title shortcut should open the new-file prompt")
+		t.Fatal("the + new file tab should open the prompt")
 	}
 	if plain := stripANSI(m.View()); !strings.Contains(plain, "+ New file") {
 		t.Fatalf("prompt missing its title\n%s", plain)
