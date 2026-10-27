@@ -72,40 +72,64 @@ func (m Model) renderMain(width, height int) string {
 	return renderPanel(title, body, width, height, focused)
 }
 
-// fileTitle draws the file name, language badge, save markers, and the new-file
-// shortcut that is pinned to the right edge.
-func (m Model) fileTitle(width int, focused bool) string {
-	titleFG := lipgloss.TerminalColor(colorSandDim)
-	if focused {
-		titleFG = colorLagoonBright
+// fileTab draws the open file as the active tab: icon, name, language badge,
+// and the save marker. Its width does not depend on focus, so click zones can
+// measure it.
+func (m Model) fileTab(focused bool) piece {
+	fg, bg := tabColors(true, focused)
+	text := func(s string, color lipgloss.TerminalColor) piece {
+		st := lipgloss.NewStyle().Foreground(color).Background(bg)
+		if focused {
+			st = st.Bold(true)
+		}
+		return piece{view: st.Render(s), width: lipgloss.Width(s)}
 	}
-	left := []piece{
-		pieceText(" ≡ ", titleFG, colorPanel),
-		pieceText(m.previewTitle, titleFG, colorPanel),
+	parts := []piece{
+		text("≡", fg),
+		text(" "+m.previewTitle, fg),
 	}
 	if m.previewLang.Detected() {
 		lang := m.previewLang.Name
 		if !m.previewSyntax {
 			lang += " off"
 		}
-		left = append(left, pieceText("  ·  "+lang, colorLagoon, colorPanel))
+		parts = append(parts, text("  ·  "+lang, colorLagoonBright))
 	}
 	switch {
 	case m.previewSaveErr:
-		left = append(left, pieceText("  save failed", colorCoral, colorPanel))
+		parts = append(parts, text("  save failed", colorCoral))
 	case m.previewDirty:
-		left = append(left, pieceText("  ●", colorCoral, colorPanel))
+		parts = append(parts, text("  ●", colorCoral))
 	case m.previewSaved:
-		left = append(left, pieceText("  ✓", colorPalm, colorPanel))
+		parts = append(parts, text("  ✓", colorPalm))
 	}
 	if m.previewEditing {
-		left = append(left, pieceText("  edit", colorSun, colorPanel))
+		parts = append(parts, text("  edit", colorSun))
 	}
-	if m.previewEditing {
-		return joinPieces(width, colorPanel, left)
+	return chip(bg, parts)
+}
+
+// newFileTab draws the new-file button as an inactive tab sitting directly
+// after the open file's tab, the way a browser keeps its new-tab button.
+func (m Model) newFileTab(focused bool) piece {
+	_, bg := tabColors(false, focused)
+	label := lipgloss.TerminalColor(colorSandDim)
+	if focused {
+		label = colorSand
 	}
-	right := []piece{pieceText("+ ", colorLagoonBright, colorPanel)}
-	return joinLeftRight(width, colorPanel, left, right)
+	return chip(bg, []piece{
+		pieceText("+", colorLagoonBright, bg),
+		pieceText(" new file", label, bg),
+	})
+}
+
+// fileTitle draws the open file's tab and the new-file tab beside it.
+func (m Model) fileTitle(width int, focused bool) string {
+	parts := []piece{m.fileTab(focused)}
+	if !m.previewEditing {
+		parts = append(parts, m.newFileTab(focused))
+	}
+	return joinPieces(width, colorPanel, parts)
 }
 
 func (m Model) homeBody(width, height int) string {

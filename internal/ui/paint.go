@@ -72,24 +72,45 @@ func joinLeftRight(width int, bg lipgloss.TerminalColor, left, right []piece) st
 	return joinPieces(width, bg, parts)
 }
 
-// tabPiece draws one tab label for a pane title. The active tab sits on a
-// darker chip so it reads as selected with the cursor keys.
-func tabPiece(label string, active, focused bool) piece {
-	fg := lipgloss.TerminalColor(colorSandDim)
-	bg := lipgloss.TerminalColor(colorPanel)
-	if active {
-		fg = colorLagoon
-		bg = colorSelectDim
-		if focused {
-			fg = colorLagoonBright
-		}
+// tabColors picks the text and fill for a tab. The active tab is the lighter
+// chip, so it stands apart from both the title bar and the inactive tabs.
+func tabColors(active, focused bool) (lipgloss.TerminalColor, lipgloss.TerminalColor) {
+	switch {
+	case active && focused:
+		return colorLagoonBright, colorSelect
+	case active:
+		return colorSand, colorSelect
+	default:
+		return colorSandDim, colorSelectDim
 	}
-	text := " " + label + " "
+}
+
+// chip wraps styled parts in one cell of fill on each side, so a run of text
+// reads as a tab rather than as part of the title bar. Each part must already
+// paint bg.
+func chip(bg lipgloss.TerminalColor, parts []piece) piece {
+	pad := lipgloss.NewStyle().Background(bg).Render(" ")
+	var b strings.Builder
+	width := 0
+	b.WriteString(pad)
+	width++
+	for _, p := range parts {
+		b.WriteString(p.view)
+		width += p.width
+	}
+	b.WriteString(pad)
+	width++
+	return piece{view: b.String(), width: width}
+}
+
+// tabPiece draws one tab label for a pane title.
+func tabPiece(label string, active, focused bool) piece {
+	fg, bg := tabColors(active, focused)
 	style := lipgloss.NewStyle().Foreground(fg).Background(bg)
 	if active && focused {
 		style = style.Bold(true)
 	}
-	return piece{view: style.Render(text), width: lipgloss.Width(text)}
+	return chip(bg, []piece{{view: style.Render(label), width: lipgloss.Width(label)}})
 }
 
 func borderStyle(focused bool) lipgloss.Style {

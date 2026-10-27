@@ -13,6 +13,7 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
   - `settings.go` — the settings overlay: wordmark, version, and about.
   - `codeview.go` — renders the file preview: gutter, fold markers, caret row and block, highlighted spans, and collapsed-block summaries.
   - `preview.go` — line numbering, wrapping, and diff colouring helpers for plain previews.
+  - `paint.go` — piece strings, left/right joins, tab chips, titles, rows, and panel frames.
   - `editor.go` — the preview editor: open file, buffer edits, save, and the new-file prompt.
   - `terminal.go` — the Terminal tab: prompt input, history, run dispatch, and terminal scrollback.
   - `view.go` — pane bodies, the History and Build tab titles, footers, and overlays.
@@ -56,7 +57,7 @@ The minimum window is **72 × 22** cells; smaller windows show a single "make th
 
 Focus order is Main, Files, History, Build. The app starts on Files. Tab moves Files → History → Build → Main. Shift-Tab reverses. Changing focus re-renders the preview so the cursor row only highlights while Main is focused.
 
-The focused pane uses border `#3DDECE` and a bold title. Unfocused panes use border `#24555C`. A selected row uses fill `#1B5E5A` when its pane is focused and `#14343C` when it is not. Borders are not the selection.
+The focused pane uses border `#3DDECE` and a bold title. Unfocused panes use border `#24555C`. A selected row uses fill `#1B5E5A` when its pane is focused and `#14343C` when it is not; tabs reuse those two fills, so the lighter one always means "this one". Borders are not the selection.
 
 ### Footers and command lists
 
@@ -84,13 +85,17 @@ To add a command: add the binding to `keyMap`, add an action to the right `paneA
 
 ### Tabs
 
-History draws its title as `⎇  History   Changes` and Build as `▶  Build   Terminal`. The active tab sits on the `#14343C` chip. `←` `→` (and `h` `l`) switch tabs while that box is focused, and a click on a tab label switches too. Click zones are in inner-title cells: History has a 3-cell `⎇` prefix, then a 9-cell ` History `, a 1-cell gap, and a 9-cell ` Changes `; Build has a 3-cell state glyph, then a 7-cell ` Build `, a 1-cell gap, and a 10-cell ` Terminal `. Keep `historyTabAt` and `buildTabAt` in `update.go` in step with those widths.
+Tabs are chips drawn by `chip` and `tabColors` in `paint.go`: one cell of fill on each side of the label, the active tab on `#1B5E5A` with bold lagoon-bright text while its box is focused (sand when not), and inactive tabs on `#14343C` with sand-dim text. The chip is what separates a tab from the title bar; do not paint tabs on the panel colour.
+
+History draws its title as `⎇  History   Changes` and Build as `▶  Build   Terminal`. `←` `→` (and `h` `l`) switch tabs while that box is focused, and a click on a tab label switches too. Click zones are in inner-title cells: History has a 3-cell `⎇` prefix, then a 9-cell ` History `, a 1-cell gap, and a 9-cell ` Changes `; Build has a 3-cell state glyph, then a 7-cell ` Build `, a 1-cell gap, and a 10-cell ` Terminal `. Keep `historyTabAt` and `buildTabAt` in `update.go` in step with those widths.
+
+Main is a two-tab strip in the same style: the open file's tab (`fileTab`, always the active chip, with the language badge and save marker inside it) and the `+ new file` tab (`newFileTab`, inactive) directly after it with no gap, the way a browser keeps its new-tab button beside the last tab. The new-file tab is hidden while editing. Its click zone moves with the file name, so `newFileTabAt` measures `fileTab().width` and `newFileTab(false).width` instead of hard-coding cells; a long name that pushes the tab past the right edge leaves the clipped part dead.
 
 Each tab keeps its own cursor and scroll: commits and changes, commands and terminal output. Switching tabs does not run anything.
 
 ### Code preview
 
-The preview is capped at 256 KB. The title is ` ≡ name` plus `  ·  Language` when a language is detected, the save marker, and `+` pinned to the right edge. `s` toggles highlighting and the title then says `Language off`; folding still works with highlighting off.
+The preview is capped at 256 KB. The title is the file's tab: ` ≡ name`, then `  ·  Language` when a language is detected, then the save marker and ` edit`. The `+ new file` tab follows it. `s` toggles highlighting and the tab then says `Language off`; folding still works with highlighting off.
 
 The Main pane has a source caret. `↑` `↓` move it by line, `←` `→` move it by character (wrapping at line ends), `pgup`/`pgdown` page it, and the viewport follows. `[` folds the innermost function or class at the caret, `]` unfolds it, and `enter` toggles it. A folded block keeps its opening line with a `▸` marker and a `… N lines` summary; open blocks use `▾`. The caret row uses fill `#14343C`, a `▌` marker when the line is not a fold start, and a lagoon-bright block over the character at the caret.
 
@@ -120,7 +125,7 @@ Terminal output has its own viewport and 2,000-line scrollback, separate from th
 
 ### Mouse
 
-Mouse reporting is on (`tea.WithMouseCellMotion`). A left click focuses the box under the pointer and moves its selection; clicking a directory toggles it, clicking a file opens the preview, clicking a commit or a changed path previews it, and clicking a tab label switches tabs. In Main's title, clicking `+` opens the new-file prompt (but not while editing). In Main, a click puts the caret at the start of that source line and, when the line opens a foldable block, toggles that block. The wheel scrolls the box under the pointer by three rows (Build scrolls the command output or the terminal scrollback).
+Mouse reporting is on (`tea.WithMouseCellMotion`). A left click focuses the box under the pointer and moves its selection; clicking a directory toggles it, clicking a file opens the preview, clicking a commit or a changed path previews it, and clicking a tab label switches tabs. In Main's title, clicking the `+ new file` tab opens the new-file prompt (but not while editing). In Main, a click puts the caret at the start of that source line and, when the line opens a foldable block, toggles that block. The wheel scrolls the box under the pointer by three rows (Build scrolls the command output or the terminal scrollback).
 
 `paneAt` in `layout.go` maps screen cells to boxes; body-top helpers keep click rows aligned with the rendered content.
 
@@ -132,15 +137,17 @@ Theme tokens:
 | panel | `#0C2832` | pane fill |
 | status | `#04161C` | status bar |
 | sand | `#F4E4C4` | text |
-| sand dim | `#B7A88A` | hints, unfocused titles |
+| sand dim | `#B7A88A` | hints, inactive tabs, unfocused titles |
 | lagoon | `#1F8F86` | mode label, secondary accent, focused footer |
-| lagoon bright | `#3DDECE` | focus border, focused title, keywords |
+| lagoon bright | `#3DDECE` | focus border, active tab text, keywords |
 | coral | `#FF6F61` | dirty counts, failures, tags |
 | palm | `#7DCE82` | success, detected systems, function and class names |
 | sun | `#E9C46A` | strings, decorators, collapsed fold marker |
 | amber | `#F4A261` | numbers |
 | moss | `#5F7D7B` | comments, gutter |
 | reef | `#5FB3C4` | types and builtins |
+| select | `#1B5E5A` | active tab chip, selected row in the focused pane |
+| select dim | `#14343C` | inactive tab chip, selected row in an unfocused pane |
 
 Every pane sets foreground and background. Do not rely on the terminal's default colors. The syntax palette lives in `internal/syntax/highlight.go` and mirrors these tokens. Stay with Unicode that Menlo and SF Mono provide: `⎇ ↑ ↓ ● ▶ ✓ ✗ ▸ ▾ ≡ ± ▌ + · …` and rounded box drawing. Do not require a Nerd Font, do not use braille spinner frames, and do not use `⏎` in hints (write `enter`).
 
