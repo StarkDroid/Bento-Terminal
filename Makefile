@@ -1,6 +1,6 @@
 BIN := bento
 PREFIX ?= $(HOME)/.local
-VERSION ?= 0.2.0
+VERSION ?= 0.3.0
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
 .PHONY: build install test darwin-arm64 darwin-amd64 linux-arm64 linux-amd64 clean
