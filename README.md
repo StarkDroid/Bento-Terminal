@@ -18,7 +18,7 @@ Bento terminal previews and edits files with syntax highlighting, browses the tr
 
 - **One window, one project.** Open `bento` in a directory and the whole project is in view. No tabs to manage.
 - **Code-aware preview.** Files are detected by name or contents and highlighted with a palette that matches the app. Go, Python, and the common brace languages also get foldable functions and classes.
-- **Edit without leaving.** `e` turns the preview into an editor, `ctrl+s` saves, and `+` or `n` creates a new file in the project.
+- **Edit without leaving.** `e` turns the preview into an editor, `ctrl+s` saves, and the `+ new file` tab or `n` creates a new file in the project.
 - **Changes at a glance.** History has a **Changes** tab that lists every modified, staged, untracked, and conflicted path and shows its patch.
 - **A terminal in the box.** Build has a **Terminal** tab that runs anything you type through your own shell, inside the project.
 - **Your shortcuts, in your box.** Every box has a footer with its own keys. Press `?` in any box to see the full list and run a command from it.
@@ -28,15 +28,16 @@ Bento terminal previews and edits files with syntax highlighting, browses the tr
 ## Layout
 
 ```
-╭──────────────────────────────╮ ╭──────────────────╮
-│ project                      │ │ ≡ Files          │
-│ ⎇ branch                     │ │ ▾ src            │
-│ Go · Make                    │ │   ≡ main.go      │
-│                              │ ├──────────────────┤
-│  12 │ selected file preview  │ │ ⎇ History Changes│
-│                              │ │ abc1234 subject  │
-│ ↑↓←→ · [ ] fold · e edit · ? │ │ ↑↓ · ←→ tab · ?  │
-╰──────────────────────────────╯ ╰──────────────────╯
+╭──────────────────────────────╮ ╭──────────────────────╮
+│ ≡ main.go  ·  Go  + new file │ │ ≡ Files              │
+│  1 │ package main            │ │ ▾ src                │
+│  2 │                         │ │   ≡ main.go          │
+│  3 │ func main() {           │ ├──────────────────────┤
+│  4 │     print("hi")         │ │ ⎇ History Changes    │
+│  5 │ }                       │ │ abc1234 subject      │
+│                              │ │ abc1233 older        │
+│ ↑↓←→ move · e edit · ? keys  │ │ ↑↓ · ←→ tab · ? keys │
+╰──────────────────────────────╯ ╰──────────────────────╯
 
 ╭──────────────────────────────────────────────────╮
 │ ▶ Build  Terminal  auto                          │
@@ -48,13 +49,15 @@ Bento terminal previews and edits files with syntax highlighting, browses the tr
  ⎇ main  ↑1 ↓0  ● staged 0  ● unstaged 1  stash 0
 ```
 
-- **Main.** The selected file, with line numbers, syntax highlighting, a character cursor, and fold markers. `e` edits the file and `ctrl+s` saves it. The `+` at the right of the title, or `n`, creates a new file. With no selection it shows an island home: project name, branch, and detected build system.
+- **Main.** The selected file, with line numbers, syntax highlighting, a character cursor, and fold markers. The file name sits in a tab, and the `+ new file` tab right beside it, or `n`, creates a new file. `e` edits the file and `ctrl+s` saves it. With no selection it shows an island home: project name, branch, and detected build system.
 - **Files.** The project tree. Selection follows the cursor. Click a directory to open or close it; click a file to preview it.
 - **History.** Two tabs. **History** lists commits on the current branch, and **Changes** lists every staged, unstaged, untracked, and unmerged path. Enter or click shows a commit or a patch in Main.
 - **Build.** Two tabs. **Build** runs detected commands in automatic or manual mode and streams their output. **Terminal** runs what you type through your shell and keeps its own scrollback and command history.
 - **Status.** Branch, ahead/behind, staged and unstaged counts (untracked files included), and the stash count.
 
 Icons use Unicode that macOS Terminal can draw with Menlo or SF Mono: `⎇` branch, `↑` `↓` ahead/behind, `●` dirty, `▶` run, `✓` `✗` result, `▸` `▾` fold, `≡` files, `±` patch, `▌` cursor, `+` new file.
+
+Tabs are chips on the title bar. The active tab has the lighter fill and brighter text; the other tabs sit darker beside it. Tabs switch with `←` `→` or a click, and the open file and the `+ new file` tab sit side by side like browser tabs.
 
 Each box has its own focus and selection. The focused box has a bright lagoon border, a brighter title, and a footer that lists its shortcuts. The selected row is a filled highlight, separate from the border.
 
@@ -104,7 +107,7 @@ While the **Terminal** tab is focused, every printable key goes to the prompt, i
 Bento terminal enables mouse reporting on start.
 
 - Click a box to focus it, and click a tab label to switch tabs.
-- In Main's title, click `+` to create a file.
+- In Main's title, click `+ new file` to create a file.
 - Click a file to preview it; click a directory to open or close it; click a commit or a changed path to preview it.
 - Click a line in Main to put the caret there. Clicking a foldable line (one with `▸` or `▾`) folds or unfolds that function or class.
 - The scroll wheel scrolls the box under the pointer, including the terminal scrollback.
@@ -115,7 +118,7 @@ Press `,` in any box for **Settings · About**. It shows the BENTO wordmark, the
 
 ## Code preview
 
-The preview shows at most 256 KB of a text file. When a language is detected, the title shows its name (for example `≡ main.go · Go`) and the code is highlighted. `s` turns highlighting off and the title says `Go off`; folding still works.
+The preview shows at most 256 KB of a text file. The file's name is a tab, with the `+ new file` tab beside it. When a language is detected, the tab shows its name too (for example `≡ main.go · Go`) and the code is highlighted. `s` turns highlighting off and the tab says `Go off`; folding still works.
 
 Highlighting is capped at 8,000 lines per file. Larger files stay plain so scrolling remains quick. Detection uses the file name first, then the content (including `#!` lines), through [Chroma](https://github.com/alecthomas/chroma).
 
