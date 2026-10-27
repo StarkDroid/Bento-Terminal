@@ -1,22 +1,25 @@
 # Bento terminal
 
-Bento terminal is a full-screen terminal workspace for one project directory. It previews files with syntax highlighting and folding, lists the tree and the current branch's commits, and runs detected build commands. The first supported terminal is macOS Terminal. The UI draws its own lagoon palette and does not read the user's theme.
+Bento terminal is a full-screen terminal workspace for one project directory. It previews and edits files with syntax highlighting and folding, lists the tree, the current branch's commits, and its working-tree changes, runs detected build commands, and runs your own commands in a shell. The first supported terminal is macOS Terminal. The UI draws its own lagoon palette and does not read the user's theme.
 
 Every box draws its own shortcut footer. `?` opens that box's command list, and a listed command can be run with enter or by pressing its shortcut. When you change packages, commands, focus order, theme tokens, keybindings, or the install flow, update this file in the same change.
 
 ## Package map
 
 - `cmd/bento` — process entry. Uses the working directory, or one optional directory argument, as the project root. Starts Bubble Tea with the alternate screen and mouse cell motion.
-- `internal/ui` — Bubble Tea model, bento layout, theme, focus, keys, and rendering. Scroll position for the preview and the build output is a Bubbles viewport. The running indicator is a Bubbles spinner. Bindings are Bubbles keys.
+- `internal/ui` — Bubble Tea model, bento layout, theme, focus, keys, and rendering. Scroll position for the preview, the build output, and the terminal is a Bubbles viewport. The running indicator is a Bubbles spinner. Bindings are Bubbles keys.
   - `commands.go` — one action table per box. Actions carry their binding and a pane-specific description, and `runAction` is the single dispatcher. This table drives both key handling and the `?` command list.
   - `palette.go` — the per-box command list: open/close, cursor movement, enter to run, direct shortcut to run.
   - `settings.go` — the settings overlay: wordmark, version, and about.
   - `codeview.go` — renders the file preview: gutter, fold markers, caret row and block, highlighted spans, and collapsed-block summaries.
-  - `preview.go` — line numbering and wrapping helpers for plain previews.
+  - `preview.go` — line numbering, wrapping, and diff colouring helpers for plain previews.
+  - `editor.go` — the preview editor: open file, buffer edits, save, and the new-file prompt.
+  - `terminal.go` — the Terminal tab: prompt input, history, run dispatch, and terminal scrollback.
+  - `view.go` — pane bodies, the History and Build tab titles, footers, and overlays.
 - `internal/syntax` — Chroma-based language detection, highlighting with the lagoon palette, and foldable block discovery. Go and Python use dedicated strategies; the common brace languages share a balanced-brace scanner. Highlighting is capped at 8,000 lines.
-- `internal/git` — parses `git status --porcelain=v2 --branch` and `git log` lines (`hash`, unix time, subject, tab-separated). `Load` shells out to git. Untracked paths count as unstaged.
-- `internal/files` — lazy directory tree and a bounded text preview. Dot entries are hidden. `node_modules`, `vendor`, `target`, `__pycache__`, `dist`, `.next`, `.venv`, and `venv` are skipped. Symlinks are not followed.
-- `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it by signaling the process group. No shell is inserted unless the command itself is a shell.
+- `internal/git` — parses `git status --porcelain=v2 --branch` and `git log` lines (`hash`, unix time, subject, tab-separated). `Load` shells out to git. Untracked paths count as unstaged. `Status.Files` keeps one `FileStatus` per changed path, and `Diff` returns the staged and unstaged patch, with a synthesised new-file patch for untracked files.
+- `internal/files` — lazy directory tree and a bounded text preview. `Create` and `Save` resolve project-relative paths and reject anything outside the project; `Tree.Refresh` re-reads loaded folders while keeping them open. Dot entries are hidden. `node_modules`, `vendor`, `target`, `__pycache__`, `dist`, `.next`, `.venv`, and `venv` are skipped. Symlinks are not followed.
+- `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it by signaling the process group. No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal tab.
 - `scripts/install.sh` — curl entrypoint. Release asset first, then `go build` from a local checkout or a clone.
 
 There is no `internal/install`. The installer is shell only.
@@ -35,7 +38,7 @@ make linux-amd64
 
 Go 1.23 or newer. Dependencies are Go modules. The platform targets set `GOOS` and `GOARCH` and write `dist/bento_<os>_<arch>`, which are the installer's release asset names.
 
-Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, per-box footers and command lists, keyboard and mouse folding, and a real `echo` run. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
+Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, editor keys and save, the new-file prompt, the Changes tab and diff preview, the terminal tab and a real shell run, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
 
 CI runs gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
 
@@ -55,13 +58,15 @@ Each box reserves its last body row for a footer of its own shortcuts. Footer hi
 
 | Box | Hints |
 | --- | --- |
-| Main, highlighted file | `↑↓←→ move · [ ] fold · ? keys` |
-| Main, file with no detected language | `↑↓←→ move · ? keys` |
-| Main, commit | `↑↓ scroll · ? keys` |
-| Main, home | `? keys · tab panes` |
+| Main, editing | `↑↓←→ move · ctrl+s save · esc done` |
+| Main, highlighted file | `↑↓←→ move · [ ] fold · e edit · ? keys` |
+| Main, file with no detected language | `↑↓←→ move · e edit · ? keys` |
+| Main, commit or patch | `↑↓ scroll · ? keys` |
+| Main, home | `n new · ? keys · tab panes` |
 | Files | `↑↓ · enter open · ? keys` |
-| History | `↑↓ · enter show · ? keys` |
-| Build | `↑↓ pick · enter run · a mode · r rerun · c cancel · ? keys` |
+| History | `↑↓ · ←→ tab · ? keys` |
+| Build | `↑↓ pick · enter run · a mode · r rerun · ←→ tab · ? keys` |
+| Terminal | `enter run · ctrl+c stop · esc back · ? keys` |
 
 `?` opens the command list for the focused box (`? Keys · Files`). The list shows that box's commands and then a Global section. `↑` `↓` (or `k` `j`) move, `pgup`/`pgdown` jump, `enter` runs the selected row, and pressing a listed shortcut runs it directly and closes the list. `?` and `esc` close it. While the list is open, focus does not move, and mouse events are ignored.
 
@@ -71,17 +76,45 @@ Build commands (`a`, `r`, `c`) are listed under Build but work from any box. `q`
 
 To add a command: add the binding to `keyMap`, add an action to the right `paneActions` case (and `buildActions` if it must work globally), and handle its id in `runAction`. Update the footer hints if the command is important enough to show there.
 
+### Tabs
+
+History draws its title as `⎇  History   Changes` and Build as `▶  Build   Terminal`. The active tab sits on the `#14343C` chip. `←` `→` (and `h` `l`) switch tabs while that box is focused, and a click on a tab label switches too. Click zones are in inner-title cells: History has a 3-cell `⎇` prefix, then a 9-cell ` History `, a 1-cell gap, and a 9-cell ` Changes `; Build has a 3-cell state glyph, then a 7-cell ` Build `, a 1-cell gap, and a 10-cell ` Terminal `. Keep `historyTabAt` and `buildTabAt` in `update.go` in step with those widths.
+
+Each tab keeps its own cursor and scroll: commits and changes, commands and terminal output. Switching tabs does not run anything.
+
 ### Code preview
 
-The preview is capped at 256 KB. The title is ` ≡ name` plus `  ·  Language` when a language is detected. `s` toggles highlighting and the title then says `Language off`; folding still works with highlighting off.
+The preview is capped at 256 KB. The title is ` ≡ name` plus `  ·  Language` when a language is detected, the save marker, and `+` pinned to the right edge. `s` toggles highlighting and the title then says `Language off`; folding still works with highlighting off.
 
 The Main pane has a source caret. `↑` `↓` move it by line, `←` `→` move it by character (wrapping at line ends), `pgup`/`pgdown` page it, and the viewport follows. `[` folds the innermost function or class at the caret, `]` unfolds it, and `enter` toggles it. A folded block keeps its opening line with a `▸` marker and a `… N lines` summary; open blocks use `▾`. The caret row uses fill `#14343C`, a `▌` marker when the line is not a fold start, and a lagoon-bright block over the character at the caret.
 
-Commit previews have no gutter, cursor, highlighting, or folding; they scroll as plain wrapped text.
+Commit and patch previews have no gutter, cursor, highlighting, or folding; they scroll as plain text. Patches are coloured: `+` palm, `-` coral, `@@` reef, and file headers moss.
+
+### Editing
+
+`e` edits an open text file. The buffer lives in `previewEditLines`, not `previewRaw`, because `fileLines` trims trailing newlines and the editor must be able to append a final line; `sourceLines()` returns the buffer while editing and the preview text otherwise. Folding blocks are dropped while editing and rebuilt on exit.
+
+Printable keys type, `enter` splits, `backspace`/`delete` delete and join lines, `home`/`end` jump within the line, `tab` inserts four spaces, and arrows/page keys move the caret. `ctrl+s` saves, `esc` leaves the editor and keeps the buffer in the preview. The title shows `●` for unsaved changes, `✓` after a save, and `save failed` when the write fails. Highlighting is refreshed after every edit and save.
+
+Saving joins the buffer with newlines and adds a trailing newline when the buffer is not empty. Writes go through `files.Save`, which keeps the path inside the project. A successful save refreshes the tree in place and reloads git.
+
+`n` or `+` opens the new-file prompt over the grid: type a project-relative path, `enter` creates it (parent directories included), and `esc` cancels. A path that already exists or climbs out of the project keeps the prompt open with an error. A created file opens in the editor, and its name decides the language, so saving a `.go` or `.py` file highlights it.
+
+### Changes tab
+
+`git.Status.Files` lists every changed path in git's order. The Changes tab shows the porcelain columns (`M `, ` M`, `MM`, `A `, `??`, `R `, and unmerged codes) and renders renames as `old → new`. The title carries the change count.
+
+`enter` or a click opens the selected path in Main as a `±` patch. `git.Diff` joins the staged and unstaged patches and synthesises a new-file patch for an untracked file. A clean tree shows "Working tree clean".
+
+### Terminal tab
+
+The terminal prompt always has the keyboard while the tab is visible: printable keys type (including `q`, `?`, and `,`), `tab`/`shift+tab` still cycle focus, `↑`/`↓` walk the command history, `←`/`→` move the prompt caret, and `home`/`end` jump. `enter` runs the line through `build.ShellCommand`, which uses `$SHELL -c` and falls back to `/bin/sh`. `esc` clears the prompt, then returns to the Build tab. `ctrl+c` stops a running process, or clears the prompt when nothing runs. The command list and settings open on `?` and `,` only while the prompt is empty.
+
+Terminal output has its own viewport and 2,000-line scrollback, separate from the Build output. `runTarget` selects which buffer receives lines and which state records the result; starting any run stops the previous one. The terminal output height is `Build.H - 5` (panel body minus the prompt and footer).
 
 ### Mouse
 
-Mouse reporting is on (`tea.WithMouseCellMotion`). A left click focuses the box under the pointer and moves its selection; clicking a directory toggles it, clicking a file opens the preview, clicking a commit previews it. In Main, a click puts the caret at the start of that source line and, when the line opens a foldable block, toggles that block. The wheel scrolls the box under the pointer by three rows (Build scrolls its output).
+Mouse reporting is on (`tea.WithMouseCellMotion`). A left click focuses the box under the pointer and moves its selection; clicking a directory toggles it, clicking a file opens the preview, clicking a commit or a changed path previews it, and clicking a tab label switches tabs. In Main's title, clicking `+` opens the new-file prompt (but not while editing). In Main, a click puts the caret at the start of that source line and, when the line opens a foldable block, toggles that block. The wheel scrolls the box under the pointer by three rows (Build scrolls the command output or the terminal scrollback).
 
 `paneAt` in `layout.go` maps screen cells to boxes; body-top helpers keep click rows aligned with the rendered content.
 
@@ -103,7 +136,7 @@ Theme tokens:
 | moss | `#5F7D7B` | comments, gutter |
 | reef | `#5FB3C4` | types and builtins |
 
-Every pane sets foreground and background. Do not rely on the terminal's default colors. The syntax palette lives in `internal/syntax/highlight.go` and mirrors these tokens. Stay with Unicode that Menlo and SF Mono provide: `⎇ ↑ ↓ ● ▶ ✓ ✗ ▸ ▾ ≡ ▌ · …` and rounded box drawing. Do not require a Nerd Font, do not use braille spinner frames, and do not use `⏎` in hints (write `enter`).
+Every pane sets foreground and background. Do not rely on the terminal's default colors. The syntax palette lives in `internal/syntax/highlight.go` and mirrors these tokens. Stay with Unicode that Menlo and SF Mono provide: `⎇ ↑ ↓ ● ▶ ✓ ✗ ▸ ▾ ≡ ± ▌ + · …` and rounded box drawing. Do not require a Nerd Font, do not use braille spinner frames, and do not use `⏎` in hints (write `enter`).
 
 Build mode defaults to automatic. `a` switches to manual. `c` cancels the process group. `r` reruns the last argv.
 
@@ -111,8 +144,10 @@ Build mode defaults to automatic. `a` switches to manual. `c` cancels the proces
 
 - Not a git repository: the history box and the status bar say so. The home screen omits a branch name.
 - Empty tree: the files box says the directory is empty.
+- Clean working tree: the Changes tab says the working tree is clean.
 - No detected commands: the build list says none were found. If the other mode has commands, it says to press `a`.
 - Build idle: the output area says to select a command and press enter.
+- Terminal idle: the prompt area says to type a command and press enter.
 - No language detected in a file: no language badge, no fold markers, and `s` does nothing.
 
 ## Install
