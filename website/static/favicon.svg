@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Bento terminal">
+	<rect width="32" height="32" rx="7" fill="#071E26" />
+	<rect x="6.5" y="6.5" width="19" height="19" rx="4" fill="none" stroke="#3DDECE" stroke-width="2" />
+	<rect x="10" y="10" width="5.5" height="5.5" rx="1.5" fill="#3DDECE" />
+	<rect x="17" y="10" width="5.5" height="5.5" rx="1.5" fill="#1F8F86" />
+	<rect x="10" y="17" width="12.5" height="5.5" rx="1.5" fill="#E9C46A" />
+</svg>

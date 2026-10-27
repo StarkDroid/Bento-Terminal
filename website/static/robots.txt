@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://starkdroid.github.io/Bento-Terminal/sitemap.xml

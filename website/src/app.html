@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#071E26" />
+		<meta name="author" content="Trishiraj" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+		<script type="application/ld+json">
+			{
+				"@context": "https://schema.org",
+				"@type": "SoftwareApplication",
+				"name": "Bento terminal",
+				"applicationCategory": "DeveloperApplication",
+				"operatingSystem": "macOS, Linux",
+				"url": "https://starkdroid.github.io/Bento-Terminal/",
+				"codeRepository": "https://github.com/StarkDroid/Bento-Terminal",
+				"license": "https://opensource.org/license/mit",
+				"description": "A full-screen terminal workspace for one project: preview and edit files, review changes, run builds, and use a shell in one bento layout."
+			}
+		</script>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<noscript>
+			<style>
+				.docs-nav {
+					display: none;
+				}
+				.panel[hidden] {
+					display: block !important;
+					margin-bottom: 16px;
+				}
+			</style>
+		</noscript>
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
