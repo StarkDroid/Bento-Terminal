@@ -20,6 +20,44 @@ type Status struct {
 	Stash    int
 	Detached bool
 	Dirty    map[string]struct{}
+	// Files lists each changed path in the order git reports it.
+	Files []FileStatus
+}
+
+// FileStatus is one changed path. Index is the staged code and Worktree is the
+// unstaged code, using the porcelain-v2 letters ('.' means unchanged).
+type FileStatus struct {
+	Path      string
+	OrigPath  string
+	Index     byte
+	Worktree  byte
+	Untracked bool
+	Unmerged  bool
+}
+
+// Staged reports whether the index differs from HEAD.
+func (f FileStatus) Staged() bool {
+	return !f.Untracked && f.Index != 0 && f.Index != '.' && f.Index != ' '
+}
+
+// Unstaged reports whether the working tree differs from the index.
+func (f FileStatus) Unstaged() bool {
+	return !f.Untracked && f.Worktree != 0 && f.Worktree != '.' && f.Worktree != ' '
+}
+
+// Code renders the two status columns, for example "M ", " M", or "??".
+func (f FileStatus) Code() string {
+	if f.Untracked {
+		return "??"
+	}
+	x, y := f.Index, f.Worktree
+	if x == 0 || x == '.' {
+		x = ' '
+	}
+	if y == 0 || y == '.' {
+		y = ' '
+	}
+	return string([]byte{x, y})
 }
 
 // Commit is one git log row.
@@ -51,18 +89,29 @@ func ParseStatus(out string) (Status, error) {
 			st.Unstaged++
 			if p := cleanPath(line[2:]); p != "" {
 				st.Dirty[p] = struct{}{}
+				st.Files = append(st.Files, FileStatus{
+					Path:      p,
+					Index:     '?',
+					Worktree:  '?',
+					Untracked: true,
+				})
 			}
 		case '!':
 			continue
 		case '1':
 			xy, path := splitOrdinary(line)
 			applyXY(&st, xy, path)
+			st.Files = append(st.Files, fileStatus(xy, path, ""))
 		case '2':
-			xy, path := splitRename(line)
+			xy, path, orig := splitRename(line)
 			applyXY(&st, xy, path)
+			st.Files = append(st.Files, fileStatus(xy, path, orig))
 		case 'u':
 			xy, path := splitUnmerged(line)
 			applyXY(&st, xy, path)
+			fs := fileStatus(xy, path, "")
+			fs.Unmerged = true
+			st.Files = append(st.Files, fs)
 		}
 	}
 	if !sawBranch {
@@ -117,16 +166,18 @@ func splitOrdinary(line string) (string, string) {
 	return parts[1], cleanPath(parts[8])
 }
 
-func splitRename(line string) (string, string) {
+func splitRename(line string) (string, string, string) {
 	parts := strings.SplitN(line, " ", 10)
 	if len(parts) < 10 {
-		return "", ""
+		return "", "", ""
 	}
 	path := parts[9]
+	orig := ""
 	if tab := strings.IndexByte(path, '\t'); tab >= 0 {
+		orig = cleanPath(path[tab+1:])
 		path = path[:tab]
 	}
-	return parts[1], cleanPath(path)
+	return parts[1], cleanPath(path), orig
 }
 
 func splitUnmerged(line string) (string, string) {
@@ -145,6 +196,17 @@ func cleanPath(p string) string {
 		}
 	}
 	return filepath.ToSlash(p)
+}
+
+func fileStatus(xy, path, orig string) FileStatus {
+	fs := FileStatus{Path: path, OrigPath: orig}
+	if len(xy) > 0 {
+		fs.Index = xy[0]
+	}
+	if len(xy) > 1 {
+		fs.Worktree = xy[1]
+	}
+	return fs
 }
 
 // ParseLog parses lines of hash, unix seconds, and subject separated by tabs.
