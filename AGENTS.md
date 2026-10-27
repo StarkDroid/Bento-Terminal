@@ -44,6 +44,12 @@ CI runs gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
 
 `.github/workflows/release.yml` runs on every push to `main`. It finds the merged pull request, reads `Release:` and the `## Changelog` bullets from the PR body, collects notes from every PR merged since the last release, runs the tests, builds `bento_<os>_<arch>` for macOS and Linux with `main.version` set, writes `SHA256SUMS`, and creates the GitHub release. The PR template asks for that format; commit subjects are only a fallback. Bump the version in `cmd/bento/main.go` and `Makefile` in the same change.
 
+## Workflow
+
+Never commit a feature straight to `main`. Make a branch, commit there in logical chunks, push it, and open a pull request — for every feature, however small. Only a pull request merges into `main`, and `main` stays green because CI runs on the PR.
+
+A release is the same flow: branch `release/<version>`, bump the version, and put `Release: <version>` plus plain-language `## Changelog` bullets in the PR body so the merge triggers `release.yml`. Keep the author yours; do not add a tool or assistant as a co-author.
+
 ## UI conventions
 
 The minimum window is **72 × 22** cells; smaller windows show a single "make the terminal larger" panel.
