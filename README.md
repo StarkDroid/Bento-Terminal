@@ -10,6 +10,8 @@ Bento terminal previews and edits files with syntax highlighting, browses the tr
 [![License](https://img.shields.io/github/license/StarkDroid/Bento-Terminal?style=flat-square&color=7DCE82)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-071E26?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal)
 [![Go Report Card](https://goreportcard.com/badge/github.com/StarkDroid/Bento-Terminal?style=flat-square)](https://goreportcard.com/report/github.com/StarkDroid/Bento-Terminal)
+
+**Site:** [starkdroid.github.io/Bento-Terminal](https://starkdroid.github.io/Bento-Terminal/) · **Docs:** [install, shortcuts, layout](https://starkdroid.github.io/Bento-Terminal/docs/)
 [![Stars](https://img.shields.io/github/stars/StarkDroid/Bento-Terminal?style=flat-square&color=FF6F61)](https://github.com/StarkDroid/Bento-Terminal/stargazers)
 [![Issues](https://img.shields.io/github/issues/StarkDroid/Bento-Terminal?style=flat-square&color=E9C46A)](https://github.com/StarkDroid/Bento-Terminal/issues)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-3DDECE?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/pulls)
