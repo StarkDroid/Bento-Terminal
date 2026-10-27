@@ -1,6 +1,6 @@
 # Bento terminal
 
-**A full-screen terminal workspace for one project directory.**
+**One project. Every pane.**
 
 Bento terminal previews and edits files with syntax highlighting, browses the tree, the current branch's commits, and its working-tree changes, and runs detected build commands or your own shell commands — all inside a set of island-themed bento boxes. It is written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and is designed for the macOS Terminal first (Menlo or SF Mono, no Nerd Font).
 
