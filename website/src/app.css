@@ -86,10 +86,26 @@ pre {
 }
 
 .wrap {
+	position: relative;
+	z-index: 1;
 	width: 100%;
 	max-width: var(--page);
 	margin: 0 auto;
 	padding: 0 24px;
+}
+
+/* A soft light that follows a fine pointer. The fallback keeps a still glow
+   on touch screens and before hydration. */
+.spotlight {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	background: radial-gradient(
+		460px circle at var(--mx, 18%) var(--my, 8%),
+		rgba(61, 222, 206, 0.09),
+		transparent 68%
+	);
 }
 
 .sr-only {
@@ -161,7 +177,24 @@ pre {
 }
 
 .site-nav a {
+	position: relative;
 	color: var(--sand-dim);
+}
+
+.site-nav a::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 100%;
+	bottom: -4px;
+	height: 1px;
+	background: var(--bright);
+	transition: right 140ms ease;
+}
+
+.site-nav a:hover::after,
+.site-nav a[aria-current="page"]::after {
+	right: 0;
 }
 
 .site-nav a:hover,
@@ -253,6 +286,7 @@ pre {
 
 .cmd button {
 	flex: none;
+	transition: background-color 140ms ease, color 140ms ease;
 	border: 0;
 	border-left: 1px solid var(--line);
 	background: transparent;
@@ -290,8 +324,29 @@ pre {
 }
 
 .feature {
+	position: relative;
+	isolation: isolate;
 	background: var(--panel);
 	padding: 18px 20px;
+}
+
+.feature::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: radial-gradient(
+		220px circle at var(--cx, 50%) var(--cy, 50%),
+		rgba(61, 222, 206, 0.12),
+		transparent 70%
+	);
+	opacity: 0;
+	transition: opacity 180ms ease;
+	pointer-events: none;
+}
+
+.feature:hover::after {
+	opacity: 1;
 }
 
 .feature dt {
@@ -303,6 +358,11 @@ pre {
 .feature dt::before {
 	content: "▸ ";
 	color: var(--lagoon);
+	transition: color 160ms ease;
+}
+
+.feature:hover dt::before {
+	color: var(--bright);
 }
 
 .feature dd {
@@ -563,6 +623,7 @@ tr.group th {
 
 kbd {
 	display: inline-block;
+	transition: transform 120ms ease, border-color 120ms ease;
 	min-width: 22px;
 	padding: 1px 6px;
 	background: #0a222b;
@@ -579,6 +640,11 @@ kbd + kbd {
 	margin-left: 4px;
 }
 
+kbd:hover {
+	transform: translateY(-1px);
+	border-color: var(--bright);
+}
+
 .muted {
 	color: var(--moss);
 }
@@ -590,7 +656,8 @@ kbd + kbd {
 
 	.docs-nav {
 		flex-direction: row;
-		overflow-x: auto;
+		flex-wrap: wrap;
+		row-gap: 2px;
 		position: static;
 		padding-bottom: 4px;
 	}
@@ -620,8 +687,25 @@ kbd + kbd {
 	}
 }
 
+@media (pointer: coarse) {
+	.spotlight {
+		display: none;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
+	.spotlight,
+	.feature::after {
+		display: none;
+	}
+
 	.caret {
 		animation: none;
+	}
+
+	.site-nav a::after,
+	.cmd button,
+	kbd {
+		transition: none;
 	}
 }

@@ -4,37 +4,47 @@
 
 	const install =
 		'curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh';
+
+	// The glow follows the pointer across a card, so each one lights where the
+	// cursor is instead of in the middle.
+	function glow(event) {
+		const card = event.target instanceof Element ? event.target.closest('.feature') : null;
+		if (!card) return;
+		const rect = card.getBoundingClientRect();
+		card.style.setProperty('--cx', `${event.clientX - rect.left}px`);
+		card.style.setProperty('--cy', `${event.clientY - rect.top}px`);
+	}
 </script>
 
 <svelte:head>
-	<title>Bento terminal — a terminal workspace for one project</title>
+	<title>Bento terminal — one project, every pane</title>
 	<meta
 		name="description"
-		content="A full-screen terminal workspace for one project: preview and edit files, review changes, run builds, and use a shell in one bento layout. Go, macOS and Linux."
+		content="Preview and edit files, review changes, run builds, and use a shell for the project in front of you — one bento layout, no tabs. Go, macOS and Linux."
 	/>
 	<link rel="canonical" href="https://starkdroid.github.io/Bento-Terminal/" />
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="Bento terminal" />
-	<meta property="og:title" content="Bento terminal — a terminal workspace for one project" />
+	<meta property="og:title" content="Bento terminal — one project, every pane" />
 	<meta
 		property="og:description"
-		content="Preview and edit files, review changes, run builds, and use a shell in one bento layout."
+		content="Preview, edit, review changes, run builds, and open a shell without leaving the directory."
 	/>
 	<meta property="og:url" content="https://starkdroid.github.io/Bento-Terminal/" />
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="Bento terminal" />
-	<meta name="twitter:description" content="A terminal workspace for one project." />
+	<meta name="twitter:description" content="One project. Every pane." />
 </svelte:head>
 
 <main id="content">
 	<section class="hero" aria-labelledby="title">
 		<p class="eyebrow">terminal workspace</p>
 		<h1 id="title">
-			A terminal workspace for one project.<span class="caret" aria-hidden="true"></span>
+			One project.<br /><em>Every pane.</em><span class="caret" aria-hidden="true"></span>
 		</h1>
 		<p class="lede">
 			Preview and edit files, read the tree, commits and working-tree changes, run builds, and open a
-			shell — in the directory you are already in.
+			shell — without leaving the directory you are in.
 		</p>
 
 		<div class="install">
@@ -48,7 +58,7 @@
 
 	<section aria-label="What it does">
 		<h2 class="sr-only">What it does</h2>
-		<dl class="features">
+		<dl class="features" onpointermove={glow}>
 			<div class="feature">
 				<dt>Preview &amp; edit</dt>
 				<dd>Syntax highlighting, folding, and an editor that saves in place.</dd>
