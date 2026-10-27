@@ -3,12 +3,12 @@ Release:
 ## Changelog
 
 <!--
-Write plain-language bullets for users, not commit subjects. Example:
+These bullets become the release notes. Write them for users, not as commit
+subjects, and keep them current as the branch grows.
 
-- The preview now follows the arrow keys and folds with [ and ].
-- New settings panel with the version and a wordmark.
+Set the version above when this pull request should release, for example
+`Release: 0.5.0`. Leave it blank for work that is not a release.
 
-Set the version above with `Release: 0.3.0`. Leave it blank to bump the patch
-version automatically when this PR merges.
+Merging publishes nothing. Merge the pull request yourself, then run
+`scripts/release.sh` from main.
 -->
--
