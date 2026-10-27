@@ -1,9 +1,9 @@
 BIN := bento
 PREFIX ?= $(HOME)/.local
-VERSION ?= 0.4.0
+VERSION ?= 0.4.1
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build install test darwin-arm64 darwin-amd64 linux-arm64 linux-amd64 clean
+.PHONY: build install test release darwin-arm64 darwin-amd64 linux-arm64 linux-amd64 clean
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/bento
@@ -14,6 +14,11 @@ install: build
 
 test:
 	go test ./...
+
+# Publishes a release from the pull requests merged since the last one. Pass a
+# version with V=0.5.0, or leave it out to use the merged PR's Release: line.
+release:
+	./scripts/release.sh $(V)
 
 darwin-arm64:
 	mkdir -p dist

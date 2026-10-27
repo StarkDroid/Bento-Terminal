@@ -155,6 +155,8 @@ Build's **Terminal** tab runs whatever you type through `$SHELL -c`, falling bac
 
 The terminal keeps its own scrollback, separate from the Build output. Starting a command stops the previous one.
 
+Output is captured as text, so a command cannot clear or repaint Bento. Colour, cursor, and erase sequences are dropped before they reach the scrollback, a progress-bar redraw keeps only its last line, and a command that writes nothing but control sequences (`clear`) leaves no trace. Full-screen programs such as `vim` or `top` are not supported; the tab is for one-shot commands, and Build is the place for project commands whose output you want to read.
+
 ## Build commands
 
 Automatic mode is the default. It reads:
@@ -233,14 +235,14 @@ GOOS=linux GOARCH=arm64 go build -o dist/bento_linux_arm64 ./cmd/bento
 GOOS=linux GOARCH=amd64 go build -o dist/bento_linux_amd64 ./cmd/bento
 ```
 
-The release workflow publishes those four files, plus `SHA256SUMS`, so `curl | sh` installs without a toolchain.
+The release script publishes those four files, plus `SHA256SUMS`, so `curl | sh` installs without a toolchain.
 
 ## Releasing
 
-Every change lands on `main` through a pull request. The PR body carries the version and a changelog written for users:
+Every change lands on `main` through a pull request, and merging publishes nothing. Each PR body carries a changelog written for users:
 
 ```markdown
-Release: 0.3.0
+Release: 0.5.0
 
 ## Changelog
 
@@ -248,9 +250,20 @@ Release: 0.3.0
 - Settings shows the running version.
 ```
 
-When the PR is merged, `.github/workflows/release.yml` collects the `## Changelog` bullets from every PR merged since the last release, runs the tests, builds the four binaries with the version in the build metadata, and publishes `v0.3.0`. Commit subjects are only a fallback; the bullets in the PR body become the release notes.
+Keep those bullets current as the branch grows; every PR merged since the last release contributes to the next set of notes. Leave `Release:` blank on work that should not cut a release.
 
-Leave `Release:` blank to bump the patch version automatically. The workflow can also be started by hand from **Actions → Release → Run workflow**.
+After merging the release pull request yourself, run the release script on `main`:
+
+```sh
+scripts/release.sh                 # version from the merged PR's Release: line
+make release V=0.5.0               # or name the version yourself
+scripts/release.sh --dry-run       # print the notes and stop
+scripts/release.sh --since v0.4.0  # release from an earlier tag
+```
+
+It collects the `## Changelog` bullets from every PR merged since the last release, runs the tests, builds the four binaries with the version in the build metadata, tags `v0.5.0`, and publishes the release with `SHA256SUMS`. A PR without a changelog falls back to its cleaned-up title.
+
+The script needs `git`, `go`, and the [GitHub CLI](https://cli.github.com) signed in. It refuses to run on a dirty tree, off `main`, or for a tag that already exists, and it prints a note when `cmd/bento/main.go` still carries a different version from the one being released.
 
 ## Develop
 
@@ -274,7 +287,7 @@ Issues and pull requests are welcome. Small, focused changes are easiest to revi
 2. Run `go vet ./...` and `go test ./...`.
 3. Add a test when you change behavior.
 4. Update the README or AGENTS.md when keys, layout, packages, or the install flow change.
-5. Fill in `Release:` and the user-facing `## Changelog` in the PR body. Those bullets become the release notes.
+5. Fill in the user-facing `## Changelog` in the PR body, and add `Release:` only when the PR should cut a release. Merging publishes nothing; the release step runs `scripts/release.sh` afterwards.
 
 ## License
 
