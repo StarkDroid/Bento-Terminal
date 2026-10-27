@@ -63,6 +63,8 @@ npm run build    # writes website/build
 
 The landing page reacts to a fine pointer: `+layout.svelte` moves the fixed `.spotlight`, and a handler on the feature grid sets `--cx`/`--cy` so each card lights under the cursor. Both use CSS-variable fallbacks, are set from `onMount` so prerendering stays static, and are switched off for coarse pointers and reduced motion.
 
+The README banner is `assets/banner.png`, a 2560 × 640 render (2× of 1280 × 320) of `assets/banner.html` made with headless Chrome. It uses the site's mark, palette, and mono font; update the HTML and re-render when the mark, name, or tagline changes.
+
 Site changes go through a pull request and never cut a release. The Pages workflow builds the site on any pull request that touches `website/` and only deploys from `main`.
 
 ## Workflow

@@ -1,6 +1,4 @@
-# Bento terminal
-
-**One project. Every pane.**
+![Bento terminal — one project, multi-pane](assets/banner.png)
 
 Bento terminal previews and edits files with syntax highlighting, browses the tree, the current branch's commits, and its working-tree changes, and runs detected build commands or your own shell commands — all inside a set of island-themed bento boxes. It is written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and is designed for the macOS Terminal first (Menlo or SF Mono, no Nerd Font).
 
@@ -10,11 +8,11 @@ Bento terminal previews and edits files with syntax highlighting, browses the tr
 [![License](https://img.shields.io/github/license/StarkDroid/Bento-Terminal?style=flat-square&color=7DCE82)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-071E26?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal)
 [![Go Report Card](https://goreportcard.com/badge/github.com/StarkDroid/Bento-Terminal?style=flat-square)](https://goreportcard.com/report/github.com/StarkDroid/Bento-Terminal)
-
-**Site:** [starkdroid.github.io/Bento-Terminal](https://starkdroid.github.io/Bento-Terminal/) · **Docs:** [install, shortcuts, layout](https://starkdroid.github.io/Bento-Terminal/docs/)
 [![Stars](https://img.shields.io/github/stars/StarkDroid/Bento-Terminal?style=flat-square&color=FF6F61)](https://github.com/StarkDroid/Bento-Terminal/stargazers)
 [![Issues](https://img.shields.io/github/issues/StarkDroid/Bento-Terminal?style=flat-square&color=E9C46A)](https://github.com/StarkDroid/Bento-Terminal/issues)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-3DDECE?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/pulls)
+
+**Site:** [starkdroid.github.io/Bento-Terminal](https://starkdroid.github.io/Bento-Terminal/) · **Docs:** [install, shortcuts, layout](https://starkdroid.github.io/Bento-Terminal/docs/)
 
 ## Why Bento
 
