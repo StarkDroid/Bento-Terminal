@@ -22,6 +22,7 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
 - `internal/files` — lazy directory tree and a bounded text preview. `Create` and `Save` resolve project-relative paths and reject anything outside the project; `Tree.Refresh` re-reads loaded folders while keeping them open. Dot entries are hidden. `node_modules`, `vendor`, `target`, `__pycache__`, `dist`, `.next`, `.venv`, and `venv` are skipped. Symlinks are not followed.
 - `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it by signaling the process group. No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal tab.
 - `scripts/install.sh` — curl entrypoint. Release asset first, then `go build` from a local checkout or a clone.
+- `scripts/release.sh` — the release. Tests, builds the four assets, writes `SHA256SUMS`, tags, and publishes the GitHub release from the merged PRs' changelogs.
 
 There is no `internal/install`. The installer is shell only.
 
@@ -43,13 +44,26 @@ Tests cover command detection fixtures in `internal/build/testdata`, git status 
 
 CI runs gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
 
-`.github/workflows/release.yml` runs on every push to `main`. It finds the merged pull request, reads `Release:` and the `## Changelog` bullets from the PR body, collects notes from every PR merged since the last release, runs the tests, builds `bento_<os>_<arch>` for macOS and Linux with `main.version` set, writes `SHA256SUMS`, and creates the GitHub release. The PR template asks for that format; commit subjects are only a fallback. Bump the version in `cmd/bento/main.go` and `Makefile` in the same change.
+`scripts/release.sh` is the only thing that publishes a release; nothing runs on merge. CI (`.github/workflows/ci.yml`) only checks gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
 
 ## Workflow
 
-Never commit a feature straight to `main`. Make a branch, commit there in logical chunks, push it, and open a pull request — for every feature, however small. Only a pull request merges into `main`, and `main` stays green because CI runs on the PR.
+Never commit a feature straight to `main`, and never merge a pull request yourself. Make a branch, commit there in logical chunks, push it, and open a pull request — for every change, however small — then leave the merge to the user. Only a pull request lands on `main`, and `main` stays green because CI runs on the PR.
 
-A release is the same flow: branch `release/<version>`, bump the version, and put `Release: <version>` plus plain-language `## Changelog` bullets in the PR body so the merge triggers `release.yml`. Keep the author yours; do not add a tool or assistant as a co-author.
+Never publish a release while delivering a feature. Releases are a separate step the user starts after merging; see Releases.
+
+Every pull request body carries a user-facing `## Changelog`, and that changelog is kept current as the branch grows: when you add or change something, update the PR body in the same pass. It becomes the release notes. Add a `Release: <version>` line only when the PR is the release PR. Keep the author yours; do not add a tool or assistant as a co-author.
+
+## Releases
+
+`scripts/release.sh` (or `make release V=<version>`) publishes; merging never does. The user merges the release pull request, then runs the script on `main`:
+
+1. It takes the version from the merged pull request's `Release:` line, or from an argument, and stops if the tag or release already exists.
+2. It collects the `## Changelog` bullets of every pull request merged since the last release — falling back to a cleaned-up title — and writes the notes with a compare link.
+3. It runs `go test ./...`, builds `bento_<os>_<arch>` for macOS and Linux with `main.version` set, and writes `SHA256SUMS`.
+4. It tags `v<version>`, pushes the tag, and creates the GitHub release with the notes and assets.
+
+`--dry-run` prints the version and notes and changes nothing; `--since <tag>` sets the base tag. The script does not commit, so the release pull request must bump the version in `cmd/bento/main.go` and `Makefile`; the script warns when the source and the release version differ.
 
 ## UI conventions
 
