@@ -43,6 +43,55 @@ func joinPieces(width int, bg lipgloss.TerminalColor, parts []piece) string {
 	return b.String()
 }
 
+// joinLeftRight puts left parts at the start, right parts at the end, and fills
+// the space between them. The gap collapses when the parts do not fit.
+func joinLeftRight(width int, bg lipgloss.TerminalColor, left, right []piece) string {
+	if width < 1 {
+		return ""
+	}
+	used := 0
+	for _, p := range left {
+		used += p.width
+	}
+	for _, p := range right {
+		used += p.width
+	}
+	gap := width - used
+	if gap < 0 {
+		gap = 0
+	}
+	parts := make([]piece, 0, len(left)+len(right)+1)
+	parts = append(parts, left...)
+	if gap > 0 {
+		parts = append(parts, piece{
+			view:  lipgloss.NewStyle().Background(bg).Width(gap).Render(""),
+			width: gap,
+		})
+	}
+	parts = append(parts, right...)
+	return joinPieces(width, bg, parts)
+}
+
+// tabPiece draws one tab label for a pane title. The active tab sits on a
+// darker chip so it reads as selected with the cursor keys.
+func tabPiece(label string, active, focused bool) piece {
+	fg := lipgloss.TerminalColor(colorSandDim)
+	bg := lipgloss.TerminalColor(colorPanel)
+	if active {
+		fg = colorLagoon
+		bg = colorSelectDim
+		if focused {
+			fg = colorLagoonBright
+		}
+	}
+	text := " " + label + " "
+	style := lipgloss.NewStyle().Foreground(fg).Background(bg)
+	if active && focused {
+		style = style.Bold(true)
+	}
+	return piece{view: style.Render(text), width: lipgloss.Width(text)}
+}
+
 func borderStyle(focused bool) lipgloss.Style {
 	color := colorBorderDim
 	if focused {

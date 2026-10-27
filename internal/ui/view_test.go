@@ -25,7 +25,7 @@ func TestViewEmptyStates(t *testing.T) {
 		t.Fatalf("size %dx%d\n%s", lipgloss.Width(view), lipgloss.Height(view), view)
 	}
 	plain := stripANSI(view)
-	for _, want := range []string{"≡ Files", "⎇ History", "Build", "Empty directory", "Not a git repository", "No commands detected", "Idle. Select a command and press enter.", "bento"} {
+	for _, want := range []string{"≡ Files", "History", "Changes", "Build", "Terminal", "Empty directory", "Not a git repository", "No commands detected", "Idle. Select a command and press enter.", "bento"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("missing %q\n%s", want, plain)
 		}

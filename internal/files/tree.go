@@ -71,6 +71,44 @@ func Load(root string) (*Tree, error) {
 	}, nil
 }
 
+// Refresh re-reads every loaded directory while keeping which folders are open.
+// It is called after Bento creates or saves a file.
+func (t *Tree) Refresh() error {
+	if t == nil || t.top == nil {
+		return nil
+	}
+	return t.refresh(t.top)
+}
+
+func (t *Tree) refresh(n *node) error {
+	if n == nil || !n.isDir {
+		return nil
+	}
+	kids, err := readChildren(t.root, n.rel)
+	if err != nil {
+		return err
+	}
+	prev := make(map[string]*node, len(n.children))
+	for _, c := range n.children {
+		prev[c.rel] = c
+	}
+	for _, c := range kids {
+		old, ok := prev[c.rel]
+		if !ok || old.isDir != c.isDir {
+			continue
+		}
+		c.expanded = old.expanded
+		c.loaded = old.loaded
+		c.children = old.children
+		if c.isDir && c.expanded && c.loaded {
+			_ = t.refresh(c)
+		}
+	}
+	n.children = kids
+	n.loaded = true
+	return nil
+}
+
 // Rows returns the expanded view of the tree.
 func (t *Tree) Rows() []Row {
 	if t == nil || t.top == nil {

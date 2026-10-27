@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -69,6 +70,59 @@ func TestLoadNotRepository(t *testing.T) {
 func TestShowRejectsBadHash(t *testing.T) {
 	if _, err := Show(t.TempDir(), "not a hash"); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestDiffModifiedAndUntracked(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	dir := t.TempDir()
+	gitCmd(t, dir, "init", "-b", "main")
+	gitCmd(t, dir, "config", "user.email", "bento@example.com")
+	gitCmd(t, dir, "config", "user.name", "Bento terminal")
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gitCmd(t, dir, "add", "main.go")
+	gitCmd(t, dir, "commit", "-m", "Initial commit")
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte("hello\nworld\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	snap := Load(dir)
+	var modified, untracked FileStatus
+	for _, f := range snap.Status.Files {
+		switch f.Path {
+		case "main.go":
+			modified = f
+		case "note.md":
+			untracked = f
+		}
+	}
+	if modified.Path == "" || untracked.Path == "" {
+		t.Fatalf("files = %+v", snap.Status.Files)
+	}
+
+	patch, err := Diff(dir, modified)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(patch, "+func main() {}") {
+		t.Fatalf("modified diff:\n%s", patch)
+	}
+
+	patch, err = Diff(dir, untracked)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"new file mode", "+++ b/note.md", "+hello", "+world"} {
+		if !strings.Contains(patch, want) {
+			t.Fatalf("untracked diff missing %q:\n%s", want, patch)
+		}
 	}
 }
 

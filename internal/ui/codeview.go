@@ -27,8 +27,7 @@ type codeSpan struct {
 // buildCode renders the current file preview and returns its rows plus the
 // source lines that are visible after folding.
 func (m Model) buildCode() ([]previewRow, []int) {
-	source := fileLines(m.previewRaw)
-	return renderCode(source, m.previewSpans, m.previewBlocks, m.previewFolds, m.previewCursor, m.previewCol, m.preview.Width, m.focus == PaneMain)
+	return renderCode(m.sourceLines(), m.previewSpans, m.previewBlocks, m.previewFolds, m.previewCursor, m.previewCol, m.preview.Width, m.focus == PaneMain)
 }
 
 // refreshSpans tokenises the preview once, so resizing and folding only redo
@@ -38,7 +37,7 @@ func (m Model) refreshSpans() Model {
 	if !m.previewNumbered || !m.previewSyntax || !m.previewLang.Detected() {
 		return m
 	}
-	raw, ok := syntax.Highlight(m.previewLang.Name, fileLines(m.previewRaw))
+	raw, ok := syntax.Highlight(m.previewLang.Name, m.sourceLines())
 	if !ok {
 		return m
 	}

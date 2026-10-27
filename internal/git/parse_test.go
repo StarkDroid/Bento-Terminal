@@ -51,6 +51,34 @@ func TestParseStatusFixture(t *testing.T) {
 	if _, ok := st.Dirty["old.go"]; ok {
 		t.Fatal("rename source should not be the dirty path")
 	}
+	if len(st.Files) != 9 {
+		t.Fatalf("files = %d: %+v", len(st.Files), st.Files)
+	}
+	byPath := map[string]FileStatus{}
+	for _, f := range st.Files {
+		byPath[f.Path] = f
+	}
+	if got := byPath["README.md"]; got.Code() != "M " || !got.Staged() || got.Unstaged() {
+		t.Fatalf("README.md = %+v code %q", got, got.Code())
+	}
+	if got := byPath["main.go"]; got.Code() != " M" || got.Staged() || !got.Unstaged() {
+		t.Fatalf("main.go = %+v code %q", got, got.Code())
+	}
+	if got := byPath["internal/app.go"]; got.Code() != "MM" || !got.Staged() || !got.Unstaged() {
+		t.Fatalf("app.go = %+v", got)
+	}
+	if got := byPath["new.txt"]; got.Code() != "A " {
+		t.Fatalf("new.txt = %+v", got)
+	}
+	if got := byPath["renamed.go"]; got.Code() != "R " || got.OrigPath != "old.go" {
+		t.Fatalf("renamed.go = %+v", got)
+	}
+	if got := byPath["scratch.txt"]; !got.Untracked || got.Code() != "??" {
+		t.Fatalf("scratch.txt = %+v", got)
+	}
+	if got := byPath["conflict.txt"]; !got.Unmerged {
+		t.Fatalf("conflict.txt = %+v", got)
+	}
 }
 
 func TestParseStatusDetached(t *testing.T) {
