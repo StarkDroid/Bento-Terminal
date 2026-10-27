@@ -5,6 +5,8 @@
 
 	const install =
 		'curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh';
+	const installWindows =
+		'irm https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.ps1 | iex';
 
 	const sections = [
 		{ id: 'install', label: 'Install' },
@@ -133,6 +135,13 @@
 					<code>~/.local/bin</code>.
 				</p>
 				<CopyCommand command={install} />
+				<h3>Windows</h3>
+				<p>
+					Run this in Windows Terminal. It downloads <code>bento.exe</code> into
+					<code>%LOCALAPPDATA%\bento</code> for your architecture and adds that folder to your
+					user PATH.
+				</p>
+				<CopyCommand command={installWindows} prompt="PS>" />
 				<h3>Options</h3>
 				<ul>
 					<li>
@@ -140,7 +149,10 @@
 						<code>~/.zshrc</code>, without touching your prompt.
 					</li>
 					<li><code>--no-zsh</code> is the default: the binary only.</li>
-					<li><code>BENTO_INSTALL_DIR</code> changes the install directory.</li>
+					<li>
+						<code>BENTO_INSTALL_DIR</code> changes the install directory; on Windows, so does
+						<code>-InstallDir</code>.
+					</li>
 					<li><code>BENTO_REPO</code> or <code>BENTO_REPO_URL</code> points the installer at a fork.</li>
 					<li>
 						From a clone, use <code>go install ./cmd/bento</code> or <code>make install</code>;
@@ -365,6 +377,8 @@ UU  unmerged</pre>
 bento_darwin_amd64
 bento_linux_arm64
 bento_linux_amd64
+bento_windows_amd64.exe
+bento_windows_arm64.exe
 SHA256SUMS</pre>
 				<p>
 					Notes are the changelog from each merged pull request, so a release page reads as a
@@ -392,8 +406,9 @@ SHA256SUMS</pre>
 					>. It draws its own lagoon palette, so your terminal theme does not change how it looks.
 				</p>
 				<p>
-					It targets the macOS Terminal first, with Menlo or SF Mono: rounded boxes, no Nerd Font,
-					no braille spinners. Linux uses the same build. MIT licensed, contributions welcome.
+					It runs in the macOS Terminal and Windows Terminal, with Menlo or SF Mono on macOS and
+					Cascadia Mono or Consolas on Windows: rounded boxes, no Nerd Font, no braille spinners.
+					Linux uses the same build. MIT licensed, contributions welcome.
 				</p>
 				<p>
 					<a href="https://github.com/StarkDroid/Bento-Terminal">Source on GitHub →</a>

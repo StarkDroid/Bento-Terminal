@@ -1,5 +1,5 @@
 <script>
-	let { command } = $props();
+	let { command, prompt = '$' } = $props();
 
 	let copied = $state(false);
 	let timer;
@@ -25,7 +25,7 @@
 </script>
 
 <div class="cmd">
-	<code><span class="prompt" aria-hidden="true">$</span>{command}</code>
+	<code><span class="prompt" aria-hidden="true">{prompt}</span>{command}</code>
 	<button type="button" onclick={copy} aria-label={copied ? 'Copied' : 'Copy command'}>
 		{copied ? 'copied' : 'copy'}
 	</button>
