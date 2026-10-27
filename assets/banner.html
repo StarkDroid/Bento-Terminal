@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Bento terminal banner</title>
+		<style>
+			:root {
+				--ocean: #071e26;
+				--panel: #0c2832;
+				--sand: #f4e4c4;
+				--dim: #b7a88a;
+				--bright: #3ddece;
+				--lagoon: #1f8f86;
+				--sun: #e9c46a;
+			}
+
+			* {
+				box-sizing: border-box;
+				margin: 0;
+			}
+
+			html,
+			body {
+				width: 1280px;
+				height: 320px;
+				overflow: hidden;
+			}
+
+			body {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 44px;
+				padding: 0 64px;
+				background-color: var(--ocean);
+				background-image:
+					radial-gradient(720px 360px at 6% -25%, rgba(31, 143, 134, 0.32), transparent 64%),
+					linear-gradient(rgba(36, 85, 92, 0.18) 1px, transparent 1px),
+					linear-gradient(90deg, rgba(36, 85, 92, 0.18) 1px, transparent 1px);
+				background-size: auto, 40px 40px, 40px 40px;
+				color: var(--sand);
+				font-family: Menlo, "SF Mono", ui-monospace, monospace;
+			}
+
+			.mark {
+				flex: none;
+				width: 132px;
+				height: 132px;
+				filter: drop-shadow(0 10px 34px rgba(61, 222, 206, 0.2));
+			}
+
+			.text {
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+			}
+
+			.eyebrow {
+				color: var(--lagoon);
+				font-size: 15px;
+				letter-spacing: 3.4px;
+				text-transform: uppercase;
+			}
+
+			.name {
+				font-size: 72px;
+				font-weight: 700;
+				letter-spacing: -3px;
+				line-height: 1;
+			}
+
+			.tagline {
+				color: var(--dim);
+				font-size: 27px;
+				letter-spacing: -0.4px;
+			}
+
+			.tagline b {
+				color: var(--bright);
+				font-weight: 400;
+			}
+
+			.blink {
+				display: inline-block;
+				width: 15px;
+				height: 25px;
+				margin-left: 8px;
+				background: var(--bright);
+				transform: translateY(3px);
+			}
+		</style>
+	</head>
+	<body>
+		<svg class="mark" viewBox="0 0 32 32" role="img" aria-label="Bento terminal">
+			<rect
+				x="0.75"
+				y="0.75"
+				width="30.5"
+				height="30.5"
+				rx="7"
+				fill="#0C2832"
+				stroke="#3DDECE"
+				stroke-width="1.5"
+			/>
+			<rect x="9.4" y="8.9" width="5.8" height="5.8" rx="1.4" fill="#3DDECE" />
+			<rect x="16.8" y="8.9" width="5.8" height="5.8" rx="1.4" fill="#1F8F86" />
+			<rect x="9.4" y="16.4" width="13.2" height="5.8" rx="1.4" fill="#E9C46A" />
+		</svg>
+		<div class="text">
+			<span class="eyebrow">terminal workspace</span>
+			<span class="name">Bento terminal</span>
+			<span class="tagline">One project. <b>Multi-pane.</b><span class="blink"></span></span>
+		</div>
+	</body>
+</html>

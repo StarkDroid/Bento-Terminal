@@ -24,6 +24,7 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
 - `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it by signaling the process group. No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal tab.
 - `scripts/install.sh` — curl entrypoint. Release asset first, then `go build` from a local checkout or a clone.
 - `scripts/release.sh` — the release. Tests, builds the four assets, writes `SHA256SUMS`, tags, and publishes the GitHub release from the merged PRs' changelogs.
+- `website` — the GitHub Pages site: SvelteKit prerendered to static HTML. It is a separate Node project and the Go build never touches it.
 
 There is no `internal/install`. The installer is shell only.
 
@@ -46,6 +47,25 @@ Tests cover command detection fixtures in `internal/build/testdata`, git status 
 CI runs gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
 
 `scripts/release.sh` is the only thing that publishes a release; nothing runs on merge. CI (`.github/workflows/ci.yml`) only checks gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
+
+## Website
+
+`website/` is the project site: a SvelteKit app prerendered to static HTML and deployed to GitHub Pages by `.github/workflows/pages.yml`. It is a separate Node project, so the Go build and tests never touch it.
+
+```sh
+cd website
+npm ci
+npm run dev      # local preview
+npm run build    # writes website/build
+```
+
+`BASE_PATH` sets the path prefix; the workflow passes the value from `actions/configure-pages`, so the same build works on the project page or a custom domain. The pages are `/` and `/docs/`. The docs page keeps all five sections in the prerendered HTML and switches panels with tabs, so it stays short and stays crawlable. Copy lives in the Svelte components, not Markdown: keep the landing page to one screen and do not duplicate whole README sections.
+
+The landing page reacts to a fine pointer: `+layout.svelte` moves the fixed `.spotlight`, and a handler on the feature grid sets `--cx`/`--cy` so each card lights under the cursor. Both use CSS-variable fallbacks, are set from `onMount` so prerendering stays static, and are switched off for coarse pointers and reduced motion.
+
+The README banner is `assets/banner.png`, a 2560 × 640 render (2× of 1280 × 320) of `assets/banner.html` made with headless Chrome. It uses the site's mark, palette, and mono font; update the HTML and re-render when the mark, name, or tagline changes.
+
+Site changes go through a pull request and never cut a release. The Pages workflow builds the site on any pull request that touches `website/` and only deploys from `main`.
 
 ## Workflow
 
