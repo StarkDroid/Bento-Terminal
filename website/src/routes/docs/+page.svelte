@@ -8,9 +8,13 @@
 
 	const sections = [
 		{ id: 'install', label: 'Install' },
-		{ id: 'releases', label: 'Releases' },
 		{ id: 'shortcuts', label: 'Shortcuts' },
+		{ id: 'editing', label: 'Editing' },
+		{ id: 'changes', label: 'Changes' },
+		{ id: 'terminal', label: 'Terminal' },
+		{ id: 'builds', label: 'Builds' },
 		{ id: 'layout', label: 'Layout' },
+		{ id: 'releases', label: 'Releases' },
 		{ id: 'about', label: 'About' }
 	];
 
@@ -72,14 +76,14 @@
 	<title>Docs — Bento terminal</title>
 	<meta
 		name="description"
-		content="Install Bento terminal, check the keyboard shortcuts and window layout, and see how releases are published."
+		content="Install, shortcuts, editing, changes, the terminal, builds, layout, and releases for Bento terminal."
 	/>
 	<link rel="canonical" href="https://starkdroid.github.io/Bento-Terminal/docs/" />
 	<meta property="og:type" content="article" />
 	<meta property="og:title" content="Docs — Bento terminal" />
 	<meta
 		property="og:description"
-		content="Install Bento terminal, check the shortcuts and layout, and see how releases work."
+		content="Every part of Bento terminal, one panel at a time: install, shortcuts, editing, changes, terminal, builds, layout, releases."
 	/>
 	<meta property="og:url" content="https://starkdroid.github.io/Bento-Terminal/docs/" />
 	<meta name="twitter:card" content="summary" />
@@ -137,38 +141,12 @@
 					</li>
 					<li><code>--no-zsh</code> is the default: the binary only.</li>
 					<li><code>BENTO_INSTALL_DIR</code> changes the install directory.</li>
+					<li><code>BENTO_REPO</code> or <code>BENTO_REPO_URL</code> points the installer at a fork.</li>
 					<li>
-						From a clone, use <code>go install ./cmd/bento</code> or <code>make install</code>.
+						From a clone, use <code>go install ./cmd/bento</code> or <code>make install</code>;
+						or <code>go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</code>.
 					</li>
 				</ul>
-			</div>
-
-			<div
-				class="panel"
-				role="tabpanel"
-				id="releases"
-				aria-labelledby="tab-releases"
-				hidden={active !== 'releases'}
-			>
-				<h2>Releases</h2>
-				<p>
-					A release is a tagged <code>vX.Y.Z</code> GitHub release with a binary for each
-					platform and a checksum file. The installer picks the right asset; only when one is
-					missing does it build from source with Go.
-				</p>
-				<pre>bento_darwin_arm64
-bento_darwin_amd64
-bento_linux_arm64
-bento_linux_amd64
-SHA256SUMS</pre>
-				<p>
-					Notes are the changelog from each merged pull request, so a release page reads as a
-					short list of what changed. Maintainers publish with <code>scripts/release.sh</code>;
-					merging a pull request on its own publishes nothing.
-				</p>
-				<p>
-					<a href="https://github.com/StarkDroid/Bento-Terminal/releases/latest">Latest release →</a>
-				</p>
 			</div>
 
 			<div
@@ -245,6 +223,108 @@ SHA256SUMS</pre>
 			<div
 				class="panel"
 				role="tabpanel"
+				id="editing"
+				aria-labelledby="tab-editing"
+				hidden={active !== 'editing'}
+			>
+				<h2>Editing</h2>
+				<p>
+					<kbd>e</kbd> edits the open text file and <kbd>ctrl+s</kbd> saves it. Arrows move the
+					caret, <kbd>enter</kbd> splits a line, <kbd>backspace</kbd> and <kbd>delete</kbd> remove
+					and join lines, <kbd>home</kbd> and <kbd>end</kbd> jump within a line, and
+					<kbd>tab</kbd> inserts four spaces. Printable keys type.
+				</p>
+				<p>
+					The file's tab shows <code>●</code> while the buffer differs from the file,
+					<code>✓</code> after a save, and <code>save failed</code> when the write fails.
+					<kbd>esc</kbd> leaves the editor and keeps unsaved text in the preview, where
+					<kbd>ctrl+s</kbd> still saves it.
+				</p>
+				<p>
+					The <code>+ new file</code> tab, or <kbd>n</kbd>, opens a path prompt and puts the new
+					file straight into the editor; parent directories are created. Every write stays
+					inside the project. A binary file, a commit, and a patch are read-only.
+				</p>
+			</div>
+
+			<div
+				class="panel"
+				role="tabpanel"
+				id="changes"
+				aria-labelledby="tab-changes"
+				hidden={active !== 'changes'}
+			>
+				<h2>Changes</h2>
+				<p>
+					History's <strong>Changes</strong> tab lists every path git reports, in order, with its
+					two porcelain columns. <kbd>enter</kbd> or a click opens the patch in Main, and the tab
+					title carries the number of changed paths.
+				</p>
+				<pre>M   staged             M   unstaged
+MM  staged and unstaged
+A   added              ??  untracked
+R   renamed, old → new
+UU  unmerged</pre>
+				<p>
+					Staged and unstaged changes are shown together, and an untracked file gets a generated
+					new-file patch. A clean tree says so.
+				</p>
+			</div>
+
+			<div
+				class="panel"
+				role="tabpanel"
+				id="terminal"
+				aria-labelledby="tab-terminal"
+				hidden={active !== 'terminal'}
+			>
+				<h2>Terminal</h2>
+				<p>
+					Build's <strong>Terminal</strong> tab runs a typed line through <code>$SHELL -c</code>,
+					falling back to <code>/bin/sh</code>, inside the project root. <kbd>enter</kbd> runs,
+					<kbd>↑</kbd> <kbd>↓</kbd> recall earlier lines, <kbd>esc</kbd> clears the prompt and then
+					returns to Build, and <kbd>ctrl+c</kbd> stops a running command or clears the prompt.
+				</p>
+				<p>
+					Output is captured as text: colour, cursor, and erase sequences are dropped so a command
+					like <code>clear</code> cannot touch Bento's own screen. The scrollback is separate from
+					the Build output, and starting a command stops the previous one.
+				</p>
+				<p>
+					Full-screen programs such as <code>vim</code> or <code>top</code> are not supported; the
+					tab is for one-shot commands. Pipes, globs, and builtins work because the line goes
+					through your shell.
+				</p>
+			</div>
+
+			<div
+				class="panel"
+				role="tabpanel"
+				id="builds"
+				aria-labelledby="tab-builds"
+				hidden={active !== 'builds'}
+			>
+				<h2>Builds</h2>
+				<p>Automatic mode reads the project and offers:</p>
+				<ul>
+					<li><code>package.json</code> scripts, <code>Makefile</code> targets, and <code>gradlew</code> tasks</li>
+					<li><code>go.mod</code>: test, build, and vet; <code>Cargo.toml</code>: test, build, check, and run</li>
+					<li><code>pyproject.toml</code>: <code>python -m pytest</code>, and a build when one is declared</li>
+				</ul>
+				<p>
+					<kbd>a</kbd> switches to a shorter manual list, <kbd>enter</kbd> runs the selected
+					command, <kbd>r</kbd> reruns it, and <kbd>c</kbd> cancels the process group. The output
+					streams under the list.
+				</p>
+				<p>
+					Detected commands run directly, without a shell, so pipes, globs, and builtins belong in
+					the Terminal tab.
+				</p>
+			</div>
+
+			<div
+				class="panel"
+				role="tabpanel"
 				id="layout"
 				aria-labelledby="tab-layout"
 				hidden={active !== 'layout'}
@@ -257,9 +337,42 @@ SHA256SUMS</pre>
 					<li><strong>History:</strong> commits on the branch and the working-tree changes, as tabs.</li>
 					<li><strong>Build:</strong> detected commands and the terminal, as tabs.</li>
 				</ul>
+				<p>
+					Click a box or a tab label to focus and switch; a click in Main puts the caret on that
+					line and toggles a fold marker. The wheel scrolls the box under the pointer. Focus starts
+					on Files, <kbd>tab</kbd> cycles the boxes, and the window needs at least 72 × 22 cells.
+				</p>
 				<p class="muted">
-					Focus starts on Files. The window needs at least 72 × 22 cells; below that it asks
-					for a larger terminal.
+					Missing git, an empty tree, no detected commands, and a clean working tree each say so
+					in place.
+				</p>
+			</div>
+
+			<div
+				class="panel"
+				role="tabpanel"
+				id="releases"
+				aria-labelledby="tab-releases"
+				hidden={active !== 'releases'}
+			>
+				<h2>Releases</h2>
+				<p>
+					A release is a tagged <code>vX.Y.Z</code> GitHub release with a binary for each
+					platform and a checksum file. The installer picks the right asset; only when one is
+					missing does it build from source with Go.
+				</p>
+				<pre>bento_darwin_arm64
+bento_darwin_amd64
+bento_linux_arm64
+bento_linux_amd64
+SHA256SUMS</pre>
+				<p>
+					Notes are the changelog from each merged pull request, so a release page reads as a
+					short list of what changed. Maintainers publish with <code>scripts/release.sh</code>;
+					merging a pull request on its own publishes nothing.
+				</p>
+				<p>
+					<a href="https://github.com/StarkDroid/Bento-Terminal/releases/latest">Latest release →</a>
 				</p>
 			</div>
 
