@@ -35,6 +35,10 @@ jobs:
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: go build -o bento.exe ./cmd/bento
+      - name: Check the PowerShell installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: $null = [scriptblock]::Create((Get-Content -Raw scripts/install.ps1))
       - name: Upload the Windows build
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
