@@ -96,8 +96,8 @@
 		<div
 			class="docs-nav"
 			role="tablist"
+			tabindex="-1"
 			aria-label="Documentation sections"
-			aria-orientation="vertical"
 			onkeydown={onKeydown}
 		>
 			{#each sections as section}
@@ -116,7 +116,7 @@
 		</div>
 
 		<div>
-			<section
+			<div
 				class="panel"
 				role="tabpanel"
 				id="install"
@@ -141,9 +141,9 @@
 						From a clone, use <code>go install ./cmd/bento</code> or <code>make install</code>.
 					</li>
 				</ul>
-			</section>
+			</div>
 
-			<section
+			<div
 				class="panel"
 				role="tabpanel"
 				id="releases"
@@ -169,9 +169,9 @@ SHA256SUMS</pre>
 				<p>
 					<a href="https://github.com/StarkDroid/Bento-Terminal/releases/latest">Latest release →</a>
 				</p>
-			</section>
+			</div>
 
-			<section
+			<div
 				class="panel"
 				role="tabpanel"
 				id="shortcuts"
@@ -240,9 +240,9 @@ SHA256SUMS</pre>
 					In the Terminal tab every printable key goes to the prompt, including <kbd>q</kbd>;
 					<kbd>tab</kbd> still moves between boxes. While editing, printable keys type.
 				</p>
-			</section>
+			</div>
 
-			<section
+			<div
 				class="panel"
 				role="tabpanel"
 				id="layout"
@@ -261,9 +261,9 @@ SHA256SUMS</pre>
 					Focus starts on Files. The window needs at least 72 × 22 cells; below that it asks
 					for a larger terminal.
 				</p>
-			</section>
+			</div>
 
-			<section
+			<div
 				class="panel"
 				role="tabpanel"
 				id="about"
@@ -285,7 +285,7 @@ SHA256SUMS</pre>
 				<p>
 					<a href="https://github.com/StarkDroid/Bento-Terminal">Source on GitHub →</a>
 				</p>
-			</section>
+			</div>
 		</div>
 	</div>
 </main>
