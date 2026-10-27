@@ -158,13 +158,18 @@ func (m Model) runTerminal() (tea.Model, tea.Cmd) {
 	m.runTarget = targetTerminal
 	m.termState = stateRunning
 	m.termFollow = true
-	m.termLines = append(m.termLines, "$ "+script)
+	m.termLines = append(m.termLines, sanitizeLine("$ "+script))
 	m = m.syncTermOutput()
 	return m, tea.Batch(startCmd(id, m.root, build.ShellCommand(script)), m.spinner.Tick)
 }
 
 func (m Model) appendTerm(line string) Model {
-	m.termLines = append(m.termLines, line)
+	clean := sanitizeLine(line)
+	if line != "" && clean == "" {
+		// The command wrote nothing but control sequences, as "clear" does.
+		return m
+	}
+	m.termLines = append(m.termLines, clean)
 	if len(m.termLines) > maxTermLines {
 		m.termLines = m.termLines[len(m.termLines)-maxTermLines:]
 	}
