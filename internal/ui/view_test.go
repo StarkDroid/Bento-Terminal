@@ -107,7 +107,7 @@ func TestRunEchoCommand(t *testing.T) {
 	m.height = 32
 	m.focus = PaneBuild
 	m.mode = build.ModeManual
-	m.manualCmds = []build.Command{{Name: "echo hi", Argv: []string{"echo", "hi"}, Source: "test"}}
+	m.manualCmds = []build.Command{{Name: "echo hi", Argv: build.ShellCommand("echo hi").Argv, Source: "test"}}
 	m.buildReady = true
 	next, cmd := m.Update(keyMsg("enter"))
 	m = drive(t, next.(Model), cmd)

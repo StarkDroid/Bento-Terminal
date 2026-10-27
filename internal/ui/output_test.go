@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -25,6 +26,9 @@ func TestSanitizeLineDropsTerminalControl(t *testing.T) {
 }
 
 func TestTerminalOutputCannotClearTheScreen(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a Unix printf")
+	}
 	m, _ := previewSample(t)
 	m.focus = PaneBuild
 	m = press(t, m, "right")
@@ -61,6 +65,9 @@ func TestBuildOutputCannotClearTheScreen(t *testing.T) {
 }
 
 func TestClearCommandKeepsTheInterface(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses the Unix clear command")
+	}
 	m, _ := previewSample(t)
 	m.focus = PaneBuild
 	m = press(t, m, "right")

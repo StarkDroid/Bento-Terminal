@@ -204,7 +204,7 @@ func gradleWrapper(root string) (string, bool) {
 		return "./gradlew", true
 	}
 	if fileExists(filepath.Join(root, "gradlew.bat")) {
-		return "gradlew.bat", true
+		return `.\gradlew.bat`, true
 	}
 	return "", false
 }
