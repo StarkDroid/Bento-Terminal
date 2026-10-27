@@ -685,7 +685,12 @@ func (m Model) onDone(msg runDoneMsg) Model {
 }
 
 func (m Model) appendOut(line string) Model {
-	m.outLines = append(m.outLines, line)
+	clean := sanitizeLine(line)
+	if line != "" && clean == "" {
+		// The command wrote nothing but control sequences.
+		return m
+	}
+	m.outLines = append(m.outLines, clean)
 	if len(m.outLines) > 2000 {
 		m.outLines = m.outLines[len(m.outLines)-2000:]
 	}
