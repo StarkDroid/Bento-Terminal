@@ -201,7 +201,7 @@ go test ./...
 
 printf 'release: building the binaries\n'
 rm -rf dist
-make darwin-arm64 darwin-amd64 linux-arm64 linux-amd64 VERSION="$version" >/dev/null
+make darwin-arm64 darwin-amd64 linux-arm64 linux-amd64 windows-amd64 windows-arm64 VERSION="$version" >/dev/null
 
 if command -v sha256sum >/dev/null 2>&1; then
 	sum=(sha256sum)
@@ -210,7 +210,8 @@ else
 fi
 (
 	cd dist
-	"${sum[@]}" bento_darwin_arm64 bento_darwin_amd64 bento_linux_arm64 bento_linux_amd64 >SHA256SUMS
+	"${sum[@]}" bento_darwin_arm64 bento_darwin_amd64 bento_linux_arm64 bento_linux_amd64 \
+		bento_windows_amd64.exe bento_windows_arm64.exe >SHA256SUMS
 )
 
 printf 'release: tagging %s\n' "$tag"
@@ -219,7 +220,9 @@ git push origin "$tag"
 
 printf 'release: publishing %s\n' "$tag"
 gh release create "$tag" dist/bento_darwin_arm64 dist/bento_darwin_amd64 \
-	dist/bento_linux_arm64 dist/bento_linux_amd64 dist/SHA256SUMS \
+	dist/bento_linux_arm64 dist/bento_linux_amd64 \
+	dist/bento_windows_amd64.exe dist/bento_windows_arm64.exe \
+	dist/SHA256SUMS \
 	--title "Bento terminal $tag" \
 	--notes-file "$notes" \
 	--verify-tag >/dev/null
