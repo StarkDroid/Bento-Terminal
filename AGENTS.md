@@ -59,7 +59,7 @@ npm run dev      # local preview
 npm run build    # writes website/build
 ```
 
-`BASE_PATH` sets the path prefix; the workflow passes the value from `actions/configure-pages`, so the same build works on the project page or a custom domain. The pages are `/` and `/docs/`. The docs page keeps all five sections in the prerendered HTML and switches panels with tabs, so it stays short and stays crawlable. Copy lives in the Svelte components, not Markdown: keep the landing page to one screen and do not duplicate whole README sections.
+`BASE_PATH` sets the path prefix; the workflow passes the value from `actions/configure-pages`, so the same build works on the project page or a custom domain. The pages are `/` and `/docs/`. The docs page keeps all nine sections in the prerendered HTML and switches panels with tabs, so it stays short and stays crawlable: install, shortcuts, editing, changes, terminal, builds, layout, releases, about. Copy lives in the Svelte components, not Markdown: keep the landing page to one screen and do not duplicate whole README sections.
 
 The landing page reacts to a fine pointer: `+layout.svelte` moves the fixed `.spotlight`, and a handler on the feature grid sets `--cx`/`--cy` so each card lights under the cursor. Both use CSS-variable fallbacks, are set from `onMount` so prerendering stays static, and are switched off for coarse pointers and reduced motion.
 
