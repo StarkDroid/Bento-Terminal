@@ -18,3 +18,7 @@ the repository's base path (`/Bento-Terminal`). The deploy workflow is
 Pages: `/` (overview and install) and `/docs/` (install options, releases,
 shortcuts, layout, about). The docs page keeps every section in the prerendered
 HTML for search engines and switches panels with tabs, so it stays short.
+
+The canonical links, `static/robots.txt`, and `static/sitemap.xml` hardcode
+`https://starkdroid.github.io/Bento-Terminal/`. Change all three together if the
+site moves to a custom domain.
