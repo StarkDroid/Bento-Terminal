@@ -1,6 +1,7 @@
 package build
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -49,6 +50,26 @@ func TestStartCancel(t *testing.T) {
 	_, done := collect(t, events, 5*time.Second)
 	if done == nil {
 		t.Fatal("expected cancel error")
+	}
+}
+
+func TestShellCommandUsesTheShell(t *testing.T) {
+	cmd := ShellCommand("echo shell-ok; echo err >&2")
+	if len(cmd.Argv) != 3 || cmd.Argv[1] != "-c" || cmd.Argv[2] != "echo shell-ok; echo err >&2" {
+		t.Fatalf("argv = %#v", cmd.Argv)
+	}
+	cancel, events, err := Start(t.TempDir(), cmd.Argv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cancel()
+	lines, done := collect(t, events, 5*time.Second)
+	if done != nil {
+		t.Fatal(done)
+	}
+	joined := strings.Join(lines, "\n")
+	if !strings.Contains(joined, "shell-ok") || !strings.Contains(joined, "err") {
+		t.Fatalf("lines = %#v", lines)
 	}
 }
 

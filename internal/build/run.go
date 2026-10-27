@@ -58,6 +58,16 @@ func Start(dir string, argv []string) (cancel func(), events <-chan Event, err e
 	return cancel, ch, nil
 }
 
+// ShellCommand wraps script in the user's shell so the terminal tab can run
+// pipes, globs, and builtins the way a normal prompt does.
+func ShellCommand(script string) Command {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "/bin/sh"
+	}
+	return Command{Name: script, Argv: []string{shell, "-c", script}}
+}
+
 func readProcess(ctx context.Context, cmd *exec.Cmd, r io.ReadCloser, ch chan Event) {
 	defer close(ch)
 	defer r.Close()
