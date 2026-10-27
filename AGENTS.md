@@ -14,6 +14,7 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
   - `codeview.go` — renders the file preview: gutter, fold markers, caret row and block, highlighted spans, and collapsed-block summaries.
   - `preview.go` — line numbering, wrapping, and diff colouring helpers for plain previews.
   - `paint.go` — piece strings, left/right joins, tab chips, titles, rows, and panel frames.
+  - `output.go` — sanitises captured process output before it reaches a viewport.
   - `editor.go` — the preview editor: open file, buffer edits, save, and the new-file prompt.
   - `terminal.go` — the Terminal tab: prompt input, history, run dispatch, and terminal scrollback.
   - `view.go` — pane bodies, the History and Build tab titles, footers, and overlays.
@@ -40,7 +41,7 @@ make linux-amd64
 
 Go 1.23 or newer. Dependencies are Go modules. The platform targets set `GOOS` and `GOARCH` and write `dist/bento_<os>_<arch>`, which are the installer's release asset names.
 
-Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, editor keys and save, the new-file prompt, the Changes tab and diff preview, the terminal tab and a real shell run, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
+Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, editor keys and save, the new-file prompt, the Changes tab and diff preview, the terminal tab and a real shell run, captured output sanitising, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
 
 CI runs gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
 
@@ -136,6 +137,8 @@ Saving joins the buffer with newlines and adds a trailing newline when the buffe
 The terminal prompt always has the keyboard while the tab is visible: printable keys type (including `q`, `?`, and `,`), `tab`/`shift+tab` still cycle focus, `↑`/`↓` walk the command history, `←`/`→` move the prompt caret, and `home`/`end` jump. `enter` runs the line through `build.ShellCommand`, which uses `$SHELL -c` and falls back to `/bin/sh`. `esc` clears the prompt, then returns to the Build tab. `ctrl+c` stops a running process, or clears the prompt when nothing runs. The command list and settings open on `?` and `,` only while the prompt is empty.
 
 Terminal output has its own viewport and 2,000-line scrollback, separate from the Build output. `runTarget` selects which buffer receives lines and which state records the result; starting any run stops the previous one. The terminal output height is `Build.H - 5` (panel body minus the prompt and footer).
+
+Captured output is sanitised by `sanitizeLine` in `output.go` before it reaches either viewport: escape sequences are dropped, a carriage return keeps only its last segment, tabs become four spaces, and a line that held nothing but control sequences is skipped. A command still thinks it owns a terminal, so `clear` would otherwise send `\x1b[2J` into the scrollback and wipe the whole interface. Never append raw process output to a viewport, and do not try to keep colour codes: they would fight the pane background. Full-screen programs are not supported; the tab is for one-shot commands.
 
 ### Mouse
 

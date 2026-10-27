@@ -155,6 +155,8 @@ Build's **Terminal** tab runs whatever you type through `$SHELL -c`, falling bac
 
 The terminal keeps its own scrollback, separate from the Build output. Starting a command stops the previous one.
 
+Output is captured as text, so a command cannot clear or repaint Bento. Colour, cursor, and erase sequences are dropped before they reach the scrollback, a progress-bar redraw keeps only its last line, and a command that writes nothing but control sequences (`clear`) leaves no trace. Full-screen programs such as `vim` or `top` are not supported; the tab is for one-shot commands, and Build is the place for project commands whose output you want to read.
+
 ## Build commands
 
 Automatic mode is the default. It reads:
