@@ -17,7 +17,7 @@
 </script>
 
 <svelte:head>
-	<title>Bento terminal — one project, every pane</title>
+	<title>Bento terminal — one project, multi-pane</title>
 	<meta
 		name="description"
 		content="Preview and edit files, review changes, run builds, and use a shell for the project in front of you — one bento layout, no tabs. Go, macOS and Linux."
@@ -25,7 +25,7 @@
 	<link rel="canonical" href="https://starkdroid.github.io/Bento-Terminal/" />
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="Bento terminal" />
-	<meta property="og:title" content="Bento terminal — one project, every pane" />
+	<meta property="og:title" content="Bento terminal — one project, multi-pane" />
 	<meta
 		property="og:description"
 		content="Preview, edit, review changes, run builds, and open a shell without leaving the directory."
@@ -33,14 +33,14 @@
 	<meta property="og:url" content="https://starkdroid.github.io/Bento-Terminal/" />
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="Bento terminal" />
-	<meta name="twitter:description" content="One project. Every pane." />
+	<meta name="twitter:description" content="One project. Multi-pane." />
 </svelte:head>
 
 <main id="content">
 	<section class="hero" aria-labelledby="title">
 		<p class="eyebrow">terminal workspace</p>
 		<h1 id="title">
-			One project.<br /><em>Every pane.</em><span class="caret" aria-hidden="true"></span>
+			One project.<br /><em>Multi-pane.</em><span class="caret" aria-hidden="true"></span>
 		</h1>
 		<p class="lede">
 			Preview and edit files, read the tree, commits and working-tree changes, run builds, and open a
