@@ -61,7 +61,7 @@ npm run build    # writes website/build
 
 `BASE_PATH` sets the path prefix; the workflow passes the value from `actions/configure-pages`, so the same build works on the project page or a custom domain. The pages are `/` and `/docs/`. The docs page keeps all five sections in the prerendered HTML and switches panels with tabs, so it stays short and stays crawlable. Copy lives in the Svelte components, not Markdown: keep the landing page to one screen and do not duplicate whole README sections.
 
-Site changes go through a pull request and never cut a release.
+Site changes go through a pull request and never cut a release. The Pages workflow builds the site on any pull request that touches `website/` and only deploys from `main`.
 
 ## Workflow
 
