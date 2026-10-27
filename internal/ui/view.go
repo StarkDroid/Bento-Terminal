@@ -17,6 +17,9 @@ func (m Model) View() string {
 	if m.width <= 0 || m.height <= 0 {
 		return "Bento terminal"
 	}
+	if m.newFileOpen {
+		return m.newFileView()
+	}
 	if m.paletteOpen {
 		return m.paletteView()
 	}
@@ -47,21 +50,17 @@ func (m Model) renderMain(width, height int) string {
 	if bodyH < 0 {
 		bodyH = 0
 	}
-	title := " " + filepath.Base(m.root)
+	title := paintTitle(" "+filepath.Base(m.root), innerW, focused)
 	var body string
 	switch m.previewKind {
 	case previewFile:
-		title = " ≡ " + m.previewTitle
-		if m.previewLang.Detected() {
-			lang := m.previewLang.Name
-			if !m.previewSyntax {
-				lang += " off"
-			}
-			title += "  ·  " + lang
-		}
+		title = m.fileTitle(innerW, focused)
 		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
 	case previewCommit:
-		title = " ⎇ " + m.previewTitle
+		title = paintTitle(" ⎇ "+m.previewTitle, innerW, focused)
+		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
+	case previewDiff:
+		title = paintTitle(" ± "+m.previewTitle, innerW, focused)
 		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
 	default:
 		body = m.homeBody(innerW, bodyH)
@@ -70,7 +69,43 @@ func (m Model) renderMain(width, height int) string {
 		body += "\n"
 	}
 	body += m.footer(PaneMain, innerW)
-	return renderPanel(paintTitle(title, innerW, focused), body, width, height, focused)
+	return renderPanel(title, body, width, height, focused)
+}
+
+// fileTitle draws the file name, language badge, save markers, and the new-file
+// shortcut that is pinned to the right edge.
+func (m Model) fileTitle(width int, focused bool) string {
+	titleFG := lipgloss.TerminalColor(colorSandDim)
+	if focused {
+		titleFG = colorLagoonBright
+	}
+	left := []piece{
+		pieceText(" ≡ ", titleFG, colorPanel),
+		pieceText(m.previewTitle, titleFG, colorPanel),
+	}
+	if m.previewLang.Detected() {
+		lang := m.previewLang.Name
+		if !m.previewSyntax {
+			lang += " off"
+		}
+		left = append(left, pieceText("  ·  "+lang, colorLagoon, colorPanel))
+	}
+	switch {
+	case m.previewSaveErr:
+		left = append(left, pieceText("  save failed", colorCoral, colorPanel))
+	case m.previewDirty:
+		left = append(left, pieceText("  ●", colorCoral, colorPanel))
+	case m.previewSaved:
+		left = append(left, pieceText("  ✓", colorPalm, colorPanel))
+	}
+	if m.previewEditing {
+		left = append(left, pieceText("  edit", colorSun, colorPanel))
+	}
+	if m.previewEditing {
+		return joinPieces(width, colorPanel, left)
+	}
+	right := []piece{pieceText("+ ", colorLagoonBright, colorPanel)}
+	return joinLeftRight(width, colorPanel, left, right)
 }
 
 func (m Model) homeBody(width, height int) string {
@@ -211,6 +246,8 @@ func (m Model) renderHistory(width, height int) string {
 		lines = []string{noteLine(" "+m.gitSnap.Err, bodyW)}
 	case !m.gitSnap.Repo:
 		lines = []string{noteLine(" Not a git repository", bodyW)}
+	case m.historyTab == histTabChanges:
+		lines = m.changeLines(bodyW, bodyH)
 	case len(m.gitSnap.Commits) == 0:
 		lines = []string{noteLine(" No commits on this branch", bodyW)}
 	default:
@@ -230,7 +267,85 @@ func (m Model) renderHistory(width, height int) string {
 		lines = lines[:bodyH]
 	}
 	lines = append(lines, m.footer(PaneHistory, bodyW))
-	return panel("⎇ History", strings.Join(lines, "\n"), width, height, focused)
+	return renderPanel(m.historyTitle(bodyW), strings.Join(lines, "\n"), width, height, focused)
+}
+
+// historyTitle draws the History and Changes tabs, with a change count on the
+// right while Changes is visible.
+func (m Model) historyTitle(width int) string {
+	focused := m.focus == PaneHistory
+	left := []piece{
+		pieceText(" ⎇ ", colorLagoonBright, colorPanel),
+		tabPiece("History", m.historyTab == histTabCommits, focused),
+		pieceText(" ", colorSand, colorPanel),
+		tabPiece("Changes", m.historyTab == histTabChanges, focused),
+	}
+	var right []piece
+	if n := len(m.gitSnap.Status.Files); n > 0 && m.gitSnap.Repo && m.historyTab == histTabChanges {
+		right = append(right, pieceText(fmt.Sprintf(" %d ", n), colorCoral, colorPanel))
+	}
+	return joinLeftRight(width, colorPanel, left, right)
+}
+
+// changeLines lists the working-tree changes, or a note when the tree is clean.
+func (m Model) changeLines(width, height int) []string {
+	changes := m.gitSnap.Status.Files
+	if len(changes) == 0 {
+		return []string{noteLine(" Working tree clean", width)}
+	}
+	scroll := ensure(m.changeCursor, m.changeScroll, height)
+	end := scroll + height
+	if end > len(changes) {
+		end = len(changes)
+	}
+	var lines []string
+	for i := scroll; i < end; i++ {
+		lines = append(lines, m.changeLine(changes[i], width, i == m.changeCursor))
+	}
+	return lines
+}
+
+// changeLine shows the porcelain code and path, with renames rendered as
+// "old → new".
+func (m Model) changeLine(f git.FileStatus, width int, selected bool) string {
+	if width < 1 {
+		return ""
+	}
+	bg := lipgloss.TerminalColor(colorPanel)
+	row := lipgloss.NewStyle().Width(width)
+	switch {
+	case selected && m.focus == PaneHistory:
+		bg = colorSelect
+		row = row.Bold(true)
+	case selected:
+		bg = colorSelectDim
+	}
+	codeFG := colorAmber
+	switch {
+	case f.Untracked:
+		codeFG = colorPalm
+	case f.Unmerged:
+		codeFG = colorCoral
+	case f.Staged() && f.Unstaged():
+		codeFG = colorCoral
+	case f.Staged():
+		codeFG = colorLagoonBright
+	}
+	code := lipgloss.NewStyle().Foreground(codeFG).Background(bg).Render(" " + f.Code() + " ")
+	name := f.Path
+	if f.OrigPath != "" {
+		name = f.OrigPath + " → " + f.Path
+	}
+	textW := width - 4
+	if textW < 1 {
+		textW = 1
+	}
+	text := lipgloss.NewStyle().
+		Foreground(colorSand).
+		Background(bg).
+		Width(textW).
+		Render(truncateCells(name, textW))
+	return row.Background(bg).Render(code + text)
 }
 
 func (m Model) commitLine(c git.Commit, width int, selected bool) string {
@@ -254,6 +369,9 @@ func (m Model) commitLine(c git.Commit, width int, selected bool) string {
 }
 
 func (m Model) renderBuild(width, height int) string {
+	if m.buildTab == buildTabTerminal {
+		return m.renderTerminal(width, height)
+	}
 	focused := m.focus == PaneBuild
 	innerW := width - 2
 	if innerW < 1 {
@@ -318,37 +436,129 @@ func (m Model) commandLine(c build.Command, width int, selected bool) string {
 }
 
 func (m Model) buildTitle(width int) string {
-	mode := "auto"
-	if m.mode == build.ModeManual {
-		mode = "manual"
+	focused := m.focus == PaneBuild
+	fg := lipgloss.TerminalColor(colorSandDim)
+	if focused {
+		fg = colorLagoonBright
 	}
-	titleFG := colorSandDim
-	if m.focus == PaneBuild {
-		titleFG = colorLagoonBright
+	state := m.buildState
+	if m.buildTab == buildTabTerminal {
+		state = m.termState
 	}
-	var parts []piece
-	switch m.buildState {
+	var glyph piece
+	switch state {
 	case stateRunning:
 		spin := m.spinner.View()
-		parts = append(parts,
-			pieceText(" ", colorSand, colorPanel),
-			piece{view: spin, width: lipgloss.Width(spin)},
-			pieceText(" Build  ", titleFG, colorPanel),
-		)
+		glyph = piece{
+			view:  lipgloss.NewStyle().Background(colorPanel).Render(" ") + spin + lipgloss.NewStyle().Background(colorPanel).Render(" "),
+			width: 2 + lipgloss.Width(spin),
+		}
 	case stateOK:
-		parts = append(parts, pieceText(" ✓ Build  ", colorPalm, colorPanel))
-	case stateFailed:
-		parts = append(parts, pieceText(" ✗ Build  ", colorCoral, colorPanel))
-	case stateCanceled:
-		parts = append(parts, pieceText(" ✗ Build  ", colorCoral, colorPanel))
+		glyph = pieceText(" ✓ ", colorPalm, colorPanel)
+	case stateFailed, stateCanceled:
+		glyph = pieceText(" ✗ ", colorCoral, colorPanel)
 	default:
-		parts = append(parts, pieceText(" ▶ Build  ", titleFG, colorPanel))
+		glyph = pieceText(" ▶ ", fg, colorPanel)
 	}
-	parts = append(parts, pieceText(mode, colorLagoon, colorPanel))
-	if m.last != nil {
-		parts = append(parts, pieceText("  ·  "+m.last.Name, colorSandDim, colorPanel))
+	left := []piece{
+		glyph,
+		tabPiece("Build", m.buildTab == buildTabCommands, focused),
+		pieceText(" ", colorSand, colorPanel),
+		tabPiece("Terminal", m.buildTab == buildTabTerminal, focused),
 	}
-	return joinPieces(width, colorPanel, parts)
+	var right []piece
+	switch {
+	case m.buildTab == buildTabTerminal:
+		if m.running && m.runTarget == targetTerminal {
+			right = append(right, pieceText(" running ", colorPalm, colorPanel))
+		}
+	default:
+		mode := "auto"
+		if m.mode == build.ModeManual {
+			mode = "manual"
+		}
+		right = append(right, pieceText(" "+mode, colorLagoon, colorPanel))
+		if m.last != nil {
+			right = append(right, pieceText("  ·  "+m.last.Name, colorSandDim, colorPanel))
+		}
+	}
+	return joinLeftRight(width, colorPanel, left, right)
+}
+
+// renderTerminal draws the terminal scrollback, the command prompt, and the
+// footer. The prompt always has the keyboard.
+func (m Model) renderTerminal(width, height int) string {
+	focused := m.focus == PaneBuild
+	innerW := width - 2
+	if innerW < 1 {
+		innerW = 1
+	}
+	outH := height - 5
+	if outH < 0 {
+		outH = 0
+	}
+	var lines []string
+	if outH > 0 {
+		if block := m.terminalBlock(innerW, outH); block != "" {
+			lines = append(lines, strings.Split(block, "\n")...)
+		}
+	}
+	lines = append(lines, m.terminalPrompt(innerW))
+	lines = append(lines, m.footer(PaneBuild, innerW))
+	return renderPanel(m.buildTitle(innerW), strings.Join(lines, "\n"), width, height, focused)
+}
+
+func (m Model) terminalBlock(width, height int) string {
+	if height <= 0 {
+		return ""
+	}
+	if len(m.termLines) == 0 {
+		return windowLines([]string{noteLine(" Type a command and press enter.", width)}, 0, width, height)
+	}
+	y := m.termOutput.YOffset
+	if y < 0 {
+		y = 0
+	}
+	return windowLines(stylePlain(m.termLines, width), y, width, height)
+}
+
+// terminalPrompt draws "$" and the input with a block caret. The input scrolls
+// horizontally so the caret stays visible in a long command.
+func (m Model) terminalPrompt(width int) string {
+	if width < 1 {
+		return ""
+	}
+	avail := width - 3
+	if avail < 1 {
+		return noteLine("", width)
+	}
+	runes := []rune(m.termInput)
+	col := clamp(m.termCursor, 0, len(runes))
+	start := 0
+	if col > avail-1 {
+		start = col - avail + 1
+	}
+	end := start + avail
+	if end > len(runes) {
+		end = len(runes)
+	}
+	visible := runes[start:end]
+	caret := col - start
+	pad := lipgloss.NewStyle().Background(colorPanel)
+	prefix := lipgloss.NewStyle().Foreground(colorLagoonBright).Background(colorPanel).Render(" $ ")
+	text := lipgloss.NewStyle().Foreground(colorSand).Background(colorPanel).Render(string(visible[:caret]))
+	block := lipgloss.NewStyle().Foreground(colorOcean).Background(colorLagoonBright).Render(" ")
+	tail := visible[caret:]
+	if len(tail) > 0 {
+		block = lipgloss.NewStyle().Foreground(colorOcean).Background(colorLagoonBright).Render(string(tail[0]))
+		tail = tail[1:]
+	}
+	row := prefix + text + block +
+		lipgloss.NewStyle().Foreground(colorSand).Background(colorPanel).Render(string(tail))
+	if w := lipgloss.Width(row); w < width {
+		row += pad.Width(width - w).Render("")
+	}
+	return row
 }
 
 func (m Model) outputBlock(width, height int) string {
@@ -383,22 +593,72 @@ func (m Model) footerHints(p Pane) []string {
 	case PaneMain:
 		switch m.previewKind {
 		case previewFile:
-			if m.previewLang.Detected() {
-				return []string{"↑↓←→ move", "[ ] fold", "? keys"}
+			if m.previewEditing {
+				return []string{"↑↓←→ move", "ctrl+s save", "esc done"}
 			}
-			return []string{"↑↓←→ move", "? keys"}
-		case previewCommit:
+			if m.previewLang.Detected() {
+				return []string{"↑↓←→ move", "[ ] fold", "e edit", "? keys"}
+			}
+			return []string{"↑↓←→ move", "e edit", "? keys"}
+		case previewCommit, previewDiff:
 			return []string{"↑↓ scroll", "? keys"}
 		}
-		return []string{"? keys", "tab panes"}
+		return []string{"n new", "? keys", "tab panes"}
 	case PaneFiles:
 		return []string{"↑↓", "enter open", "? keys"}
 	case PaneHistory:
-		return []string{"↑↓", "enter show", "? keys"}
+		return []string{"↑↓", "←→ tab", "? keys"}
 	case PaneBuild:
-		return []string{"↑↓ pick", "enter run", "a mode", "r rerun", "c cancel", "? keys"}
+		if m.buildTab == buildTabTerminal {
+			return []string{"enter run", "ctrl+c stop", "esc back", "? keys"}
+		}
+		return []string{"↑↓ pick", "enter run", "a mode", "r rerun", "←→ tab", "? keys"}
 	}
 	return []string{"? keys"}
+}
+
+// newFileView is the modal prompt for a new project path.
+func (m Model) newFileView() string {
+	innerW := m.width - 6
+	if innerW > 64 {
+		innerW = 64
+	}
+	if innerW < 24 {
+		innerW = m.width - 2
+	}
+	if innerW < 8 {
+		innerW = 8
+	}
+	rows := []string{
+		noteLine(" Path is relative to "+filepath.Base(m.root), innerW),
+		m.newFileInput(innerW),
+	}
+	if m.newFileErr != "" {
+		rows = append(rows, noteLine(" "+m.newFileErr, innerW))
+	} else {
+		rows = append(rows, noteLine(" enter create · esc cancel", innerW))
+	}
+	boxH := len(rows) + 3
+	if boxH > m.height {
+		boxH = m.height
+	}
+	if boxH < 5 {
+		boxH = 5
+	}
+	box := renderPanel(paintTitle(" + New file", innerW, true), strings.Join(rows, "\n"), innerW+2, boxH, true)
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box,
+		lipgloss.WithWhitespaceChars(" "),
+		lipgloss.WithWhitespaceBackground(colorOcean),
+	)
+}
+
+func (m Model) newFileInput(width int) string {
+	text := truncateCells(" "+m.newFilePath+"▌", width)
+	return lipgloss.NewStyle().
+		Foreground(colorLagoonBright).
+		Background(colorSelectDim).
+		Width(width).
+		Render(text)
 }
 
 func (m Model) renderStatus(width int) string {

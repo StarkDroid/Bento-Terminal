@@ -19,6 +19,7 @@ const (
 	previewNone previewKind = iota
 	previewFile
 	previewCommit
+	previewDiff
 )
 
 type runState int
@@ -29,6 +30,30 @@ const (
 	stateOK
 	stateFailed
 	stateCanceled
+)
+
+// historyTab selects the commit list or the working-tree changes.
+type historyTab int
+
+const (
+	histTabCommits historyTab = iota
+	histTabChanges
+)
+
+// buildTab selects the command list or the free-form terminal.
+type buildTab int
+
+const (
+	buildTabCommands buildTab = iota
+	buildTabTerminal
+)
+
+// runTarget says where a running process writes its output.
+type runTarget int
+
+const (
+	targetBuild runTarget = iota
+	targetTerminal
 )
 
 // Model is the Bubble Tea model for Bento terminal.
@@ -55,6 +80,9 @@ type Model struct {
 	gitReady     bool
 	commitCursor int
 	commitScroll int
+	changeCursor int
+	changeScroll int
+	historyTab   historyTab
 
 	mode       build.Mode
 	autoCmds   []build.Command
@@ -63,32 +91,52 @@ type Model struct {
 	buildReady bool
 	cmdCursor  int
 	cmdScroll  int
+	buildTab   buildTab
 
 	running         bool
 	runID           int
+	runTarget       runTarget
 	cancel          func()
 	cancelRequested bool
 	last            *build.Command
 	buildState      runState
+	termState       runState
 	outLines        []string
 	output          viewport.Model
 	follow          bool
+	termLines       []string
+	termOutput      viewport.Model
+	termFollow      bool
+	termInput       string
+	termCursor      int
+	termHistory     []string
+	termHistPos     int
 
-	previewKind     previewKind
-	previewTitle    string
-	previewRaw      string
-	previewNumbered bool
-	previewLang     syntax.Language
-	previewSyntax   bool
-	previewCursor   int
-	previewCol      int
-	previewFolds    map[int]bool
-	previewBlocks   []syntax.Block
-	previewSpans    [][]codeSpan
-	previewRows     []previewRow
-	previewVisible  []int
-	preview         viewport.Model
-	previewLines    []string
+	previewKind      previewKind
+	previewTitle     string
+	previewPath      string
+	previewRaw       string
+	previewNumbered  bool
+	previewLang      syntax.Language
+	previewSyntax    bool
+	previewCursor    int
+	previewCol       int
+	previewFolds     map[int]bool
+	previewBlocks    []syntax.Block
+	previewSpans     [][]codeSpan
+	previewRows      []previewRow
+	previewVisible   []int
+	preview          viewport.Model
+	previewLines     []string
+	previewEditing   bool
+	previewEditLines []string
+	previewDirty     bool
+	previewSaved     bool
+	previewSaveErr   bool
+
+	newFileOpen bool
+	newFilePath string
+	newFileErr  string
 }
 
 // New returns a TUI model rooted at the project directory.
@@ -105,9 +153,12 @@ func New(root, version string) Model {
 		spinner:      sp,
 		mode:         build.ModeAuto,
 		follow:       true,
+		termFollow:   true,
+		termHistPos:  -1,
 		previewFolds: map[int]bool{},
 		preview:      viewport.New(0, 0),
 		output:       viewport.New(0, 0),
+		termOutput:   viewport.New(0, 0),
 	}
 }
 

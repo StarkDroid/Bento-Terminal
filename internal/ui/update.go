@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"errors"
-	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -10,7 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/StarkDroid/Bento-Terminal/internal/build"
-	"github.com/StarkDroid/Bento-Terminal/internal/files"
 	"github.com/StarkDroid/Bento-Terminal/internal/git"
 	"github.com/StarkDroid/Bento-Terminal/internal/syntax"
 )
@@ -55,7 +52,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.id != m.runID {
 			return m, nil
 		}
-		return m.appendOut(msg.line), listenCmd(msg.id, msg.events)
+		return m.appendRun(msg.line), listenCmd(msg.id, msg.events)
 	case runDoneMsg:
 		return m.onDone(msg), nil
 	case refreshMsg:
@@ -66,6 +63,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.newFileOpen {
+		return m.onNewFileKey(msg)
+	}
+	if m.previewEditing {
+		return m.onEditorKey(msg)
+	}
+	if !m.paletteOpen && !m.settingsOpen && m.focus == PaneBuild && m.buildTab == buildTabTerminal {
+		return m.onTerminalKey(msg)
+	}
 	if key.Matches(msg, m.keys.Quit) {
 		return m.stopRun(), tea.Quit
 	}
@@ -92,7 +98,7 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // onMouse focuses a pane on click and lets the pointer move the selection, fold
 // a block, or scroll a list.
 func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
-	if m.paletteOpen || m.settingsOpen {
+	if m.paletteOpen || m.settingsOpen || m.newFileOpen {
 		return m, nil
 	}
 	lay := computeLayout(m.width, m.height)
@@ -114,18 +120,35 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		}
 	case tea.MouseButtonLeft:
 		if msg.Action == tea.MouseActionPress {
-			return m.click(pane, msg.Y, lay)
+			return m.click(pane, msg.X, msg.Y, lay)
 		}
 	}
 	return m, nil
 }
 
-func (m Model) click(pane Pane, y int, lay layout) (tea.Model, tea.Cmd) {
+func (m Model) click(pane Pane, x, y int, lay layout) (tea.Model, tea.Cmd) {
+	if y == 1 && x >= lay.Main.W-3 && x <= lay.Main.W-2 && m.previewKind == previewFile && !m.previewEditing {
+		return m.openNewFile(), nil
+	}
+	if y == lay.HistoryBodyTop()-1 {
+		if tab, ok := historyTabAt(x - (lay.Main.W + 2)); ok {
+			m.focus = PaneHistory
+			m.historyTab = tab
+			return m.reflowPreview(false), nil
+		}
+	}
+	if y == lay.BuildBodyTop()-1 {
+		if tab, ok := buildTabAt(x - 1); ok {
+			m.focus = PaneBuild
+			m.buildTab = tab
+			return m.reflowPreview(false), nil
+		}
+	}
 	m.focus = pane
 	m = m.reflowPreview(false)
 	switch pane {
 	case PaneMain:
-		if m.previewKind != previewFile {
+		if m.previewKind != previewFile || m.previewEditing {
 			return m, nil
 		}
 		row := y - lay.MainBodyTop() + m.preview.YOffset
@@ -152,6 +175,14 @@ func (m Model) click(pane Pane, y int, lay layout) (tea.Model, tea.Cmd) {
 		}
 		return m.openSelection()
 	case PaneHistory:
+		if m.historyTab == histTabChanges {
+			row := y - lay.HistoryBodyTop() + m.changeScroll
+			if row < 0 || row >= len(m.gitSnap.Status.Files) {
+				return m, nil
+			}
+			m.changeCursor = row
+			return m.openChange()
+		}
 		row := y - lay.HistoryBodyTop() + m.commitScroll
 		if row < 0 || row >= len(m.gitSnap.Commits) {
 			return m, nil
@@ -159,6 +190,9 @@ func (m Model) click(pane Pane, y int, lay layout) (tea.Model, tea.Cmd) {
 		m.commitCursor = row
 		return m.openCommit()
 	case PaneBuild:
+		if m.buildTab == buildTabTerminal {
+			return m, nil
+		}
 		row := y - lay.BuildBodyTop() + m.cmdScroll
 		if row < 0 || row >= len(m.commands()) {
 			return m, nil
@@ -166,6 +200,30 @@ func (m Model) click(pane Pane, y int, lay layout) (tea.Model, tea.Cmd) {
 		m.cmdCursor = row
 	}
 	return m, nil
+}
+
+// historyTabAt maps an inner title cell to a history tab. Tabs are drawn as
+// " ⎇ " then " History " and " Changes ".
+func historyTabAt(rel int) (historyTab, bool) {
+	switch {
+	case rel >= 3 && rel < 12:
+		return histTabCommits, true
+	case rel >= 13 && rel < 22:
+		return histTabChanges, true
+	}
+	return 0, false
+}
+
+// buildTabAt maps an inner title cell to a build tab. Tabs are drawn as a
+// three-cell state glyph then " Build " and " Terminal ".
+func buildTabAt(rel int) (buildTab, bool) {
+	switch {
+	case rel >= 3 && rel < 10:
+		return buildTabCommands, true
+	case rel >= 11 && rel < 21:
+		return buildTabTerminal, true
+	}
+	return 0, false
 }
 
 func (m Model) wheel(pane Pane, delta int) Model {
@@ -184,9 +242,13 @@ func (m Model) wheel(pane Pane, delta int) Model {
 			m = m.moveFile(delta)
 		}
 	case PaneHistory:
-		m = m.moveCommit(delta)
+		m = m.moveHistory(delta)
 	case PaneBuild:
-		m = m.scrollOutput(delta)
+		if m.buildTab == buildTabTerminal {
+			m = m.scrollTerminal(delta)
+		} else {
+			m = m.scrollOutput(delta)
+		}
 	}
 	return m
 }
@@ -204,33 +266,7 @@ func (m Model) openSelection() (tea.Model, tea.Cmd) {
 		m.tree.Toggle(m.fileCursor)
 		return m, nil
 	}
-	body, err := files.Preview(filepath.Join(m.root, filepath.FromSlash(row.Rel)))
-	m.previewKind = previewFile
-	m.previewTitle = row.Name
-	m.previewNumbered = false
-	m.previewLang = syntax.Language{}
-	m.previewSyntax = false
-	m.previewCursor = 0
-	m.previewCol = 0
-	m.previewFolds = map[int]bool{}
-	m.previewBlocks = nil
-	switch {
-	case errors.Is(err, files.ErrBinary):
-		m.previewRaw = "Binary file"
-	case err != nil:
-		m.previewRaw = err.Error()
-	case strings.TrimSpace(body) == "":
-		m.previewRaw = "Empty file"
-	default:
-		m.previewRaw = body
-		m.previewNumbered = true
-		m.previewLang = syntax.Detect(row.Name, body)
-		m.previewSyntax = m.previewLang.Detected()
-	}
-	m = m.prepareBlocks()
-	m = m.refreshSpans()
-	m.preview.GotoTop()
-	return m.reflowPreview(true), nil
+	return m.openFile(row.Rel, row.Name), nil
 }
 
 func (m Model) openCommit() (tea.Model, tea.Cmd) {
@@ -241,13 +277,8 @@ func (m Model) openCommit() (tea.Model, tea.Cmd) {
 	body, err := git.Show(m.root, c.Hash)
 	m.previewKind = previewCommit
 	m.previewTitle = c.Hash
-	m.previewNumbered = false
-	m.previewLang = syntax.Language{}
-	m.previewSyntax = false
-	m.previewBlocks = nil
-	m.previewSpans = nil
-	m.previewRows = nil
-	m.previewVisible = nil
+	m.previewPath = ""
+	m = m.resetPreviewState()
 	if err != nil {
 		m.previewRaw = err.Error()
 	} else if strings.TrimSpace(body) == "" {
@@ -259,17 +290,113 @@ func (m Model) openCommit() (tea.Model, tea.Cmd) {
 	return m.reflowPreview(true), nil
 }
 
+// openChange previews the patch for the selected working-tree change.
+func (m Model) openChange() (tea.Model, tea.Cmd) {
+	files := m.gitSnap.Status.Files
+	if !m.gitSnap.Repo || m.changeCursor < 0 || m.changeCursor >= len(files) {
+		return m, nil
+	}
+	f := files[m.changeCursor]
+	body, err := git.Diff(m.root, f)
+	m.previewKind = previewDiff
+	m.previewTitle = f.Path
+	m.previewPath = ""
+	m = m.resetPreviewState()
+	if err != nil {
+		m.previewRaw = err.Error()
+	} else {
+		m.previewRaw = body
+	}
+	m.preview.GotoTop()
+	return m.reflowPreview(true), nil
+}
+
+// resetPreviewState clears the editor and language fields when a commit or a
+// patch replaces a file in the preview.
+func (m Model) resetPreviewState() Model {
+	m.previewNumbered = false
+	m.previewLang = syntax.Language{}
+	m.previewSyntax = false
+	m.previewEditing = false
+	m.previewEditLines = nil
+	m.previewDirty = false
+	m.previewSaved = false
+	m.previewSaveErr = false
+	m.previewCursor = 0
+	m.previewCol = 0
+	m.previewFolds = map[int]bool{}
+	m.previewBlocks = nil
+	m.previewSpans = nil
+	m.previewRows = nil
+	m.previewVisible = nil
+	return m
+}
+
+// openHistorySelection opens a commit or a patch depending on the visible tab.
+func (m Model) openHistorySelection() (tea.Model, tea.Cmd) {
+	if m.historyTab == histTabChanges {
+		return m.openChange()
+	}
+	return m.openCommit()
+}
+
+// switchHistoryTab flips between commits and changes; the direction is kept so
+// the two tab keys stay symmetric.
+func (m Model) switchHistoryTab(delta int) Model {
+	if delta == 0 {
+		return m
+	}
+	if m.historyTab == histTabCommits {
+		m.historyTab = histTabChanges
+	} else {
+		m.historyTab = histTabCommits
+	}
+	return m
+}
+
+// switchBuildTab flips between the command list and the terminal.
+func (m Model) switchBuildTab(delta int) Model {
+	if delta == 0 {
+		return m
+	}
+	if m.buildTab == buildTabCommands {
+		m.buildTab = buildTabTerminal
+	} else {
+		m.buildTab = buildTabCommands
+	}
+	return m
+}
+
+// moveHistory moves the cursor of the visible history tab.
+func (m Model) moveHistory(delta int) Model {
+	if m.historyTab == histTabChanges {
+		return m.moveChange(delta)
+	}
+	return m.moveCommit(delta)
+}
+
+func (m Model) moveChange(delta int) Model {
+	n := len(m.gitSnap.Status.Files)
+	if n == 0 {
+		m.changeCursor = 0
+		return m
+	}
+	m.changeCursor = clamp(m.changeCursor+delta, 0, n-1)
+	m.changeScroll = ensure(m.changeCursor, m.changeScroll, m.historyPage())
+	return m
+}
+
 func (m Model) prepareBlocks() Model {
 	m.previewBlocks = nil
 	if !m.previewNumbered {
 		return m
 	}
-	m.previewBlocks = syntax.Outline(m.previewLang, fileLines(m.previewRaw))
+	m.previewBlocks = syntax.Outline(m.previewLang, m.sourceLines())
 	return m
 }
 
 func (m Model) movePreview(delta int) Model {
-	if m.previewKind == previewCommit {
+	if m.previewKind == previewCommit || m.previewKind == previewDiff {
 		m = m.syncSizes()
 		if delta > 0 {
 			m.preview.ScrollDown(delta)
@@ -298,7 +425,7 @@ func (m Model) movePreviewCol(delta int) Model {
 	if m.previewKind != previewFile || len(m.previewVisible) == 0 {
 		return m
 	}
-	lines := fileLines(m.previewRaw)
+	lines := m.sourceLines()
 	if m.previewCursor < 0 || m.previewCursor >= len(lines) {
 		return m
 	}
@@ -338,7 +465,7 @@ func (m Model) previewVisiblePos() int {
 }
 
 func (m Model) clampPreviewCol() Model {
-	lines := fileLines(m.previewRaw)
+	lines := m.sourceLines()
 	if m.previewCursor < 0 || m.previewCursor >= len(lines) {
 		m.previewCol = 0
 		return m
@@ -473,12 +600,13 @@ func (m Model) launch(c build.Command) (tea.Model, tea.Cmd) {
 	m.runID++
 	id := m.runID
 	m.running = true
+	m.runTarget = targetBuild
 	m.buildState = stateRunning
 	m.follow = true
 	copied := c
 	m.last = &copied
 	m.outLines = nil
-	m = m.appendOut("$ " + c.Name)
+	m = m.appendRun("$ " + c.Name)
 	m = m.syncSizes()
 	return m, tea.Batch(startCmd(id, m.root, c), m.spinner.Tick)
 }
@@ -510,15 +638,15 @@ func (m Model) onStarted(msg runStartedMsg) (tea.Model, tea.Cmd) {
 	}
 	if msg.err != nil {
 		m.running = false
-		m.buildState = stateFailed
+		m = m.setRunState(stateFailed)
 		m.cancel = nil
-		return m.appendOut("✗ " + msg.err.Error()), nil
+		return m.appendRun("✗ " + msg.err.Error()), nil
 	}
 	m.cancel = msg.cancel
 	m.running = true
 	if msg.events == nil {
 		m.running = false
-		m.buildState = stateFailed
+		m = m.setRunState(stateFailed)
 		return m, nil
 	}
 	return m, listenCmd(msg.id, msg.events)
@@ -532,14 +660,14 @@ func (m Model) onDone(msg runDoneMsg) Model {
 	m.cancel = nil
 	switch {
 	case m.cancelRequested:
-		m.buildState = stateCanceled
-		m = m.appendOut("✗ cancelled")
+		m = m.setRunState(stateCanceled)
+		m = m.appendRun("✗ cancelled")
 	case msg.err == nil:
-		m.buildState = stateOK
-		m = m.appendOut("✓ done")
+		m = m.setRunState(stateOK)
+		m = m.appendRun("✓ done")
 	default:
-		m.buildState = stateFailed
-		m = m.appendOut("✗ " + msg.err.Error())
+		m = m.setRunState(stateFailed)
+		m = m.appendRun("✗ " + msg.err.Error())
 	}
 	return m
 }
@@ -561,6 +689,10 @@ func (m Model) applyGit(snap git.Snapshot) Model {
 	if m.commitCursor >= 0 && m.commitCursor < len(m.gitSnap.Commits) {
 		keep = m.gitSnap.Commits[m.commitCursor].Hash
 	}
+	var keepChange string
+	if m.changeCursor >= 0 && m.changeCursor < len(m.gitSnap.Status.Files) {
+		keepChange = m.gitSnap.Status.Files[m.changeCursor].Path
+	}
 	m.gitSnap = snap
 	m.gitReady = true
 	m.commitCursor = 0
@@ -576,6 +708,19 @@ func (m Model) applyGit(snap git.Snapshot) Model {
 		m.commitCursor = clamp(m.commitCursor, 0, n-1)
 	}
 	m.commitScroll = ensure(m.commitCursor, m.commitScroll, m.historyPage())
+	m.changeCursor = 0
+	if keepChange != "" {
+		for i, f := range snap.Status.Files {
+			if f.Path == keepChange {
+				m.changeCursor = i
+				break
+			}
+		}
+	}
+	if n := len(snap.Status.Files); n > 0 {
+		m.changeCursor = clamp(m.changeCursor, 0, n-1)
+	}
+	m.changeScroll = ensure(m.changeCursor, m.changeScroll, m.historyPage())
 	return m
 }
 
@@ -601,6 +746,20 @@ func (m Model) syncSizes() Model {
 	if m.output.Height < 1 {
 		m.output.Height = 1
 	}
+	termW := lay.Build.W - 2
+	termH := lay.Build.H - 5
+	if termW < 1 {
+		termW = 1
+	}
+	if termH < 1 {
+		termH = 1
+	}
+	prevH := m.termOutput.Height
+	m.termOutput.Width = termW
+	m.termOutput.Height = termH
+	if m.termFollow && prevH != termH {
+		m.termOutput.GotoBottom()
+	}
 	return m
 }
 
@@ -621,7 +780,11 @@ func (m Model) reflowPreview(reset bool) Model {
 		}
 		m.preview.SetContent(strings.Join(m.previewLines, "\n"))
 	default:
-		m.previewLines = wrappedLines(m.previewRaw, m.preview.Width)
+		if m.previewKind == previewDiff {
+			m.previewLines = diffLines(m.previewRaw, m.preview.Width)
+		} else {
+			m.previewLines = wrappedLines(m.previewRaw, m.preview.Width)
+		}
 		m.previewRows = nil
 		m.previewVisible = nil
 		m.preview.SetContent(strings.Join(m.previewLines, "\n"))

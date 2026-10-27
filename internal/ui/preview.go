@@ -69,3 +69,43 @@ func wrappedLines(content string, width int) []string {
 	}
 	return out
 }
+
+// diffLines colours a patch: additions palm, removals coral, hunks reef, and
+// file headers moss.
+func diffLines(content string, width int) []string {
+	if width < 1 {
+		return nil
+	}
+	raw := strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n")
+	if len(raw) > 1 && raw[len(raw)-1] == "" {
+		raw = raw[:len(raw)-1]
+	}
+	out := make([]string, len(raw))
+	for i, line := range raw {
+		fg := colorSand
+		switch {
+		case strings.HasPrefix(line, "diff --git"),
+			strings.HasPrefix(line, "index "),
+			strings.HasPrefix(line, "--- "),
+			strings.HasPrefix(line, "+++ "),
+			strings.HasPrefix(line, "new file mode"),
+			strings.HasPrefix(line, "deleted file mode"):
+			fg = colorMoss
+		case strings.HasPrefix(line, "@@"):
+			fg = colorReef
+		case strings.HasPrefix(line, "+"):
+			fg = colorPalm
+		case strings.HasPrefix(line, "-"):
+			fg = colorCoral
+		}
+		out[i] = lipgloss.NewStyle().
+			Foreground(fg).
+			Background(colorPanel).
+			Width(width).
+			Render(truncateCells(line, width))
+	}
+	if len(out) == 0 {
+		out = []string{noteLine("", width)}
+	}
+	return out
+}

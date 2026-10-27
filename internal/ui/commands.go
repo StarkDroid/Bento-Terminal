@@ -26,6 +26,8 @@ const (
 	actHistoryDown
 	actHistoryPageUp
 	actHistoryPageDown
+	actHistoryTabPrev
+	actHistoryTabNext
 	actHistoryOpen
 
 	actBuildUp
@@ -36,6 +38,11 @@ const (
 	actBuildMode
 	actBuildRerun
 	actBuildCancel
+	actBuildTabPrev
+	actBuildTabNext
+	actTermRun
+	actTermCancel
+	actTermClear
 
 	actMainUp
 	actMainDown
@@ -47,6 +54,9 @@ const (
 	actMainUnfold
 	actMainToggleFold
 	actMainSyntax
+	actMainEdit
+	actMainNew
+	actMainSave
 )
 
 // action is one keyboard command. Binding supplies the keys and their label;
@@ -71,6 +81,9 @@ func (m Model) paneActions(p Pane) []action {
 			{actMainFold, m.keys.Fold, "fold function or class"},
 			{actMainUnfold, m.keys.Unfold, "unfold function or class"},
 			{actMainToggleFold, m.keys.Enter, "fold or unfold"},
+			{actMainEdit, m.keys.Edit, "edit this file"},
+			{actMainNew, m.keys.New, "create a new file"},
+			{actMainSave, m.keys.Save, "save the file"},
 			{actMainSyntax, m.keys.Syntax, "toggle code highlighting"},
 		}
 	case PaneFiles:
@@ -89,9 +102,14 @@ func (m Model) paneActions(p Pane) []action {
 			{actHistoryDown, m.keys.Down, "move down"},
 			{actHistoryPageUp, m.keys.PageUp, "page up"},
 			{actHistoryPageDown, m.keys.PageDown, "page down"},
-			{actHistoryOpen, m.keys.Enter, "preview commit"},
+			{actHistoryTabPrev, m.keys.Left, "previous tab"},
+			{actHistoryTabNext, m.keys.Right, "next tab"},
+			{actHistoryOpen, m.keys.Enter, "open the selection"},
 		}
 	case PaneBuild:
+		if m.buildTab == buildTabTerminal {
+			return m.terminalActions()
+		}
 		return m.buildActions()
 	}
 	return nil
@@ -107,6 +125,16 @@ func (m Model) buildActions() []action {
 		{actBuildMode, m.keys.Mode, "switch auto or manual"},
 		{actBuildRerun, m.keys.Rerun, "rerun last command"},
 		{actBuildCancel, m.keys.Cancel, "cancel the run"},
+		{actBuildTabPrev, m.keys.Left, "previous tab"},
+		{actBuildTabNext, m.keys.Right, "next tab"},
+	}
+}
+
+func (m Model) terminalActions() []action {
+	return []action{
+		{actTermRun, m.keys.Enter, "run the typed command"},
+		{actTermCancel, m.keys.Interrupt, "stop the running command"},
+		{actTermClear, m.keys.Close, "clear the input"},
 	}
 }
 
@@ -177,15 +205,19 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.openSelection()
 
 	case actHistoryUp:
-		return m.moveCommit(-1), nil
+		return m.moveHistory(-1), nil
 	case actHistoryDown:
-		return m.moveCommit(1), nil
+		return m.moveHistory(1), nil
 	case actHistoryPageUp:
-		return m.moveCommit(-m.historyPage()), nil
+		return m.moveHistory(-m.historyPage()), nil
 	case actHistoryPageDown:
-		return m.moveCommit(m.historyPage()), nil
+		return m.moveHistory(m.historyPage()), nil
+	case actHistoryTabPrev:
+		return m.switchHistoryTab(-1), nil
+	case actHistoryTabNext:
+		return m.switchHistoryTab(1), nil
 	case actHistoryOpen:
-		return m.openCommit()
+		return m.openHistorySelection()
 
 	case actBuildUp:
 		return m.moveCmd(-1), nil
@@ -207,6 +239,18 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.rerun()
 	case actBuildCancel:
 		return m.stopRun(), nil
+	case actBuildTabPrev:
+		return m.switchBuildTab(-1), nil
+	case actBuildTabNext:
+		return m.switchBuildTab(1), nil
+	case actTermRun:
+		return m.runTerminal()
+	case actTermCancel:
+		return m.stopRun(), nil
+	case actTermClear:
+		m.termInput = ""
+		m.termCursor = 0
+		return m, nil
 
 	case actMainUp:
 		return m.movePreview(-1), nil
@@ -228,6 +272,12 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.toggleFold(), nil
 	case actMainSyntax:
 		return m.toggleSyntax(), nil
+	case actMainEdit:
+		return m.startEditing(), nil
+	case actMainNew:
+		return m.openNewFile(), nil
+	case actMainSave:
+		return m.savePreview()
 	}
 	return m, nil
 }
