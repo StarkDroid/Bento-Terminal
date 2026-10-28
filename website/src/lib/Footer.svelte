@@ -3,7 +3,7 @@
 </script>
 
 <footer class="site-footer">
-	<span>MIT licensed · Go 1.23+ · macOS &amp; Linux</span>
+	<span>MIT licensed · Go 1.23+ · macOS · Linux · Windows</span>
 	<nav aria-label="Project">
 		<a href="{base}/docs/">Docs</a>
 		<a href="https://github.com/StarkDroid/Bento-Terminal">Source</a>

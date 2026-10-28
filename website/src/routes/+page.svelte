@@ -20,7 +20,7 @@
 	<title>Bento terminal — one project, multi-pane</title>
 	<meta
 		name="description"
-		content="Preview and edit files, review changes, run builds, and use a shell for the project in front of you — one bento layout, no tabs. Go, macOS and Linux."
+		content="Preview and edit files, review changes, run builds, and use a shell for the project in front of you — one bento layout, no tabs. Go, macOS, Linux and Windows."
 	/>
 	<link rel="canonical" href="https://starkdroid.github.io/Bento-Terminal/" />
 	<meta property="og:type" content="website" />
@@ -50,7 +50,7 @@
 		<div class="install">
 			<CopyCommand command={install} />
 			<p class="hint">
-				Binary only. <a href="{base}/docs/#install">Install options</a> ·
+				macOS and Linux. <a href="{base}/docs/#install">Windows and install options</a> ·
 				<a href="{base}/docs/">Docs</a>
 			</p>
 		</div>

@@ -3,10 +3,20 @@
 package build
 
 import (
+	"os"
 	"os/exec"
 	"syscall"
 	"time"
 )
+
+// shellArgv wraps a terminal line in the user's shell, falling back to sh.
+func shellArgv(script string) []string {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "/bin/sh"
+	}
+	return []string{shell, "-c", script}
+}
 
 func prepareCommand(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
