@@ -1,9 +1,24 @@
 <script>
 	import { base } from '$app/paths';
+	import { onMount } from 'svelte';
 	import CopyCommand from '$lib/CopyCommand.svelte';
 
-	const install =
+	const unixInstall =
 		'curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh';
+	const windowsInstall =
+		'irm https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.ps1 | iex';
+
+	// The page is prerendered with the curl line; Windows swaps to PowerShell
+	// after hydration, because install.sh only handles macOS and Linux.
+	let install = $state(unixInstall);
+	let prompt = $state('$');
+
+	onMount(() => {
+		if (/windows/i.test(navigator.userAgent)) {
+			install = windowsInstall;
+			prompt = 'PS>';
+		}
+	});
 
 	// The glow follows the pointer across a card, so each one lights where the
 	// cursor is instead of in the middle.
@@ -48,9 +63,9 @@
 		</p>
 
 		<div class="install">
-			<CopyCommand command={install} />
+			<CopyCommand command={install} {prompt} />
 			<p class="hint">
-				macOS and Linux. <a href="{base}/docs/#install">Windows and install options</a> ·
+				macOS, Linux and Windows. <a href="{base}/docs/#install">Install options</a> ·
 				<a href="{base}/docs/">Docs</a>
 			</p>
 		</div>
