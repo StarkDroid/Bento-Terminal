@@ -108,6 +108,9 @@ func (m Model) syncEditRaw() Model {
 // onEditorKey is the editor mode of the preview pane. Printable keys type,
 // arrows move the caret, enter splits a line, and ctrl+s saves.
 func (m Model) onEditorKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if msg.Type == tea.KeyCtrlF {
+		return m.openFind(), nil
+	}
 	switch msg.Type {
 	case tea.KeyCtrlS:
 		return m.savePreview()

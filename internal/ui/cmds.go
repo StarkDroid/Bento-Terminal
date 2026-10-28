@@ -23,6 +23,11 @@ type buildLoadedMsg struct {
 	result build.Result
 }
 
+type filesListedMsg struct {
+	files []string
+	err   error
+}
+
 type runStartedMsg struct {
 	id     int
 	cancel func()
@@ -53,6 +58,13 @@ func loadTreeCmd(root string) tea.Cmd {
 func loadGitCmd(root string) tea.Cmd {
 	return func() tea.Msg {
 		return gitLoadedMsg{snap: git.Load(root)}
+	}
+}
+
+func loadFilesListCmd(root string) tea.Cmd {
+	return func() tea.Msg {
+		files, err := files.List(root)
+		return filesListedMsg{files: files, err: err}
 	}
 }
 

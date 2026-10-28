@@ -37,9 +37,11 @@ The Unix installer puts the binary in `~/.local/bin`; `--with-zsh` also adds tha
 - **Your shell.** Any command, run inside the project.
 - **Builds without setup.** Detected tests, builds, and lint commands.
 
+- **Find fast.** `ctrl+p` filters the project's files; `ctrl+f` searches the open file.
+
 Every build ships the same panes, keys, and behaviour. Only the shell the Terminal tab runs (`$SHELL` on macOS and Linux, `%COMSPEC%` on Windows) and the installer differ per platform.
 
-Editing, changes, the terminal, build detection, shortcuts, mouse, and layout are in the [docs](https://starkdroid.github.io/Bento-Terminal/docs/).
+Search, editing, changes, the terminal, build detection, shortcuts, mouse, and layout are in the [docs](https://starkdroid.github.io/Bento-Terminal/docs/).
 
 ## Develop
 
