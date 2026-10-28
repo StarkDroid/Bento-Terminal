@@ -5,6 +5,8 @@
 
 	const install =
 		'curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh';
+	const installWindows =
+		'irm https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.ps1 | iex';
 
 	const sections = [
 		{ id: 'install', label: 'Install' },
@@ -129,10 +131,45 @@
 			>
 				<h2>Install</h2>
 				<p>
+					Install is the published binary; development is a build from a checkout. The features are
+					the same in both, on every platform: only the shell the Terminal tab runs and the
+					installer differ.
+				</p>
+
+				<h3>macOS and Linux</h3>
+				<p>
 					One command. It downloads the release binary for your OS and architecture into
-					<code>~/.local/bin</code>.
+					<code>~/.local/bin</code>. Add <code>--with-zsh</code> to put that folder on PATH.
 				</p>
 				<CopyCommand command={install} />
+
+				<h3>Windows</h3>
+				<p>
+					Run this in Windows Terminal. It downloads <code>bento.exe</code> into
+					<code>%LOCALAPPDATA%\bento</code>, adds that folder to your user PATH, and checks that
+					the binary runs. Open a new Windows Terminal and type <code>bento</code>.
+				</p>
+				<CopyCommand command={installWindows} prompt="PS>" />
+
+				<h3>Develop</h3>
+				<p>macOS and Linux:</p>
+				<pre>go test ./...
+make build
+./bento
+sh scripts/install.sh --from-source</pre>
+				<p>Windows, in Windows Terminal:</p>
+				<pre>go test ./...
+go build -o bento.exe ./cmd/bento
+.\bento.exe
+.\scripts\install.ps1 -FromSource</pre>
+				<p>
+					<code>go run ./cmd/bento</code> is the quickest loop anywhere: it compiles to a temp
+					directory, so PATH and the checkout stay untouched. <code>--from-source</code> and
+					<code>-FromSource</code> install the checkout itself, which is how a branch is tried
+					before a release exists. <code>go install ./cmd/bento</code> also works, but writes to
+					<code>go env GOPATH</code>'s <code>bin</code>, which may not be on PATH.
+				</p>
+
 				<h3>Options</h3>
 				<ul>
 					<li>
@@ -140,11 +177,20 @@
 						<code>~/.zshrc</code>, without touching your prompt.
 					</li>
 					<li><code>--no-zsh</code> is the default: the binary only.</li>
-					<li><code>BENTO_INSTALL_DIR</code> changes the install directory.</li>
-					<li><code>BENTO_REPO</code> or <code>BENTO_REPO_URL</code> points the installer at a fork.</li>
 					<li>
-						From a clone, use <code>go install ./cmd/bento</code> or <code>make install</code>;
-						or <code>go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</code>.
+						<code>--from-source</code> on macOS and Linux, <code>-FromSource</code> on Windows:
+						build the checkout instead of downloading a release.
+					</li>
+					<li>
+						<code>BENTO_INSTALL_DIR</code> changes the install directory; on Windows, so does
+						<code>-InstallDir</code>.
+					</li>
+					<li>
+						<code>-NoPath</code> installs <code>bento.exe</code> without editing your user PATH.
+					</li>
+					<li>
+						<code>BENTO_REPO</code> points the installer at a fork;
+						<code>BENTO_REPO_URL</code> changes the clone URL the source build uses.
 					</li>
 				</ul>
 			</div>
@@ -280,10 +326,12 @@ UU  unmerged</pre>
 			>
 				<h2>Terminal</h2>
 				<p>
-					Build's <strong>Terminal</strong> tab runs a typed line through <code>$SHELL -c</code>,
-					falling back to <code>/bin/sh</code>, inside the project root. <kbd>enter</kbd> runs,
-					<kbd>↑</kbd> <kbd>↓</kbd> recall earlier lines, <kbd>esc</kbd> clears the prompt and then
-					returns to Build, and <kbd>ctrl+c</kbd> stops a running command or clears the prompt.
+					Build's <strong>Terminal</strong> tab runs a typed line through your shell inside the
+					project root: <code>$SHELL -c</code>, falling back to <code>/bin/sh</code>, on macOS and
+					Linux; <code>%COMSPEC% /C</code>, falling back to <code>cmd.exe</code>, on Windows.
+					<kbd>enter</kbd> runs, <kbd>↑</kbd> <kbd>↓</kbd> recall earlier lines, <kbd>esc</kbd>
+					clears the prompt and then returns to Build, and <kbd>ctrl+c</kbd> stops a running command
+					or clears the prompt.
 				</p>
 				<p>
 					Output is captured as text: colour, cursor, and erase sequences are dropped so a command
@@ -358,13 +406,16 @@ UU  unmerged</pre>
 				<h2>Releases</h2>
 				<p>
 					A release is a tagged <code>vX.Y.Z</code> GitHub release with a binary for each
-					platform and a checksum file. The installer picks the right asset; only when one is
-					missing does it build from source with Go.
+					platform and a checksum file. The installer picks the right asset and checks it before
+					replacing your copy; only when one is missing, or when you ask for a source build, does
+					it build with Go.
 				</p>
 				<pre>bento_darwin_arm64
 bento_darwin_amd64
 bento_linux_arm64
 bento_linux_amd64
+bento_windows_amd64.exe
+bento_windows_arm64.exe
 SHA256SUMS</pre>
 				<p>
 					Notes are the changelog from each merged pull request, so a release page reads as a
@@ -392,8 +443,11 @@ SHA256SUMS</pre>
 					>. It draws its own lagoon palette, so your terminal theme does not change how it looks.
 				</p>
 				<p>
-					It targets the macOS Terminal first, with Menlo or SF Mono: rounded boxes, no Nerd Font,
-					no braille spinners. Linux uses the same build. MIT licensed, contributions welcome.
+					It runs in the macOS Terminal and Windows Terminal, with Menlo or SF Mono on macOS and
+					Cascadia Mono or Consolas on Windows: rounded boxes, no Nerd Font, no braille spinners.
+					Linux uses the same build. Every platform gets the same panes, keys, and features; only
+					the shell the Terminal tab runs and the installer differ. MIT licensed, contributions
+					welcome.
 				</p>
 				<p>
 					<a href="https://github.com/StarkDroid/Bento-Terminal">Source on GitHub →</a>

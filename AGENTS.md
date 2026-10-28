@@ -1,6 +1,6 @@
 # Bento terminal
 
-Bento terminal is a full-screen terminal workspace for one project directory. It previews and edits files with syntax highlighting and folding, lists the tree, the current branch's commits, and its working-tree changes, runs detected build commands, and runs your own commands in a shell. The first supported terminal is macOS Terminal. The UI draws its own lagoon palette and does not read the user's theme.
+Bento terminal is a full-screen terminal workspace for one project directory. It previews and edits files with syntax highlighting and folding, lists the tree, the current branch's commits, and its working-tree changes, runs detected build commands, and runs your own commands in a shell. The supported terminals are macOS Terminal and Windows Terminal. The UI draws its own lagoon palette and does not read the user's theme.
 
 Every box draws its own shortcut footer. `?` opens that box's command list, and a listed command can be run with enter or by pressing its shortcut. When you change packages, commands, focus order, theme tokens, keybindings, or the install flow, update this file in the same change.
 
@@ -21,12 +21,25 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
 - `internal/syntax` — Chroma-based language detection, highlighting with the lagoon palette, and foldable block discovery. Go and Python use dedicated strategies; the common brace languages share a balanced-brace scanner. Highlighting is capped at 8,000 lines.
 - `internal/git` — parses `git status --porcelain=v2 --branch` and `git log` lines (`hash`, unix time, subject, tab-separated). `Load` shells out to git. Untracked paths count as unstaged. `Status.Files` keeps one `FileStatus` per changed path, and `Diff` returns the staged and unstaged patch, with a synthesised new-file patch for untracked files.
 - `internal/files` — lazy directory tree and a bounded text preview. `Create` and `Save` resolve project-relative paths and reject anything outside the project; `Tree.Refresh` re-reads loaded folders while keeping them open. Dot entries are hidden. `node_modules`, `vendor`, `target`, `__pycache__`, `dist`, `.next`, `.venv`, and `venv` are skipped. Symlinks are not followed.
-- `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it by signaling the process group. No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal tab.
-- `scripts/install.sh` — curl entrypoint. Release asset first, then `go build` from a local checkout or a clone.
-- `scripts/release.sh` — the release. Tests, builds the four assets, writes `SHA256SUMS`, tags, and publishes the GitHub release from the merged PRs' changelogs.
+- `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it with the process group (`run_unix.go`: `Setpgid` and `SIGTERM`; `run_windows.go`: `CREATE_NEW_PROCESS_GROUP` and `taskkill /T`). No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal tab through `$SHELL -c` on Unix and `%COMSPEC% /C` on Windows.
+- `scripts/install.sh` — macOS and Linux entrypoint. Release asset first, then `go build` from a local checkout or a clone; `--from-source` skips the download.
+- `scripts/install.ps1` — Windows entrypoint. The same order: the `.exe` release asset for the machine's architecture, then a build from the checkout this file lives in or a clone (`-FromSource`, `-Source`). Installs `bento.exe` into `%LOCALAPPDATA%\bento` and adds that folder to the user PATH (`-NoPath` skips it), so a new Windows Terminal finds `bento`.
+- `scripts/release.sh` — the release. Tests, builds the six assets, writes `SHA256SUMS`, tags, and publishes the GitHub release from the merged PRs' changelogs.
 - `website` — the GitHub Pages site: SvelteKit prerendered to static HTML. It is a separate Node project and the Go build never touches it.
 
-There is no `internal/install`. The installer is shell only.
+There is no `internal/install`. The installers are shell and PowerShell only.
+
+## Platforms
+
+macOS Terminal and Windows Terminal are the supported terminals; Linux runs the same binary as macOS. Every user-facing feature works on every platform: panes, focus, keys, mouse, editing, diffs, build detection, and the Terminal tab are not allowed to be macOS-only or Windows-only, and the docs and README describe one feature set for all platforms.
+
+The only platform differences are the ones the OS forces:
+
+- The Terminal tab runs the user's shell: `$SHELL -c`, falling back to `/bin/sh`, on Unix; `%COMSPEC% /C`, falling back to `cmd.exe`, on Windows. Keep that behind `run_unix.go` and `run_windows.go` so the rest of `internal/build` stays shared.
+- Cancelling a run ends the process group: `Setpgid` and `SIGTERM` on Unix; `CREATE_NEW_PROCESS_GROUP` and `taskkill /T` on Windows.
+- The installer: `scripts/install.sh` on macOS and Linux, `scripts/install.ps1` on Windows. The two must stay in step — a flag or fallback on one needs its equivalent on the other.
+
+Test a platform change on the platform whose file you touched, and leave the other to the CI matrix; the shared code still runs through `go vet ./...` on every platform. When you add a feature, add it to `internal/ui` once rather than branching on `runtime.GOOS`.
 
 ## Build and test
 
@@ -38,15 +51,28 @@ make darwin-arm64
 make darwin-amd64
 make linux-arm64
 make linux-amd64
+make windows-amd64
+make windows-arm64
 ```
 
-Go 1.23 or newer. Dependencies are Go modules. The platform targets set `GOOS` and `GOARCH` and write `dist/bento_<os>_<arch>`, which are the installer's release asset names.
+Windows, in Windows Terminal:
 
-Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, editor keys and save, the new-file prompt, the Changes tab and diff preview, the terminal tab and a real shell run, captured output sanitising, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
+```powershell
+go test ./...
+go build -o bento.exe ./cmd/bento
+.\bento.exe
+.\scripts\install.ps1 -FromSource   # install the build, then `bento` works
+```
 
-CI runs gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
+`go run ./cmd/bento [dir]` is the no-install loop on every platform: it compiles to a temp directory and leaves PATH and the repository alone. `--from-source` and `-FromSource` install the checkout itself, so a branch can be tried before a release exists. `make` is not assumed on Windows; the `go build -o dist\bento_windows_amd64.exe ./cmd/bento` form produces the same release asset.
 
-`scripts/release.sh` is the only thing that publishes a release; nothing runs on merge. CI (`.github/workflows/ci.yml`) only checks gofmt, `go vet`, `go test`, and `make build` on Ubuntu and macOS.
+Go 1.23 or newer. Dependencies are Go modules. The platform targets set `GOOS` and `GOARCH` and write `dist/bento_<os>_<arch>`, plus `.exe` on Windows; those are the installers' release asset names.
+
+Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, editor keys and save, the new-file prompt, the Changes tab and diff preview, the terminal tab and a real shell run, captured output sanitising, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. Process tests live in `run_unix_test.go` and `run_windows_test.go`; the two output tests that use `printf` and `clear` skip on Windows. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
+
+CI runs gofmt, `go vet`, `go test`, and a build on Ubuntu, macOS, and Windows. The Windows job builds `bento.exe` and uploads it as the `bento-windows-amd64` artifact, so a platform change can be tested before a release.
+
+`scripts/release.sh` is the only thing that publishes a release; nothing runs on merge. CI (`.github/workflows/ci.yml`) only checks gofmt, `go vet`, `go test`, and a build on Ubuntu, macOS, and Windows.
 
 ## Website
 
@@ -75,20 +101,22 @@ Never publish a release while delivering a feature. Releases are a separate step
 
 Every pull request body carries a user-facing `## Changelog`, and that changelog is kept current as the branch grows: when you add or change something, update the PR body in the same pass. It becomes the release notes. Add a `Release: <version>` line only when the PR is the release PR. Keep the author yours; do not add a tool or assistant as a co-author.
 
+Every commit is GPG-signed: `commit.gpgsign` is on and the key must be the one uploaded to the maintainer's GitHub account, or GitHub will not mark the commit verified. Never pass `--no-gpg-sign`, never wrap `gpg.program`, and never rewrite a commit unsigned. If signing hangs, run `gpgconf --launch gpg-agent` and retry; confirm with `git log -1 --show-signature` (`%G?` is `G`) before finishing.
+
 ## Releases
 
 `scripts/release.sh` (or `make release V=<version>`) publishes; merging never does. The user merges the release pull request, then runs the script on `main`:
 
 1. It takes the version from the merged pull request's `Release:` line, or from an argument, and stops if the tag or release already exists.
 2. It collects the `## Changelog` bullets of every pull request merged since the last release — falling back to a cleaned-up title — and writes the notes with a compare link.
-3. It runs `go test ./...`, builds `bento_<os>_<arch>` for macOS and Linux with `main.version` set, and writes `SHA256SUMS`.
+3. It runs `go test ./...`, builds `bento_<os>_<arch>` for macOS, Linux, and Windows (`bento_windows_<arch>.exe`) with `main.version` set, and writes `SHA256SUMS`.
 4. It tags `v<version>`, pushes the tag, and creates the GitHub release with the notes and assets.
 
 `--dry-run` prints the version and notes and changes nothing; `--since <tag>` sets the base tag. The script does not commit, so the release pull request must bump the version in `cmd/bento/main.go` and `Makefile`; the script warns when the source and the release version differ.
 
 ## UI conventions
 
-The minimum window is **72 × 22** cells; smaller windows show a single "make the terminal larger" panel.
+The minimum window is **72 × 22** cells; smaller windows show a single "make the terminal larger" panel. macOS Terminal and Windows Terminal 1.x or newer are the targets; the legacy Windows console (conhost) is not.
 
 Focus order is Main, Files, History, Build. The app starts on Files. Tab moves Files → History → Build → Main. Shift-Tab reverses. Changing focus re-renders the preview so the cursor row only highlights while Main is focused.
 
@@ -186,9 +214,9 @@ Theme tokens:
 | select | `#1B5E5A` | active tab chip, selected row in the focused pane |
 | select dim | `#14343C` | inactive tab chip, selected row in an unfocused pane |
 
-Every pane sets foreground and background. Do not rely on the terminal's default colors. The syntax palette lives in `internal/syntax/highlight.go` and mirrors these tokens. Stay with Unicode that Menlo and SF Mono provide: `⎇ ↑ ↓ ● ▶ ✓ ✗ ▸ ▾ ≡ ± ▌ + · …` and rounded box drawing. Do not require a Nerd Font, do not use braille spinner frames, and do not use `⏎` in hints (write `enter`).
+Every pane sets foreground and background. Do not rely on the terminal's default colors. The syntax palette lives in `internal/syntax/highlight.go` and mirrors these tokens. Stay with Unicode that Menlo and SF Mono (macOS) and Cascadia Mono or Consolas (Windows) provide: `⎇ ↑ ↓ ● ▶ ✓ ✗ ▸ ▾ ≡ ± ▌ + · …` and rounded box drawing. Do not require a Nerd Font, do not use braille spinner frames, and do not use `⏎` in hints (write `enter`).
 
-Build mode defaults to automatic. `a` switches to manual. `c` cancels the process group. `r` reruns the last argv.
+Build mode defaults to automatic. `a` switches to manual. `c` cancels the command and its children. `r` reruns the last argv.
 
 ### Empty states
 
@@ -202,6 +230,12 @@ Build mode defaults to automatic. `a` switches to manual. `c` cancels the proces
 
 ## Install
 
-`scripts/install.sh` accepts `--with-zsh` and `--no-zsh`. The default and `--no-zsh` install the binary only, to `~/.local/bin` unless `BENTO_INSTALL_DIR` is set. `--with-zsh` appends a marked PATH export and a `bento` function to `~/.zshrc` and does not edit the prompt. Both flags together is an error.
+Installation and development are separate per platform. Installation is the published binary; development is a build from a checkout.
 
-The script prefers `https://github.com/$BENTO_REPO/releases/latest/download/bento_<os>_<arch>` (`BENTO_REPO` defaults to `StarkDroid/Bento-Terminal`). If that asset is not a Mach-O or ELF binary, it builds with Go. That fallback is the only path that needs a toolchain. Say so in the README if the asset names or the fallback change.
+`scripts/install.sh` is the macOS and Linux installer. It accepts `--with-zsh`, `--no-zsh`, and `--from-source`. The default and `--no-zsh` install the binary only, to `~/.local/bin` unless `BENTO_INSTALL_DIR` is set, and print the path to run. `--with-zsh` appends a marked PATH export and a `bento` function to `~/.zshrc` and does not edit the prompt. Both zsh flags together is an error. `--from-source` builds the checkout the script lives in instead of downloading the release, then falls back to a clone.
+
+`scripts/install.ps1` is the Windows path. It takes `-InstallDir`, `-FromSource`, `-Source`, and `-NoPath`. It downloads `bento_windows_<arch>.exe` for the machine (arm64 or amd64) into `%LOCALAPPDATA%\bento` unless `-InstallDir` or `BENTO_INSTALL_DIR` is set, checks that the file runs, then appends that folder to the user PATH as a registry write that keeps `%VAR%` entries unexpanded and broadcasts the environment change, unless `-NoPath`. `-FromSource` or `-Source` builds the checkout instead; that is the flag a branch dev uses, because the release does not contain the branch. `BENTO_REPO` overrides the release repository and `BENTO_REPO_URL` the clone URL. Open a new Windows Terminal afterwards; the binary is unsigned, so SmartScreen may ask once.
+
+Both scripts prefer `https://github.com/$BENTO_REPO/releases/latest/download/` and fall back to `go build` from a local checkout or a shallow clone. They validate the download before replacing the installed binary (Mach-O or ELF magic in `install.sh`, `MZ` in `install.ps1`). That fallback is the only path that needs a toolchain (Go 1.23+). Keep the two in step: a new flag, directory rule, or fallback on one needs its equivalent on the other, and the README and docs page must state the per-platform install and develop commands. Say so in the README if the asset names or the fallback change.
+
+For a branch without installing anything, use `go run ./cmd/bento [dir]`, `go build -o bento.exe ./cmd/bento`, or `make windows-amd64`. A Windows dev loop lives in Build and test.

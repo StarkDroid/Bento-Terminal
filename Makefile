@@ -3,7 +3,7 @@ PREFIX ?= $(HOME)/.local
 VERSION ?= 0.4.1
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build install test release darwin-arm64 darwin-amd64 linux-arm64 linux-amd64 clean
+.PHONY: build install test release darwin-arm64 darwin-amd64 linux-arm64 linux-amd64 windows-amd64 windows-arm64 clean
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/bento
@@ -35,6 +35,14 @@ linux-arm64:
 linux-amd64:
 	mkdir -p dist
 	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/bento_linux_amd64 ./cmd/bento
+
+windows-amd64:
+	mkdir -p dist
+	GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/bento_windows_amd64.exe ./cmd/bento
+
+windows-arm64:
+	mkdir -p dist
+	GOOS=windows GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o dist/bento_windows_arm64.exe ./cmd/bento
 
 clean:
 	rm -f $(BIN)

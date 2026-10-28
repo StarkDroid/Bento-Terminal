@@ -3,6 +3,7 @@ package files
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -16,7 +17,7 @@ func TestTreeOrderExpandAndSkip(t *testing.T) {
 	mustWrite(t, filepath.Join(dir, "node_modules", "skip.js"), "nope")
 	mustMkdir(t, filepath.Join(dir, ".git"))
 	mustWrite(t, filepath.Join(dir, ".git", "config"), "hidden")
-	if err := os.Symlink(filepath.Join(dir, "a.txt"), filepath.Join(dir, "link.txt")); err != nil {
+	if err := os.Symlink(filepath.Join(dir, "a.txt"), filepath.Join(dir, "link.txt")); err != nil && runtime.GOOS != "windows" {
 		t.Fatal(err)
 	}
 
