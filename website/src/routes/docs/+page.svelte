@@ -426,8 +426,9 @@ bento_windows_arm64.exe
 SHA256SUMS</pre>
 				<p>
 					Notes are the changelog from each merged pull request, so a release page reads as a
-					short list of what changed. Maintainers publish with <code>scripts/release.sh</code>;
-					merging a pull request on its own publishes nothing.
+					short list of what changed. Every merged pull request publishes a release: a feature
+					bumps the minor version, a fix or chore bumps the patch, and a breaking change bumps the
+					major (the minor while the project is 0.x).
 				</p>
 				<p>
 					<a href="https://github.com/StarkDroid/Bento-Terminal/releases/latest">Latest release →</a>

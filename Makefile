@@ -1,6 +1,6 @@
 BIN := bento
 PREFIX ?= $(HOME)/.local
-VERSION ?= 0.4.1
+VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
 .PHONY: build install test release darwin-arm64 darwin-amd64 linux-arm64 linux-amd64 windows-amd64 windows-arm64 clean
@@ -16,9 +16,9 @@ test:
 	go test ./...
 
 # Publishes a release from the pull requests merged since the last one. Pass a
-# version with V=0.5.0, or leave it out to use the merged PR's Release: line.
+# version with V=0.5.0, or leave it out to let the script compute one.
 release:
-	./scripts/release.sh $(V)
+	./scripts/release.sh $(if $(V),$(V),--auto)
 
 darwin-arm64:
 	mkdir -p dist

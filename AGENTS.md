@@ -26,7 +26,8 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
 - `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it with the process group (`run_unix.go`: `Setpgid` and `SIGTERM`; `run_windows.go`: `CREATE_NEW_PROCESS_GROUP` and `taskkill /T`). No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal tab through `$SHELL -c` on Unix and `%COMSPEC% /C` on Windows.
 - `scripts/install.sh` — macOS and Linux entrypoint. Release asset first, then `go build` from a local checkout or a clone; `--from-source` skips the download.
 - `scripts/install.ps1` — Windows entrypoint. The same order: the `.exe` release asset for the machine's architecture, then a build from the checkout this file lives in or a clone (`-FromSource`, `-Source`). Installs `bento.exe` into `%LOCALAPPDATA%\bento` and adds that folder to the user PATH (`-NoPath` skips it), so a new Windows Terminal finds `bento`.
-- `scripts/release.sh` — the release. Tests, builds the six assets, writes `SHA256SUMS`, tags, and publishes the GitHub release from the merged PRs' changelogs.
+- `scripts/release.sh` — the release. Tests, builds the six assets, writes `SHA256SUMS`, tags, and publishes the GitHub release from the merged PRs' changelogs; `--auto` computes the version.
+- `.github/workflows/release.yml` — runs `scripts/release.sh --auto` on every push to `main`, so merging a pull request publishes the release.
 - `website` — the GitHub Pages site: SvelteKit prerendered to static HTML. It is a separate Node project and the Go build never touches it.
 
 There is no `internal/install`. The installers are shell and PowerShell only.
@@ -74,7 +75,7 @@ Tests cover command detection fixtures in `internal/build/testdata`, git status 
 
 CI runs gofmt, `go vet`, `go test`, and a build on Ubuntu, macOS, and Windows. The Windows job builds `bento.exe` and uploads it as the `bento-windows-amd64` artifact, so a platform change can be tested before a release.
 
-`scripts/release.sh` is the only thing that publishes a release; nothing runs on merge. CI (`.github/workflows/ci.yml`) only checks gofmt, `go vet`, `go test`, and a build on Ubuntu, macOS, and Windows.
+`scripts/release.sh` publishes and `.github/workflows/release.yml` runs it with `--auto` on every push to `main`; CI (`.github/workflows/ci.yml`) only checks gofmt, `go vet`, `go test`, and a build on Ubuntu, macOS, and Windows. A push with no merged pull request since the last tag publishes nothing.
 
 ## Website
 
@@ -99,22 +100,24 @@ Site changes go through a pull request and never cut a release. The Pages workfl
 
 Never commit a feature straight to `main`, and never merge a pull request yourself. Make a branch, commit there in logical chunks, push it, and open a pull request — for every change, however small — then leave the merge to the user. Only a pull request lands on `main`, and `main` stays green because CI runs on the PR.
 
-Never publish a release while delivering a feature. Releases are a separate step the user starts after merging; see Releases.
+Merging a pull request publishes its release through `.github/workflows/release.yml`; never tag or run `scripts/release.sh` from a feature branch, and never add release steps to a feature pull request. See Releases.
 
-Every pull request body carries a user-facing `## Changelog`, and that changelog is kept current as the branch grows: when you add or change something, update the PR body in the same pass. It becomes the release notes. Add a `Release: <version>` line only when the PR is the release PR. Keep the author yours; do not add a tool or assistant as a co-author.
+Every pull request body carries a user-facing `## Changelog`, and that changelog is kept current as the branch grows: when you add or change something, update the PR body in the same pass. It becomes the release notes. Add a `Release: <version>` line only to override the version the merge would otherwise compute. Keep the author yours; do not add a tool or assistant as a co-author.
 
 Every commit is GPG-signed: `commit.gpgsign` is on and the key must be the one uploaded to the maintainer's GitHub account, or GitHub will not mark the commit verified. Never pass `--no-gpg-sign`, never wrap `gpg.program`, and never rewrite a commit unsigned. If signing hangs, run `gpgconf --launch gpg-agent` and retry; confirm with `git log -1 --show-signature` (`%G?` is `G`) before finishing.
 
 ## Releases
 
-`scripts/release.sh` (or `make release V=<version>`) publishes; merging never does. The user merges the release pull request, then runs the script on `main`:
+Every push to `main` publishes a release from `.github/workflows/release.yml`, which runs `scripts/release.sh --auto` on the latest `main`:
 
-1. It takes the version from the merged pull request's `Release:` line, or from an argument, and stops if the tag or release already exists.
+1. It takes the version from a `Release: <version>` line on the merged pull requests when one is present. Otherwise it bumps the latest tag by the strongest change in the range: a `major`, `minor`, or `patch` label wins, then a `!` title or a `BREAKING CHANGE` footer, then the conventional type (`feat` bumps the minor, anything else the patch). While the major is 0, a breaking change bumps the minor.
 2. It collects the `## Changelog` bullets of every pull request merged since the last release — falling back to a cleaned-up title — and writes the notes with a compare link.
 3. It runs `go test ./...`, builds `bento_<os>_<arch>` for macOS, Linux, and Windows (`bento_windows_<arch>.exe`) with `main.version` set, and writes `SHA256SUMS`.
 4. It tags `v<version>`, pushes the tag, and creates the GitHub release with the notes and assets.
 
-`--dry-run` prints the version and notes and changes nothing; `--since <tag>` sets the base tag. The script does not commit, so the release pull request must bump the version in `cmd/bento/main.go` and `Makefile`; the script warns when the source and the release version differ.
+`--auto` exits without releasing when no pull request has merged since the last tag, or when the computed tag already exists, so reruns and non-PR pushes are safe. `--dry-run` prints the version and notes and changes nothing; `--since <tag>` sets the base tag. Run the script by hand with an explicit version (`scripts/release.sh 0.5.0`) only for a version the automation cannot infer.
+
+The tag and the release are the version of record; nothing is committed back to `main`. `make build` stamps the latest tag into the binary, and a plain `go build` reports `dev`.
 
 ## UI conventions
 

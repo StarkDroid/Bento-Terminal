@@ -9,7 +9,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var version = "0.4.1"
+// version is stamped by the release build. A plain go build reports dev, and
+// make build stamps the latest tag.
+var version = "dev"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
