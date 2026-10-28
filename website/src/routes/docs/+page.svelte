@@ -210,7 +210,7 @@ go build -o bento.exe ./cmd/bento
 							<tbody>
 								<tr><th><kbd>tab</kbd> <kbd>shift+tab</kbd></th><td>Next or previous box</td></tr>
 								<tr><th><kbd>?</kbd></th><td>Commands for this box</td></tr>
-								<tr><th><kbd>,</kbd></th><td>Settings and version</td></tr>
+								<tr><th><kbd>,</kbd></th><td>Settings, version, and links</td></tr>
 								<tr><th><kbd>q</kbd></th><td>Quit</td></tr>
 							</tbody>
 						</table>
@@ -262,7 +262,9 @@ go build -o bento.exe ./cmd/bento
 				</div>
 				<p class="muted">
 					In the Terminal tab every printable key goes to the prompt, including <kbd>q</kbd>;
-					<kbd>tab</kbd> still moves between boxes. While editing, printable keys type.
+					<kbd>tab</kbd> still moves between boxes. While editing, printable keys type. The about
+					overlay from <kbd>,</kbd> also carries chips for the project on GitHub, the command
+					list, quit, and close; a click runs one.
 				</p>
 			</div>
 

@@ -350,7 +350,7 @@ func TestSettingsShowsAboutAndVersion(t *testing.T) {
 		t.Fatal("comma should open settings")
 	}
 	plain := stripANSI(m.View())
-	for _, want := range []string{"Settings · About", "v9.9.9", "github.com/StarkDroid/Bento-Terminal", "esc  close"} {
+	for _, want := range []string{"Settings · About", "v9.9.9", "github", "? commands", "q quit", "esc close"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("settings missing %q\n%s", want, plain)
 		}
