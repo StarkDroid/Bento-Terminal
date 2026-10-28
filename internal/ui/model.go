@@ -137,6 +137,23 @@ type Model struct {
 	newFileOpen bool
 	newFilePath string
 	newFileErr  string
+
+	finderOpen        bool
+	finderInput       string
+	finderCursor      int
+	finderInputCursor int
+	finderScroll      int
+	finderFiles       []string
+	finderReady       bool
+	finderMatches     []fileMatch
+	finderLoading     bool
+	finderErr         string
+
+	findOpen    bool
+	findInput   string
+	findCursor  int
+	findMatches []findMatch
+	findIndex   int
 }
 
 // New returns a TUI model rooted at the project directory.

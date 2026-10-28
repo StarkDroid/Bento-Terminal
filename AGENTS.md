@@ -10,9 +10,11 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
 - `internal/ui` — Bubble Tea model, bento layout, theme, focus, keys, and rendering. Scroll position for the preview, the build output, and the terminal is a Bubbles viewport. The running indicator is a Bubbles spinner. Bindings are Bubbles keys.
   - `commands.go` — one action table per box. Actions carry their binding and a pane-specific description, and `runAction` is the single dispatcher. This table drives both key handling and the `?` command list.
   - `palette.go` — the per-box command list: open/close, cursor movement, enter to run, direct shortcut to run.
-  - `settings.go` — the settings overlay: wordmark, version, about, and the `github`/`commands`/`quit`/`close` chips.
+  - `settings.go` — the settings overlay: wordmark, version, the tagline and two-column feature list, and the `github`/`commands`/`quit`/`close` chips.
   - `browser.go` — hands the project URL to the default browser.
-  - `codeview.go` — renders the file preview: gutter, fold markers, caret row and block, highlighted spans, and collapsed-block summaries.
+  - `codeview.go` — renders the file preview: gutter, fold markers, caret row and block, highlighted spans, find highlight ranges, and collapsed-block summaries.
+  - `finder.go` — project file index, fuzzy ranking, and the file search modal.
+  - `find.go` — find-in-file matching, match jumps, and the find row.
   - `preview.go` — line numbering, wrapping, and diff colouring helpers for plain previews.
   - `paint.go` — piece strings, left/right joins, tab chips, titles, rows, and panel frames.
   - `output.go` — sanitises captured process output before it reaches a viewport.
@@ -21,7 +23,7 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
   - `view.go` — pane bodies, the History and Build tab titles, footers, and overlays.
 - `internal/syntax` — Chroma-based language detection, highlighting with the lagoon palette, and foldable block discovery. Go and Python use dedicated strategies; the common brace languages share a balanced-brace scanner. Highlighting is capped at 8,000 lines.
 - `internal/git` — parses `git status --porcelain=v2 --branch` and `git log` lines (`hash`, unix time, subject, tab-separated). `Load` shells out to git. Untracked paths count as unstaged. `Status.Files` keeps one `FileStatus` per changed path, and `Diff` returns the staged and unstaged patch, with a synthesised new-file patch for untracked files.
-- `internal/files` — lazy directory tree and a bounded text preview. `Create` and `Save` resolve project-relative paths and reject anything outside the project; `Tree.Refresh` re-reads loaded folders while keeping them open. Dot entries are hidden. `node_modules`, `vendor`, `target`, `__pycache__`, `dist`, `.next`, `.venv`, and `venv` are skipped. Symlinks are not followed.
+- `internal/files` — lazy directory tree, a full file list for search, and a bounded text preview. `Create` and `Save` resolve project-relative paths and reject anything outside the project; `Tree.Refresh` re-reads loaded folders while keeping them open; `List` walks every file for the finder with the same skips. Dot entries are hidden. `node_modules`, `vendor`, `target`, `__pycache__`, `dist`, `.next`, `.venv`, and `venv` are skipped. Symlinks are not followed.
 - `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it with the process group (`run_unix.go`: `Setpgid` and `SIGTERM`; `run_windows.go`: `CREATE_NEW_PROCESS_GROUP` and `taskkill /T`). No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal tab through `$SHELL -c` on Unix and `%COMSPEC% /C` on Windows.
 - `scripts/install.sh` — macOS and Linux entrypoint. Release asset first, then `go build` from a local checkout or a clone; `--from-source` skips the download.
 - `scripts/install.ps1` — Windows entrypoint. The same order: the `.exe` release asset for the machine's architecture, then a build from the checkout this file lives in or a clone (`-FromSource`, `-Source`). Installs `bento.exe` into `%LOCALAPPDATA%\bento` and adds that folder to the user PATH (`-NoPath` skips it), so a new Windows Terminal finds `bento`.
@@ -69,7 +71,7 @@ go build -o bento.exe ./cmd/bento
 
 Go 1.23 or newer. Dependencies are Go modules. The platform targets set `GOOS` and `GOARCH` and write `dist/bento_<os>_<arch>`, plus `.exe` on Windows; those are the installers' release asset names.
 
-Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, editor keys and save, the new-file prompt, the Changes tab and diff preview, the terminal tab and a real shell run, captured output sanitising, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. Process tests live in `run_unix_test.go` and `run_windows_test.go`; the two output tests that use `printf` and `clear` skip on Windows. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
+Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, file listing and fuzzy ranking, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, the finder modal, find-in-file jumps and tab-aware highlight cells, editor keys and save, the new-file prompt, the Changes tab and diff preview, the terminal tab and a real shell run, captured output sanitising, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. Process tests live in `run_unix_test.go` and `run_windows_test.go`; the two output tests that use `printf` and `clear` skip on Windows. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
 
 CI runs gofmt, `go vet`, `go test`, and a build on Ubuntu, macOS, and Windows. The Windows job builds `bento.exe` and uploads it as the `bento-windows-amd64` artifact, so a platform change can be tested before a release.
 
@@ -130,11 +132,12 @@ Each box reserves its last body row for a footer of its own shortcuts. Footer hi
 | Box | Hints |
 | --- | --- |
 | Main, editing | `↑↓←→ move · ctrl+s save · esc done` |
-| Main, highlighted file | `↑↓←→ move · [ ] fold · e edit · ? keys` |
-| Main, file with no detected language | `↑↓←→ move · e edit · ? keys` |
+| Main, finding | `↑↓ match · enter next · esc close` |
+| Main, highlighted file | `↑↓←→ move · [ ] fold · e edit · ctrl+f find · ? keys` |
+| Main, file with no detected language | `↑↓←→ move · e edit · ctrl+f find · ? keys` |
 | Main, commit or patch | `↑↓ scroll · ? keys` |
-| Main, home | `n new · ? keys · tab panes` |
-| Files | `↑↓ · enter open · ? keys` |
+| Main, home | `n new · ctrl+p find · ? keys · tab panes` |
+| Files | `↑↓ · enter · ctrl+p find · ? keys` |
 | History | `↑↓ · ←→ tab · ? keys` |
 | Build | `↑↓ pick · enter run · a mode · r rerun · ←→ tab · ? keys` |
 | Terminal | `enter run · ctrl+c stop · esc back · ? keys` |
@@ -164,6 +167,14 @@ The preview is capped at 256 KB. The title is the file's tab: ` ≡ name`, then 
 The Main pane has a source caret. `↑` `↓` move it by line, `←` `→` move it by character (wrapping at line ends), `pgup`/`pgdown` page it, and the viewport follows. `[` folds the innermost function or class at the caret, `]` unfolds it, and `enter` toggles it. A folded block keeps its opening line with a `▸` marker and a `… N lines` summary; open blocks use `▾`. The caret row uses fill `#14343C`, a `▌` marker when the line is not a fold start, and a lagoon-bright block over the character at the caret.
 
 Commit and patch previews have no gutter, cursor, highlighting, or folding; they scroll as plain text. Patches are coloured: `+` palm, `-` coral, `@@` reef, and file headers moss.
+
+### Search
+
+`ctrl+p` opens the project file finder from any box except the Terminal tab. The first open loads `files.List` once and the list is cached for the session. Input ranks a case-insensitive subsequence of the slash path; word starts, consecutive runs, and basename hits score highest. `↑`/`↓` (or `pgup`/`pgdown`) move the selection, `enter` opens the file in Main and focuses it, and `esc` closes. Matched runes are sun and bold, and the selected row uses the select fill. The finder stays closed while the editor is open, so an unsaved buffer is never replaced.
+
+`ctrl+f` opens the find bar in the first body row of Main for the open text file, including while editing; matches come from `sourceLines()`, so the buffer is searched. It is case-insensitive and non-overlapping. Every match is sun and the current one is lagoon bright; the caret jumps to the current match and a fold hiding it opens. `↑`/`↓` and `enter` step through matches with wrap-around, `esc` closes and keeps the caret, and the bar shows `n/m`. While the bar is open the Main footer becomes `↑↓ match · enter next · esc close`.
+
+The finder input caret and the selection cursor are separate fields: `finderInputCursor` moves with left/right/home/end while `finderCursor` picks a result. In-file find has a single `findCursor` for the query.
 
 ### Editing
 

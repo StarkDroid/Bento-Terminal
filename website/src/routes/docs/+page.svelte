@@ -209,6 +209,8 @@ go build -o bento.exe ./cmd/bento
 						<table>
 							<tbody>
 								<tr><th><kbd>tab</kbd> <kbd>shift+tab</kbd></th><td>Next or previous box</td></tr>
+								<tr><th><kbd>ctrl+p</kbd></th><td>Find a file in the project</td></tr>
+								<tr><th><kbd>ctrl+f</kbd></th><td>Find in the open file</td></tr>
 								<tr><th><kbd>?</kbd></th><td>Commands for this box</td></tr>
 								<tr><th><kbd>,</kbd></th><td>Settings, version, and links</td></tr>
 								<tr><th><kbd>q</kbd></th><td>Quit</td></tr>
@@ -265,6 +267,11 @@ go build -o bento.exe ./cmd/bento
 					<kbd>tab</kbd> still moves between boxes. While editing, printable keys type. The about
 					overlay from <kbd>,</kbd> also carries chips for the project on GitHub, the command
 					list, quit, and close; a click runs one.
+				</p>
+				<p class="muted">
+					<kbd>ctrl+p</kbd> filters the project's files as you type; <kbd>enter</kbd> opens the
+					selection. <kbd>ctrl+f</kbd> finds in the open file; <kbd>enter</kbd> or <kbd>↑</kbd>
+					<kbd>↓</kbd> steps through matches, <kbd>esc</kbd> closes.
 				</p>
 			</div>
 

@@ -46,6 +46,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.systems = msg.result.Systems
 		m.buildReady = true
 		return m.clampCmd(), nil
+	case filesListedMsg:
+		m.finderLoading = false
+		m.finderErr = ""
+		if msg.err != nil {
+			m.finderErr = msg.err.Error()
+		} else {
+			m.finderReady = true
+			m.finderFiles = msg.files
+		}
+		if m.finderOpen {
+			m = m.rankFinder()
+		}
+		return m, nil
 	case runStartedMsg:
 		return m.onStarted(msg)
 	case runLineMsg:
@@ -65,6 +78,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.newFileOpen {
 		return m.onNewFileKey(msg)
+	}
+	if m.finderOpen {
+		return m.onFinderKey(msg)
+	}
+	if m.findOpen {
+		return m.onFindKey(msg)
 	}
 	if m.previewEditing {
 		return m.onEditorKey(msg)
@@ -101,7 +120,7 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if m.settingsOpen {
 		return m.settingsClick(msg)
 	}
-	if m.paletteOpen || m.newFileOpen {
+	if m.paletteOpen || m.newFileOpen || m.finderOpen || m.findOpen {
 		return m, nil
 	}
 	lay := computeLayout(m.width, m.height)

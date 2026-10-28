@@ -27,7 +27,7 @@ type codeSpan struct {
 // buildCode renders the current file preview and returns its rows plus the
 // source lines that are visible after folding.
 func (m Model) buildCode() ([]previewRow, []int) {
-	return renderCode(m.sourceLines(), m.previewSpans, m.previewBlocks, m.previewFolds, m.previewCursor, m.previewCol, m.preview.Width, m.focus == PaneMain)
+	return renderCode(m.sourceLines(), m.previewSpans, m.previewBlocks, m.previewFolds, m.previewCursor, m.previewCol, m.preview.Width, m.focus == PaneMain, m.findMatches, m.findIndex)
 }
 
 // refreshSpans tokenises the preview once, so resizing and folding only redo
@@ -59,7 +59,7 @@ func (m Model) refreshSpans() Model {
 	return m
 }
 
-func renderCode(source []string, spans [][]codeSpan, blocks []syntax.Block, folds map[int]bool, cursor, col, width int, active bool) ([]previewRow, []int) {
+func renderCode(source []string, spans [][]codeSpan, blocks []syntax.Block, folds map[int]bool, cursor, col, width int, active bool, matches []findMatch, current int) ([]previewRow, []int) {
 	if width < 1 || len(source) == 0 {
 		return nil, nil
 	}
@@ -70,7 +70,7 @@ func renderCode(source []string, spans [][]codeSpan, blocks []syntax.Block, fold
 	gutterW := len(strconv.Itoa(len(source)))
 	textW := width - gutterW - 3 - 2
 	if textW < 1 {
-		return renderCodeNarrow(source, spans, blocks, folds, cursor, width, active)
+		return renderCodeNarrow(source, spans, blocks, folds, cursor, width, active, matches, current)
 	}
 	rows := make([]previewRow, 0, len(source))
 	visible := make([]int, 0, len(source))
@@ -105,7 +105,7 @@ func renderCode(source []string, spans [][]codeSpan, blocks []syntax.Block, fold
 		}
 		b.WriteString(lipgloss.NewStyle().Foreground(markerFG).Background(bg).Render(marker))
 		lineSpans := spanFor(source, spans, i)
-		code, used := renderSpans(lineSpans, textW, bg, cursorCell)
+		code, used := renderSpans(lineSpans, textW, bg, cursorCell, lineHighlights(matches, current, i, source[i]))
 		b.WriteString(code)
 		rowWidth := gutterW + 3 + 2 + used
 		if collapsed {
@@ -130,7 +130,7 @@ func renderCode(source []string, spans [][]codeSpan, blocks []syntax.Block, fold
 }
 
 // renderCodeNarrow is the very narrow fallback: line numbers and text only.
-func renderCodeNarrow(source []string, spans [][]codeSpan, blocks []syntax.Block, folds map[int]bool, cursor, width int, active bool) ([]previewRow, []int) {
+func renderCodeNarrow(source []string, spans [][]codeSpan, blocks []syntax.Block, folds map[int]bool, cursor, width int, active bool, matches []findMatch, current int) ([]previewRow, []int) {
 	rows := make([]previewRow, 0, len(source))
 	visible := make([]int, 0, len(source))
 	byStart := make(map[int]syntax.Block, len(blocks))
@@ -143,7 +143,7 @@ func renderCodeNarrow(source []string, spans [][]codeSpan, blocks []syntax.Block
 			bg = colorSelectDim
 		}
 		lineSpans := spanFor(source, spans, i)
-		code, used := renderSpans(lineSpans, width, bg, -1)
+		code, used := renderSpans(lineSpans, width, bg, -1, lineHighlights(matches, current, i, source[i]))
 		if used < width {
 			code += lipgloss.NewStyle().Background(bg).Width(width - used).Render("")
 		}
@@ -163,52 +163,122 @@ func spanFor(source []string, spans [][]codeSpan, i int) []codeSpan {
 	return []codeSpan{{text: source[i], fg: colorSand}}
 }
 
+// codeHighlight is a cell range on one rendered line. current marks the match
+// the find bar is sitting on.
+type codeHighlight struct {
+	start   int
+	end     int
+	current bool
+}
+
+// lineHighlights converts this line's find matches into cell ranges.
+func lineHighlights(matches []findMatch, current, line int, text string) []codeHighlight {
+	if len(matches) == 0 {
+		return nil
+	}
+	var out []codeHighlight
+	for i, match := range matches {
+		if match.line != line {
+			continue
+		}
+		start := cellOffset(text, match.start)
+		end := cellOffset(text, match.end)
+		if end <= start {
+			continue
+		}
+		out = append(out, codeHighlight{start: start, end: end, current: i == current})
+	}
+	return out
+}
+
+type spanStyle struct {
+	fg     lipgloss.TerminalColor
+	bg     lipgloss.TerminalColor
+	bold   bool
+	italic bool
+}
+
 // renderSpans draws styled spans, expanding tabs and cutting at limit cells.
-// A non-negative cursor cell is drawn as a block caret.
-func renderSpans(spans []codeSpan, limit int, bg lipgloss.TerminalColor, cursor int) (string, int) {
+// A non-negative cursor cell is drawn as a block caret; find highlights sit
+// under the caret.
+func renderSpans(spans []codeSpan, limit int, bg lipgloss.TerminalColor, cursor int, highlights []codeHighlight) (string, int) {
 	if limit < 1 {
 		return "", 0
+	}
+	type styledRune struct {
+		text   string
+		fg     lipgloss.TerminalColor
+		bold   bool
+		italic bool
+	}
+	var runes []styledRune
+	for _, span := range spans {
+		text := strings.ReplaceAll(span.text, "\t", "    ")
+		for _, r := range text {
+			runes = append(runes, styledRune{text: string(r), fg: span.fg, bold: span.bold, italic: span.italic})
+		}
 	}
 	var b strings.Builder
 	used := 0
 	caretDone := cursor < 0
-	caretStyle := lipgloss.NewStyle().Foreground(colorOcean).Background(colorLagoonBright).Bold(true)
-	for _, span := range spans {
-		if used >= limit {
-			break
+	var pending strings.Builder
+	var key spanStyle
+	flush := func() {
+		if pending.Len() == 0 {
+			return
 		}
-		text := strings.ReplaceAll(span.text, "\t", "    ")
-		if text == "" {
-			continue
-		}
-		style := lipgloss.NewStyle().Foreground(span.fg).Background(bg)
-		if span.bold {
+		style := lipgloss.NewStyle().Foreground(key.fg).Background(key.bg)
+		if key.bold {
 			style = style.Bold(true)
 		}
-		if span.italic {
+		if key.italic {
 			style = style.Italic(true)
 		}
-		for text != "" && used < limit {
-			off := cursor - used
-			if caretDone || off < 0 || off >= lipgloss.Width(text) {
-				used, text = writeStyled(&b, style, text, limit, used)
-				break
-			}
-			head, mid, tail := splitAtCell(text, off)
-			if head != "" {
-				b.WriteString(style.Render(head))
-				used += lipgloss.Width(head)
-			}
-			if mid != "" && used+lipgloss.Width(mid) <= limit {
-				b.WriteString(caretStyle.Render(mid))
-				used += lipgloss.Width(mid)
-				caretDone = true
-			}
-			text = tail
-		}
+		b.WriteString(style.Render(pending.String()))
+		pending.Reset()
 	}
+	add := func(text string, next spanStyle) {
+		if pending.Len() > 0 && next != key {
+			flush()
+		}
+		key = next
+		pending.WriteString(text)
+	}
+	for _, r := range runes {
+		cells := lipgloss.Width(r.text)
+		if cells < 1 {
+			cells = 1
+		}
+		if used+cells > limit {
+			break
+		}
+		next := spanStyle{fg: r.fg, bg: bg, bold: r.bold, italic: r.italic}
+		for _, h := range highlights {
+			if used < h.start || used >= h.end {
+				continue
+			}
+			next.fg = colorOcean
+			next.bold = h.current
+			next.italic = false
+			if h.current {
+				next.bg = colorLagoonBright
+			} else {
+				next.bg = colorSun
+			}
+		}
+		if !caretDone && used == cursor {
+			next.fg = colorOcean
+			next.bg = colorLagoonBright
+			next.bold = true
+			next.italic = false
+			caretDone = true
+		}
+		add(r.text, next)
+		used += cells
+	}
+	flush()
 	if !caretDone && cursor >= used && cursor < limit {
-		b.WriteString(caretStyle.Render(" "))
+		b.WriteString(lipgloss.NewStyle().Foreground(colorOcean).Background(colorLagoonBright).Bold(true).Render(" "))
 		used++
 	}
 	return b.String(), used
