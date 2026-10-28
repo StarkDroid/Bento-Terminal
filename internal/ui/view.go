@@ -20,6 +20,9 @@ func (m Model) View() string {
 	if m.newFileOpen {
 		return m.newFileView()
 	}
+	if m.finderOpen {
+		return m.finderView()
+	}
 	if m.paletteOpen {
 		return m.paletteView()
 	}
@@ -55,7 +58,13 @@ func (m Model) renderMain(width, height int) string {
 	switch m.previewKind {
 	case previewFile:
 		title = m.fileTitle(innerW, focused)
-		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
+		if m.findOpen && bodyH > 1 {
+			body = m.findRow(innerW) + "\n" + windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH-1)
+		} else if m.findOpen && bodyH == 1 {
+			body = m.findRow(innerW)
+		} else {
+			body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
+		}
 	case previewCommit:
 		title = paintTitle(" ⎇ "+m.previewTitle, innerW, focused)
 		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
@@ -617,19 +626,22 @@ func (m Model) footerHints(p Pane) []string {
 	case PaneMain:
 		switch m.previewKind {
 		case previewFile:
+			if m.findOpen {
+				return []string{"↑↓ match", "enter next", "esc close"}
+			}
 			if m.previewEditing {
 				return []string{"↑↓←→ move", "ctrl+s save", "esc done"}
 			}
 			if m.previewLang.Detected() {
-				return []string{"↑↓←→ move", "[ ] fold", "e edit", "? keys"}
+				return []string{"↑↓←→ move", "[ ] fold", "e edit", "ctrl+f find", "? keys"}
 			}
-			return []string{"↑↓←→ move", "e edit", "? keys"}
+			return []string{"↑↓←→ move", "e edit", "ctrl+f find", "? keys"}
 		case previewCommit, previewDiff:
 			return []string{"↑↓ scroll", "? keys"}
 		}
-		return []string{"n new", "? keys", "tab panes"}
+		return []string{"n new", "ctrl+p find", "? keys", "tab panes"}
 	case PaneFiles:
-		return []string{"↑↓", "enter open", "? keys"}
+		return []string{"↑↓", "enter", "ctrl+p find", "? keys"}
 	case PaneHistory:
 		return []string{"↑↓", "←→ tab", "? keys"}
 	case PaneBuild:

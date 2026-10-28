@@ -21,6 +21,8 @@ type keyMap struct {
 	Edit      key.Binding
 	New       key.Binding
 	Save      key.Binding
+	FindFile  key.Binding
+	FindText  key.Binding
 	Interrupt key.Binding
 	Settings  key.Binding
 	Help      key.Binding
@@ -48,6 +50,8 @@ func newKeys() keyMap {
 		Edit:      key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit")),
 		New:       key.NewBinding(key.WithKeys("n", "+"), key.WithHelp("n/+", "new file")),
 		Save:      key.NewBinding(key.WithKeys("ctrl+s"), key.WithHelp("ctrl+s", "save")),
+		FindFile:  key.NewBinding(key.WithKeys("ctrl+p"), key.WithHelp("ctrl+p", "find file")),
+		FindText:  key.NewBinding(key.WithKeys("ctrl+f"), key.WithHelp("ctrl+f", "find in file")),
 		Interrupt: key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "stop")),
 		Settings:  key.NewBinding(key.WithKeys(","), key.WithHelp(",", "settings")),
 		Help:      key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "commands")),

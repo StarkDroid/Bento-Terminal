@@ -57,6 +57,9 @@ const (
 	actMainEdit
 	actMainNew
 	actMainSave
+
+	actFindFile
+	actFindText
 )
 
 // action is one keyboard command. Binding supplies the keys and their label;
@@ -144,6 +147,8 @@ func (m Model) globalActions() []action {
 		{actPrev, m.keys.Prev, "focus previous pane"},
 		{actKeys, m.keys.Help, "command list for this pane"},
 		{actSettings, m.keys.Settings, "settings and about"},
+		{actFindFile, m.keys.FindFile, "find a file in the project"},
+		{actFindText, m.keys.FindText, "find in this file"},
 		{actQuit, m.keys.Quit, "quit Bento terminal"},
 	}
 }
@@ -278,6 +283,11 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.openNewFile(), nil
 	case actMainSave:
 		return m.savePreview()
+
+	case actFindFile:
+		return m.openFinder()
+	case actFindText:
+		return m.openFind(), nil
 	}
 	return m, nil
 }
