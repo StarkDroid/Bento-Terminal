@@ -101,6 +101,8 @@ Never publish a release while delivering a feature. Releases are a separate step
 
 Every pull request body carries a user-facing `## Changelog`, and that changelog is kept current as the branch grows: when you add or change something, update the PR body in the same pass. It becomes the release notes. Add a `Release: <version>` line only when the PR is the release PR. Keep the author yours; do not add a tool or assistant as a co-author.
 
+Every commit is GPG-signed: `commit.gpgsign` is on and the key must be the one uploaded to the maintainer's GitHub account, or GitHub will not mark the commit verified. Never pass `--no-gpg-sign`, never wrap `gpg.program`, and never rewrite a commit unsigned. If signing hangs, run `gpgconf --launch gpg-agent` and retry; confirm with `git log -1 --show-signature` (`%G?` is `G`) before finishing.
+
 ## Releases
 
 `scripts/release.sh` (or `make release V=<version>`) publishes; merging never does. The user merges the release pull request, then runs the script on `main`:
