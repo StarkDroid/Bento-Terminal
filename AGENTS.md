@@ -143,7 +143,7 @@ Each box reserves its last body row for a footer of its own shortcuts. Footer hi
 
 Build commands (`a`, `r`, `c`) are listed under Build but work from any box. `q` quits even while the list is open.
 
-`,` opens the settings overlay from any box. It draws the BENTO wordmark, the version passed to `ui.New` by `cmd/bento`, a short about, and a row of chips: `github` opens the repository in the default browser, `? commands` opens the command list, `q quit` quits, and `esc close` closes. `esc` or `,` also closes it. A left click on a chip runs it; other mouse events are ignored while it is open.
+`,` opens the settings overlay from any box. It draws the BENTO wordmark, the version passed to `ui.New` by `cmd/bento`, a one-line tagline with a two-column feature list, and a row of chips: `github` opens the repository in the default browser, `? commands` opens the command list, `q quit` quits, and `esc close` closes. `esc` or `,` also closes it. A left click on a chip runs it; other mouse events are ignored while it is open.
 
 To add a command: add the binding to `keyMap`, add an action to the right `paneActions` case (and `buildActions` if it must work globally), and handle its id in `runAction`. Update the footer hints if the command is important enough to show there.
 

@@ -109,6 +109,28 @@ func TestAboutQuitButtonQuits(t *testing.T) {
 	}
 }
 
+func TestAboutListsFeaturesInTwoColumns(t *testing.T) {
+	m := aboutModel(t)
+	view := stripANSI(m.View())
+	for _, want := range []string{
+		"Everything in reach, nothing in the way.",
+		"Browse the tree",
+		"Review changes",
+		"Run detected builds",
+		"Use your shell",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("about missing %q\n%s", want, view)
+		}
+	}
+	for _, line := range strings.Split(view, "\n") {
+		if strings.Contains(line, "Browse the tree") && strings.Contains(line, "Review changes") {
+			return
+		}
+	}
+	t.Fatalf("features should sit in two columns\n%s", view)
+}
+
 func TestAboutIgnoresClicksOutsideButtons(t *testing.T) {
 	m := aboutModel(t)
 	next, cmd := aboutClick(m, 0, 0)

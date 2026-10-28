@@ -89,8 +89,11 @@ func (m Model) settingsFrame() settingsFrame {
 	rows = append(rows, settingsRow("terminal workspace", colorSand, innerW, true))
 	rows = append(rows, settingsRow(versionLabel(m.version), colorLagoon, innerW, true))
 	rows = append(rows, settingsBlank(innerW))
-	rows = append(rows, settingsRow("A full-screen terminal workspace for the directory you open.", colorSand, innerW, false))
-	rows = append(rows, settingsRow("Preview, fold, browse, and build without leaving the terminal.", colorSandDim, innerW, false))
+	rows = append(rows, settingsRow("Everything in reach, nothing in the way.", colorSand, innerW, true))
+	rows = append(rows, settingsBlank(innerW))
+	for _, feature := range aboutFeatures {
+		rows = append(rows, aboutFeatureRow(feature[0], feature[1], innerW))
+	}
 	rows = append(rows, settingsBlank(innerW))
 
 	buttonRow := len(rows)
@@ -154,11 +157,49 @@ func versionLabel(version string) string {
 	return "v" + version
 }
 
+// aboutFeatures is the two-column feature list, in simple terms.
+var aboutFeatures = [][2]string{
+	{"Browse the tree", "Review changes"},
+	{"Preview and edit", "Run detected builds"},
+	{"Save in place", "Use your shell"},
+}
+
 // aboutButton is one chip in the about row and its offset inside the body.
 type aboutButton struct {
 	id    string
 	x     int
 	piece piece
+}
+
+func aboutFeatureRow(left, right string, innerW int) string {
+	colW := (innerW - 2) / 2
+	if colW < 4 {
+		colW = 4
+	}
+	parts := []piece{
+		pieceText(" ", colorSand, colorPanel),
+		aboutFeatureCell(left, colW),
+		pieceText(" ", colorSand, colorPanel),
+		aboutFeatureCell(right, colW),
+	}
+	return joinPieces(innerW, colorPanel, parts)
+}
+
+func aboutFeatureCell(text string, width int) piece {
+	bullet := lipgloss.NewStyle().
+		Foreground(colorLagoonBright).
+		Background(colorPanel).
+		Render("· ")
+	label := lipgloss.NewStyle().
+		Foreground(colorSand).
+		Background(colorPanel).
+		Render(truncateCells(text, width-2))
+	used := lipgloss.Width(bullet) + lipgloss.Width(label)
+	view := bullet + label
+	if used < width {
+		view += lipgloss.NewStyle().Background(colorPanel).Width(width - used).Render("")
+	}
+	return piece{view: view, width: width}
 }
 
 func aboutRow(innerW int) (string, []aboutButton) {
