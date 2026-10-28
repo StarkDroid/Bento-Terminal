@@ -52,7 +52,7 @@ func (m Model) settingsView() string {
 	rows = append(rows, settingsRow("terminal workspace", colorSand, innerW, true))
 	rows = append(rows, settingsRow(versionLabel(m.version), colorLagoon, innerW, true))
 	rows = append(rows, settingsBlank(innerW))
-	rows = append(rows, settingsRow("A full-screen terminal workspace for one project directory.", colorSand, innerW, false))
+	rows = append(rows, settingsRow("A full-screen terminal workspace for the directory you open.", colorSand, innerW, false))
 	rows = append(rows, settingsRow("Preview, fold, browse, and build without leaving the terminal.", colorSandDim, innerW, false))
 	rows = append(rows, settingsBlank(innerW))
 	rows = append(rows, settingsRow("github.com/StarkDroid/Bento-Terminal", colorPalm, innerW, false))
