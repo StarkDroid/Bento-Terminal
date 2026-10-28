@@ -115,7 +115,7 @@ Every push to `main` publishes a release from `.github/workflows/release.yml`, w
 3. It runs `go test ./...`, builds `bento_<os>_<arch>` for macOS, Linux, and Windows (`bento_windows_<arch>.exe`) with `main.version` set, and writes `SHA256SUMS`.
 4. It tags `v<version>`, pushes the tag, and creates the GitHub release with the notes and assets.
 
-`--auto` exits without releasing when no pull request has merged since the last tag, or when the computed tag already exists, so reruns and non-PR pushes are safe. `--dry-run` prints the version and notes and changes nothing; `--since <tag>` sets the base tag. Run the script by hand with an explicit version (`scripts/release.sh 0.5.0`) only for a version the automation cannot infer.
+`--auto` exits without releasing when no pull request has merged since the last tag, or when the release already exists, so reruns and non-PR pushes are safe; if a run pushed the tag but died before publishing, a rerun finishes the release. `--dry-run` prints the version and notes and changes nothing, and can run on a branch; `--since <tag>` sets the base tag. Run the script by hand with an explicit version (`scripts/release.sh 0.5.0`) only for a version the automation cannot infer.
 
 The tag and the release are the version of record; nothing is committed back to `main`. `make build` stamps the latest tag into the binary, and a plain `go build` reports `dev`.
 

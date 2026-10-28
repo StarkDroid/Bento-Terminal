@@ -263,12 +263,9 @@ fi
 [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "$version is not a version like 0.5.0"
 
 tag="v$version"
+tag_exists=false
 if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-	if $auto; then
-		printf 'release: %s already exists; no release\n' "$tag"
-		exit 0
-	fi
-	die "$tag already exists"
+	tag_exists=true
 fi
 if gh release view "$tag" >/dev/null 2>&1; then
 	if $auto; then
@@ -276,6 +273,13 @@ if gh release view "$tag" >/dev/null 2>&1; then
 		exit 0
 	fi
 	die "release $tag already exists"
+fi
+if $tag_exists; then
+	if $auto; then
+		printf 'release: %s is tagged without a release; finishing it\n' "$tag"
+	else
+		die "$tag already exists"
+	fi
 fi
 
 repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
@@ -323,9 +327,11 @@ fi
 		bento_windows_amd64.exe bento_windows_arm64.exe >SHA256SUMS
 )
 
-printf 'release: tagging %s\n' "$tag"
-git tag -a "$tag" -m "Bento terminal $tag"
-git push origin "$tag"
+if ! $tag_exists; then
+	printf 'release: tagging %s\n' "$tag"
+	git tag -a "$tag" -m "Bento terminal $tag"
+	git push origin "$tag"
+fi
 
 printf 'release: publishing %s\n' "$tag"
 gh release create "$tag" dist/bento_darwin_arm64 dist/bento_darwin_amd64 \
