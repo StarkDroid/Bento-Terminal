@@ -50,7 +50,7 @@
 		<div class="install">
 			<CopyCommand command={install} />
 			<p class="hint">
-				Binary only. <a href="{base}/docs/#install">Install options</a> ·
+				macOS and Linux. <a href="{base}/docs/#install">Windows and install options</a> ·
 				<a href="{base}/docs/">Docs</a>
 			</p>
 		</div>
