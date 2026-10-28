@@ -94,7 +94,7 @@ The landing page reacts to a fine pointer: `+layout.svelte` moves the fixed `.sp
 
 The README banner is `assets/banner.png`, a 2560 × 640 render (2× of 1280 × 320) of `assets/banner.html` made with headless Chrome. It uses the site's mark, palette, and mono font; update the HTML and re-render when the mark, name, or tagline changes.
 
-Site changes go through a pull request and never cut a release. The Pages workflow builds the site on any pull request that touches `website/` and only deploys from `main`.
+Site changes go through a pull request and only deploy from `main`; merging one still publishes a release like any other change. The Pages workflow builds the site on any pull request that touches `website/` and only deploys from `main`.
 
 ## Workflow
 
