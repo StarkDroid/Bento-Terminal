@@ -10,7 +10,8 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
 - `internal/ui` — Bubble Tea model, bento layout, theme, focus, keys, and rendering. Scroll position for the preview, the build output, and the terminal is a Bubbles viewport. The running indicator is a Bubbles spinner. Bindings are Bubbles keys.
   - `commands.go` — one action table per box. Actions carry their binding and a pane-specific description, and `runAction` is the single dispatcher. This table drives both key handling and the `?` command list.
   - `palette.go` — the per-box command list: open/close, cursor movement, enter to run, direct shortcut to run.
-  - `settings.go` — the settings overlay: wordmark, version, and about.
+  - `settings.go` — the settings overlay: wordmark, version, the tagline and two-column feature list, and the `github`/`commands`/`quit`/`close` chips.
+  - `browser.go` — hands the project URL to the default browser.
   - `codeview.go` — renders the file preview: gutter, fold markers, caret row and block, highlighted spans, find highlight ranges, and collapsed-block summaries.
   - `finder.go` — project file index, fuzzy ranking, and the file search modal.
   - `find.go` — find-in-file matching, match jumps, and the find row.
@@ -137,7 +138,7 @@ Each box reserves its last body row for a footer of its own shortcuts. Footer hi
 | Main, finding | `↑↓ match · enter next · esc close` |
 | Main, highlighted file | `↑↓←→ move · [ ] fold · e edit · ctrl+f find · ? keys` |
 | Main, file with no detected language | `↑↓←→ move · e edit · ctrl+f find · ? keys` |
-| Main, commit or patch | `↑↓ scroll · ? keys` |
+| Main, commit or patch | `↑↓ scroll · esc close · ? keys` |
 | Main, home | `n new · ctrl+p find · ? keys · tab panes` |
 | Files | `↑↓ · enter · ctrl+p find · ? keys` |
 | History | `↑↓ · ←→ tab · ? keys` |
@@ -148,7 +149,7 @@ Each box reserves its last body row for a footer of its own shortcuts. Footer hi
 
 Build commands (`a`, `r`, `c`) are listed under Build but work from any box. `q` quits even while the list is open.
 
-`,` opens the settings overlay from any box. It draws the BENTO wordmark, the version passed to `ui.New` by `cmd/bento`, and a short about. `esc` or `,` closes it. Mouse events are ignored while it is open.
+`,` opens the settings overlay from any box. It draws the BENTO wordmark, the version passed to `ui.New` by `cmd/bento`, a one-line tagline with a two-column feature list, and a row of chips: `github` opens the repository in the default browser, `? commands` opens the command list, `q quit` quits, and `esc close` closes. `esc` or `,` also closes it. A left click on a chip runs it; other mouse events are ignored while it is open.
 
 To add a command: add the binding to `keyMap`, add an action to the right `paneActions` case (and `buildActions` if it must work globally), and handle its id in `runAction`. Update the footer hints if the command is important enough to show there.
 
@@ -168,7 +169,7 @@ The preview is capped at 256 KB. The title is the file's tab: ` ≡ name`, then 
 
 The Main pane has a source caret. `↑` `↓` move it by line, `←` `→` move it by character (wrapping at line ends), `pgup`/`pgdown` page it, and the viewport follows. `[` folds the innermost function or class at the caret, `]` unfolds it, and `enter` toggles it. A folded block keeps its opening line with a `▸` marker and a `… N lines` summary; open blocks use `▾`. The caret row uses fill `#14343C`, a `▌` marker when the line is not a fold start, and a lagoon-bright block over the character at the caret.
 
-Commit and patch previews have no gutter, cursor, highlighting, or folding; they scroll as plain text. Patches are coloured: `+` palm, `-` coral, `@@` reef, and file headers moss.
+Commit and patch previews have no gutter, cursor, highlighting, or folding; they scroll as plain text. Patches are coloured: `+` palm, `-` coral, `@@` reef, and file headers moss. `esc` closes the commit or patch and returns Main to the home view; a file preview is left open.
 
 ### Search
 
@@ -204,7 +205,7 @@ Captured output is sanitised by `sanitizeLine` in `output.go` before it reaches 
 
 ### Mouse
 
-Mouse reporting is on (`tea.WithMouseCellMotion`). A left click focuses the box under the pointer and moves its selection; clicking a directory toggles it, clicking a file opens the preview, clicking a commit or a changed path previews it, and clicking a tab label switches tabs. In Main's title, clicking the `+ new file` tab opens the new-file prompt (but not while editing). In Main, a click puts the caret at the start of that source line and, when the line opens a foldable block, toggles that block. The wheel scrolls the box under the pointer by three rows (Build scrolls the command output or the terminal scrollback).
+Mouse reporting is on (`tea.WithMouseCellMotion`). A left click focuses the box under the pointer and moves its selection; clicking a directory toggles it, clicking a file opens the preview, clicking a commit or a changed path previews it, and clicking a tab label switches tabs. In Main's title, clicking the `+ new file` tab opens the new-file prompt (but not while editing). In Main, a click puts the caret at the start of that source line and, when the line opens a foldable block, toggles that block. The wheel scrolls the box under the pointer by three rows (Build scrolls the command output or the terminal scrollback). In the settings overlay, a click on a chip runs that chip; every other click is ignored.
 
 `paneAt` in `layout.go` maps screen cells to boxes; body-top helpers keep click rows aligned with the rendered content.
 

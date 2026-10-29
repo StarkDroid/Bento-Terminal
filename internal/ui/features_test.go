@@ -32,6 +32,53 @@ func TestFootersShowPaneShortcuts(t *testing.T) {
 	}
 }
 
+func TestCommitPreviewClosesWithEsc(t *testing.T) {
+	m, _ := previewSample(t)
+	m.focus = PaneHistory
+	m.previewKind = previewCommit
+	m.previewTitle = "abc1234"
+	m.previewRaw = "commit abc1234\n\nfix the thing"
+	m = m.reflowPreview(true)
+
+	if !strings.Contains(stripANSI(m.View()), "abc1234") {
+		t.Fatal("the commit should be in the preview")
+	}
+	next, _ := m.Update(keyMsg("esc"))
+	m = next.(Model)
+	if m.previewKind != previewNone {
+		t.Fatalf("esc should close the commit, got kind %d", m.previewKind)
+	}
+	plain := stripANSI(m.View())
+	if strings.Contains(plain, "abc1234") {
+		t.Fatalf("the commit should be gone\n%s", plain)
+	}
+	if !strings.Contains(plain, "tab panes") {
+		t.Fatalf("Main should show the home footer\n%s", plain)
+	}
+}
+
+func TestEscLeavesAFilePreviewOpen(t *testing.T) {
+	m, _ := previewSample(t)
+	if m.previewKind != previewFile {
+		t.Fatal("the sample should open a file")
+	}
+	next, _ := m.Update(keyMsg("esc"))
+	m = next.(Model)
+	if m.previewKind != previewFile {
+		t.Fatal("esc should keep a file preview")
+	}
+}
+
+func TestCommitPreviewFooterOffersClose(t *testing.T) {
+	m, _ := previewSample(t)
+	m.previewKind = previewCommit
+	m.previewTitle = "abc1234"
+	m = m.reflowPreview(true)
+	if !strings.Contains(stripANSI(m.View()), "esc close") {
+		t.Fatal("the commit footer should offer esc close")
+	}
+}
+
 func TestPaletteListsFocusedPaneCommands(t *testing.T) {
 	m, _ := previewSample(t)
 	m.width = 120
@@ -350,7 +397,7 @@ func TestSettingsShowsAboutAndVersion(t *testing.T) {
 		t.Fatal("comma should open settings")
 	}
 	plain := stripANSI(m.View())
-	for _, want := range []string{"Settings · About", "v9.9.9", "github.com/StarkDroid/Bento-Terminal", "esc  close"} {
+	for _, want := range []string{"Settings · About", "v9.9.9", "github", "? commands", "q quit", "esc close"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("settings missing %q\n%s", want, plain)
 		}

@@ -57,6 +57,7 @@ const (
 	actMainEdit
 	actMainNew
 	actMainSave
+	actMainClose
 
 	actFindFile
 	actFindText
@@ -74,7 +75,7 @@ type action struct {
 func (m Model) paneActions(p Pane) []action {
 	switch p {
 	case PaneMain:
-		return []action{
+		actions := []action{
 			{actMainUp, m.keys.Up, "move up a line"},
 			{actMainDown, m.keys.Down, "move down a line"},
 			{actMainLeft, m.keys.Left, "move left one character"},
@@ -89,6 +90,10 @@ func (m Model) paneActions(p Pane) []action {
 			{actMainSave, m.keys.Save, "save the file"},
 			{actMainSyntax, m.keys.Syntax, "toggle code highlighting"},
 		}
+		if m.previewKind == previewCommit || m.previewKind == previewDiff {
+			actions = append(actions, action{actMainClose, m.keys.Close, "close the preview"})
+		}
+		return actions
 	case PaneFiles:
 		return []action{
 			{actFileUp, m.keys.Up, "move up"},
@@ -283,6 +288,8 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.openNewFile(), nil
 	case actMainSave:
 		return m.savePreview()
+	case actMainClose:
+		return m.closeCommitPreview(), nil
 
 	case actFindFile:
 		return m.openFinder()

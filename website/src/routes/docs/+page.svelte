@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
+	import BentoMap from '$lib/BentoMap.svelte';
 	import CopyCommand from '$lib/CopyCommand.svelte';
 
 	const install =
@@ -212,7 +213,7 @@ go build -o bento.exe ./cmd/bento
 								<tr><th><kbd>ctrl+p</kbd></th><td>Find a file in the project</td></tr>
 								<tr><th><kbd>ctrl+f</kbd></th><td>Find in the open file</td></tr>
 								<tr><th><kbd>?</kbd></th><td>Commands for this box</td></tr>
-								<tr><th><kbd>,</kbd></th><td>Settings and version</td></tr>
+								<tr><th><kbd>,</kbd></th><td>Settings, version, and links</td></tr>
 								<tr><th><kbd>q</kbd></th><td>Quit</td></tr>
 							</tbody>
 						</table>
@@ -264,7 +265,9 @@ go build -o bento.exe ./cmd/bento
 				</div>
 				<p class="muted">
 					In the Terminal tab every printable key goes to the prompt, including <kbd>q</kbd>;
-					<kbd>tab</kbd> still moves between boxes. While editing, printable keys type.
+					<kbd>tab</kbd> still moves between boxes. While editing, printable keys type. The about
+					overlay from <kbd>,</kbd> also carries chips for the project on GitHub, the command
+					list, quit, and close; a click runs one.
 				</p>
 				<p class="muted">
 					<kbd>ctrl+p</kbd> filters the project's files as you type; <kbd>enter</kbd> opens the
@@ -281,6 +284,9 @@ go build -o bento.exe ./cmd/bento
 				hidden={active !== 'editing'}
 			>
 				<h2>Editing</h2>
+				<div class="panel-map">
+					<BentoMap pane="main" />
+				</div>
 				<p>
 					<kbd>e</kbd> edits the open text file and <kbd>ctrl+s</kbd> saves it. Arrows move the
 					caret, <kbd>enter</kbd> splits a line, <kbd>backspace</kbd> and <kbd>delete</kbd> remove
@@ -308,6 +314,9 @@ go build -o bento.exe ./cmd/bento
 				hidden={active !== 'changes'}
 			>
 				<h2>Changes</h2>
+				<div class="panel-map">
+					<BentoMap pane="history" />
+				</div>
 				<p>
 					History's <strong>Changes</strong> tab lists every path git reports, in order, with its
 					two porcelain columns. <kbd>enter</kbd> or a click opens the patch in Main, and the tab
@@ -332,6 +341,9 @@ UU  unmerged</pre>
 				hidden={active !== 'terminal'}
 			>
 				<h2>Terminal</h2>
+				<div class="panel-map">
+					<BentoMap pane="build" />
+				</div>
 				<p>
 					Build's <strong>Terminal</strong> tab runs a typed line through your shell inside the
 					project root: <code>$SHELL -c</code>, falling back to <code>/bin/sh</code>, on macOS and
@@ -360,6 +372,9 @@ UU  unmerged</pre>
 				hidden={active !== 'builds'}
 			>
 				<h2>Builds</h2>
+				<div class="panel-map">
+					<BentoMap pane="build" />
+				</div>
 				<p>Automatic mode reads the project and offers:</p>
 				<ul>
 					<li><code>package.json</code> scripts, <code>Makefile</code> targets, and <code>gradlew</code> tasks</li>

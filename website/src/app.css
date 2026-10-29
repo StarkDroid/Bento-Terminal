@@ -482,6 +482,67 @@ pre {
 	color: var(--sand);
 }
 
+.panel-map {
+	display: flex;
+	justify-content: center;
+	margin: 22px 0 8px;
+}
+
+.panel-map .bento-map {
+	width: 100%;
+}
+
+.bento-map {
+	display: block;
+	height: auto;
+}
+
+.bento-map .window {
+	fill: var(--ocean);
+	stroke: var(--line);
+	stroke-width: 1;
+	vector-effect: non-scaling-stroke;
+}
+
+.bento-map .titlebar {
+	fill: var(--status);
+}
+
+.bento-map .divider {
+	stroke: var(--line);
+	stroke-width: 1;
+	vector-effect: non-scaling-stroke;
+}
+
+.bento-map .dot {
+	stroke: none;
+}
+
+.bento-map .dot.red {
+	fill: var(--coral);
+}
+
+.bento-map .dot.yellow {
+	fill: var(--sun);
+}
+
+.bento-map .dot.green {
+	fill: var(--palm);
+}
+
+.bento-map .pane {
+	fill: var(--panel);
+	stroke: var(--line);
+	stroke-width: 1.25;
+	vector-effect: non-scaling-stroke;
+}
+
+.bento-map .pane.lit {
+	fill: rgba(61, 222, 206, 0.16);
+	stroke: var(--bright);
+	stroke-width: 2;
+}
+
 .panel h3 {
 	margin-top: 22px;
 	font-size: 0.9rem;
