@@ -482,6 +482,49 @@ pre {
 	color: var(--sand);
 }
 
+.panel-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 18px;
+}
+
+.panel-head .bento-map {
+	flex: none;
+	width: 150px;
+	margin-top: 1px;
+}
+
+.bento-map {
+	display: block;
+	height: auto;
+}
+
+.bento-map .screen {
+	fill: var(--ocean);
+	stroke: var(--line);
+	stroke-width: 1;
+	vector-effect: non-scaling-stroke;
+}
+
+.bento-map .pane {
+	fill: var(--panel);
+	stroke: var(--line);
+	stroke-width: 1;
+	vector-effect: non-scaling-stroke;
+}
+
+.bento-map .pane.lit {
+	fill: rgba(61, 222, 206, 0.16);
+	stroke: var(--bright);
+	stroke-width: 1.5;
+}
+
+.bento-map .status {
+	fill: var(--status);
+	stroke: none;
+}
+
 .panel h3 {
 	margin-top: 22px;
 	font-size: 0.9rem;
@@ -684,6 +727,10 @@ kbd:hover {
 
 	.key-grid {
 		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.panel-head .bento-map {
+		width: 104px;
 	}
 }
 

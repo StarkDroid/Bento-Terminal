@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
+	import BentoMap from '$lib/BentoMap.svelte';
 	import CopyCommand from '$lib/CopyCommand.svelte';
 
 	const install =
@@ -282,7 +283,10 @@ go build -o bento.exe ./cmd/bento
 				aria-labelledby="tab-editing"
 				hidden={active !== 'editing'}
 			>
-				<h2>Editing</h2>
+				<div class="panel-head">
+					<h2>Editing</h2>
+					<BentoMap pane="main" />
+				</div>
 				<p>
 					<kbd>e</kbd> edits the open text file and <kbd>ctrl+s</kbd> saves it. Arrows move the
 					caret, <kbd>enter</kbd> splits a line, <kbd>backspace</kbd> and <kbd>delete</kbd> remove
@@ -309,7 +313,10 @@ go build -o bento.exe ./cmd/bento
 				aria-labelledby="tab-changes"
 				hidden={active !== 'changes'}
 			>
-				<h2>Changes</h2>
+				<div class="panel-head">
+					<h2>Changes</h2>
+					<BentoMap pane="history" />
+				</div>
 				<p>
 					History's <strong>Changes</strong> tab lists every path git reports, in order, with its
 					two porcelain columns. <kbd>enter</kbd> or a click opens the patch in Main, and the tab
@@ -333,7 +340,10 @@ UU  unmerged</pre>
 				aria-labelledby="tab-terminal"
 				hidden={active !== 'terminal'}
 			>
-				<h2>Terminal</h2>
+				<div class="panel-head">
+					<h2>Terminal</h2>
+					<BentoMap pane="build" />
+				</div>
 				<p>
 					Build's <strong>Terminal</strong> tab runs a typed line through your shell inside the
 					project root: <code>$SHELL -c</code>, falling back to <code>/bin/sh</code>, on macOS and
@@ -361,7 +371,10 @@ UU  unmerged</pre>
 				aria-labelledby="tab-builds"
 				hidden={active !== 'builds'}
 			>
-				<h2>Builds</h2>
+				<div class="panel-head">
+					<h2>Builds</h2>
+					<BentoMap pane="build" />
+				</div>
 				<p>Automatic mode reads the project and offers:</p>
 				<ul>
 					<li><code>package.json</code> scripts, <code>Makefile</code> targets, and <code>gradlew</code> tasks</li>
