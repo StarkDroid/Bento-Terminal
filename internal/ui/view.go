@@ -637,7 +637,7 @@ func (m Model) footerHints(p Pane) []string {
 			}
 			return []string{"↑↓←→ move", "e edit", "ctrl+f find", "? keys"}
 		case previewCommit, previewDiff:
-			return []string{"↑↓ scroll", "? keys"}
+			return []string{"↑↓ scroll", "esc close", "? keys"}
 		}
 		return []string{"n new", "ctrl+p find", "? keys", "tab panes"}
 	case PaneFiles:

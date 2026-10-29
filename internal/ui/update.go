@@ -103,6 +103,9 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.paletteOpen {
 		return m.onPaletteKey(msg)
 	}
+	if (m.previewKind == previewCommit || m.previewKind == previewDiff) && key.Matches(msg, m.keys.Close) {
+		return m.closeCommitPreview(), nil
+	}
 	if key.Matches(msg, m.keys.Help) {
 		return m.openPalette(), nil
 	}
@@ -364,6 +367,22 @@ func (m Model) resetPreviewState() Model {
 	m.previewRows = nil
 	m.previewVisible = nil
 	return m
+}
+
+// closeCommitPreview drops a commit or patch from Main and returns to the home
+// view. A file preview is left alone; esc only clears what History or Changes
+// opened.
+func (m Model) closeCommitPreview() Model {
+	m.previewKind = previewNone
+	m.previewTitle = ""
+	m.previewPath = ""
+	m.previewRaw = ""
+	m.previewLines = nil
+	m.previewRows = nil
+	m.previewVisible = nil
+	m.preview.SetContent("")
+	m = m.resetPreviewState()
+	return m.reflowPreview(true)
 }
 
 // openHistorySelection opens a commit or a patch depending on the visible tab.

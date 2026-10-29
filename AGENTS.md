@@ -138,7 +138,7 @@ Each box reserves its last body row for a footer of its own shortcuts. Footer hi
 | Main, finding | `↑↓ match · enter next · esc close` |
 | Main, highlighted file | `↑↓←→ move · [ ] fold · e edit · ctrl+f find · ? keys` |
 | Main, file with no detected language | `↑↓←→ move · e edit · ctrl+f find · ? keys` |
-| Main, commit or patch | `↑↓ scroll · ? keys` |
+| Main, commit or patch | `↑↓ scroll · esc close · ? keys` |
 | Main, home | `n new · ctrl+p find · ? keys · tab panes` |
 | Files | `↑↓ · enter · ctrl+p find · ? keys` |
 | History | `↑↓ · ←→ tab · ? keys` |
@@ -169,7 +169,7 @@ The preview is capped at 256 KB. The title is the file's tab: ` ≡ name`, then 
 
 The Main pane has a source caret. `↑` `↓` move it by line, `←` `→` move it by character (wrapping at line ends), `pgup`/`pgdown` page it, and the viewport follows. `[` folds the innermost function or class at the caret, `]` unfolds it, and `enter` toggles it. A folded block keeps its opening line with a `▸` marker and a `… N lines` summary; open blocks use `▾`. The caret row uses fill `#14343C`, a `▌` marker when the line is not a fold start, and a lagoon-bright block over the character at the caret.
 
-Commit and patch previews have no gutter, cursor, highlighting, or folding; they scroll as plain text. Patches are coloured: `+` palm, `-` coral, `@@` reef, and file headers moss.
+Commit and patch previews have no gutter, cursor, highlighting, or folding; they scroll as plain text. Patches are coloured: `+` palm, `-` coral, `@@` reef, and file headers moss. `esc` closes the commit or patch and returns Main to the home view; a file preview is left open.
 
 ### Search
 
