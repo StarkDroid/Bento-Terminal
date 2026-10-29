@@ -283,8 +283,8 @@ go build -o bento.exe ./cmd/bento
 				aria-labelledby="tab-editing"
 				hidden={active !== 'editing'}
 			>
-				<div class="panel-head">
-					<h2>Editing</h2>
+				<h2>Editing</h2>
+				<div class="panel-map">
 					<BentoMap pane="main" />
 				</div>
 				<p>
@@ -313,8 +313,8 @@ go build -o bento.exe ./cmd/bento
 				aria-labelledby="tab-changes"
 				hidden={active !== 'changes'}
 			>
-				<div class="panel-head">
-					<h2>Changes</h2>
+				<h2>Changes</h2>
+				<div class="panel-map">
 					<BentoMap pane="history" />
 				</div>
 				<p>
@@ -340,8 +340,8 @@ UU  unmerged</pre>
 				aria-labelledby="tab-terminal"
 				hidden={active !== 'terminal'}
 			>
-				<div class="panel-head">
-					<h2>Terminal</h2>
+				<h2>Terminal</h2>
+				<div class="panel-map">
 					<BentoMap pane="build" />
 				</div>
 				<p>
@@ -371,8 +371,8 @@ UU  unmerged</pre>
 				aria-labelledby="tab-builds"
 				hidden={active !== 'builds'}
 			>
-				<div class="panel-head">
-					<h2>Builds</h2>
+				<h2>Builds</h2>
+				<div class="panel-map">
 					<BentoMap pane="build" />
 				</div>
 				<p>Automatic mode reads the project and offers:</p>

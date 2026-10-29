@@ -482,17 +482,14 @@ pre {
 	color: var(--sand);
 }
 
-.panel-head {
+.panel-map {
 	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 18px;
+	justify-content: center;
+	margin: 22px 0 8px;
 }
 
-.panel-head .bento-map {
-	flex: none;
-	width: 150px;
-	margin-top: 1px;
+.panel-map .bento-map {
+	width: 100%;
 }
 
 .bento-map {
@@ -510,14 +507,14 @@ pre {
 .bento-map .pane {
 	fill: var(--panel);
 	stroke: var(--line);
-	stroke-width: 1;
+	stroke-width: 1.25;
 	vector-effect: non-scaling-stroke;
 }
 
 .bento-map .pane.lit {
 	fill: rgba(61, 222, 206, 0.16);
 	stroke: var(--bright);
-	stroke-width: 1.5;
+	stroke-width: 2;
 }
 
 .bento-map .status {
@@ -727,10 +724,6 @@ kbd:hover {
 
 	.key-grid {
 		grid-template-columns: minmax(0, 1fr);
-	}
-
-	.panel-head .bento-map {
-		width: 104px;
 	}
 }
 

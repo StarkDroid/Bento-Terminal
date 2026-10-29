@@ -20,7 +20,7 @@
 	role="img"
 	aria-label={lit ? `Bento layout with the ${lit.label} pane highlighted` : 'Bento layout'}
 >
-	<rect class="screen" x="0.5" y="0.5" width="119" height="31" rx="2" />
+	<rect class="screen" x="0.5" y="0.5" width="119" height="31" rx="1" />
 	{#each panes as box}
 		<rect
 			class="pane"
@@ -29,7 +29,7 @@
 			y={box.y + 0.5}
 			width={box.w - 1}
 			height={box.h - 1}
-			rx="2"
+			rx="1"
 		/>
 	{/each}
 	<rect class="status" x="1" y="31" width="118" height="0.8" rx="0.4" />
