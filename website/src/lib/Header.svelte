@@ -9,7 +9,7 @@
 
 <header class="site-header">
 	<a class="brand" href="{base}/" aria-label="Bento terminal home">
-		<span class="dot" aria-hidden="true"></span> bento
+		<span class="dot" aria-hidden="true"></span> Bento terminal
 	</a>
 	<nav class="site-nav" aria-label="Main">
 		<a href="{base}/docs/" aria-current={onDocs ? 'page' : undefined}>Docs</a>
