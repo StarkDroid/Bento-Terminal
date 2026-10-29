@@ -497,11 +497,37 @@ pre {
 	height: auto;
 }
 
-.bento-map .screen {
+.bento-map .window {
 	fill: var(--ocean);
 	stroke: var(--line);
 	stroke-width: 1;
 	vector-effect: non-scaling-stroke;
+}
+
+.bento-map .titlebar {
+	fill: var(--status);
+}
+
+.bento-map .divider {
+	stroke: var(--line);
+	stroke-width: 1;
+	vector-effect: non-scaling-stroke;
+}
+
+.bento-map .dot {
+	stroke: none;
+}
+
+.bento-map .dot.red {
+	fill: var(--coral);
+}
+
+.bento-map .dot.yellow {
+	fill: var(--sun);
+}
+
+.bento-map .dot.green {
+	fill: var(--palm);
 }
 
 .bento-map .pane {
@@ -515,11 +541,6 @@ pre {
 	fill: rgba(61, 222, 206, 0.16);
 	stroke: var(--bright);
 	stroke-width: 2;
-}
-
-.bento-map .status {
-	fill: var(--status);
-	stroke: none;
 }
 
 .panel h3 {
