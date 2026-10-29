@@ -1,15 +1,16 @@
 <script>
 	// The pane grid follows internal/ui/layout.go: Main on the top left, Files
 	// and History stacked on the right, Build across the bottom. Terminal cells
-	// are about twice as tall as they are wide, so each row is two units high;
-	// the window adds a macOS Terminal title bar and an even gutter.
+	// are about twice as tall as they are wide, so each row is two units high.
+	// One gutter of three units runs around the window and between every pane,
+	// with the title bar sitting three units above the grid.
 	let { pane = '' } = $props();
 
 	const panes = [
-		{ id: 'main', x: 3, y: 10, w: 79, h: 41, label: 'Main' },
-		{ id: 'files', x: 85, y: 10, w: 38, h: 22, label: 'Files' },
-		{ id: 'history', x: 85, y: 35, w: 38, h: 16, label: 'History' },
-		{ id: 'build', x: 3, y: 54, w: 120, h: 20, label: 'Build' }
+		{ id: 'main', x: 3, y: 10, w: 79, h: 42, label: 'Main' },
+		{ id: 'files', x: 85, y: 10, w: 38, h: 23, label: 'Files' },
+		{ id: 'history', x: 85, y: 36, w: 38, h: 16, label: 'History' },
+		{ id: 'build', x: 3, y: 55, w: 120, h: 20, label: 'Build' }
 	];
 
 	const lit = $derived(panes.find((box) => box.id === pane));
