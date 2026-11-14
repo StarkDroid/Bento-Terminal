@@ -66,7 +66,7 @@ go build -o bento.exe ./cmd/bento
 
 `go run ./cmd/bento` is the quickest loop on any platform; it runs from a temp directory and touches neither PATH nor the repository. Cross-compile with `make darwin-arm64`, `make darwin-amd64`, `make linux-arm64`, `make linux-amd64`, `make windows-amd64`, and `make windows-arm64`; without `make`, use `go build -o dist\bento_windows_amd64.exe ./cmd/bento`.
 
-Read [AGENTS.md](AGENTS.md) before changing layout, focus order, theme tokens, or keybindings. The site lives in `website/`; [its README](website/README.md) covers the build. Issues and pull requests are welcome.
+The site lives in `website/`; [its README](website/README.md) covers the build. Issues and pull requests are welcome.
 
 ## License
 

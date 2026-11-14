@@ -5,4 +5,5 @@
 *.out
 /coverage.out
 /.serena/
+/AGENTS.md
 .DS_Store
