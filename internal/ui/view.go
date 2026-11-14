@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/StarkDroid/Bento-Terminal/internal/build"
 	"github.com/StarkDroid/Bento-Terminal/internal/files"
@@ -625,59 +626,110 @@ func (m Model) outputBlock(width, height int) string {
 	return windowLines(stylePlain(m.outLines, width), y, width, height)
 }
 
-func (m Model) footer(p Pane, width int) string {
-	fg := colorSandDim
-	if m.focus == p {
-		fg = colorLagoon
-	}
-	text := " " + strings.Join(m.footerHints(p), " · ")
-	return lipgloss.NewStyle().
-		Foreground(fg).
-		Background(colorPanel).
-		Width(width).
-		Render(truncateCells(text, width))
+// footerHint is one shortcut in a pane footer: the keys to press and what they
+// do. Keys and labels are painted separately so the binding reads first.
+type footerHint struct {
+	key   string
+	label string
 }
 
-func (m Model) footerHints(p Pane) []string {
+// footerColours returns the key and label colours for a footer. The focused
+// pane is brighter, and the key is always a different colour from its label.
+func footerColours(focused bool) (key, label lipgloss.TerminalColor) {
+	if focused {
+		return colorLagoonBright, colorSand
+	}
+	return colorSand, colorMoss
+}
+
+func (m Model) footer(p Pane, width int) string {
+	if width < 1 {
+		return ""
+	}
+	keyFG, labelFG := footerColours(m.focus == p)
+	paint := func(text string, fg lipgloss.TerminalColor) string {
+		return lipgloss.NewStyle().Foreground(fg).Background(colorPanel).Render(text)
+	}
+	var b strings.Builder
+	b.WriteString(paint(" ", labelFG))
+	for i, h := range m.footerHints(p) {
+		if i > 0 {
+			b.WriteString(paint(" · ", colorMoss))
+		}
+		if h.key != "" {
+			b.WriteString(paint(h.key, keyFG))
+		}
+		if h.label != "" {
+			if h.key != "" {
+				b.WriteString(paint(" ", labelFG))
+			}
+			b.WriteString(paint(h.label, labelFG))
+		}
+	}
+	line := ansi.Truncate(b.String(), width, "")
+	if used := lipgloss.Width(line); used < width {
+		line += lipgloss.NewStyle().Background(colorPanel).Width(width - used).Render("")
+	}
+	return line
+}
+
+func (m Model) footerHints(p Pane) []footerHint {
 	switch p {
 	case PaneMain:
 		switch m.previewKind {
 		case previewFile:
 			if m.findOpen {
-				return []string{"↑↓ match", "enter next", "esc close"}
+				return []footerHint{{"↑↓", "match"}, {"enter", "next"}, {"esc", "close"}}
 			}
 			if m.previewEditing {
-				return []string{"↑↓←→ move", "ctrl+s save", "esc done"}
+				return []footerHint{{"↑↓←→", "move"}, {"ctrl+s", "save"}, {"esc", "done"}}
 			}
 			if m.previewLang.Detected() {
-				return []string{"↑↓←→ move", "[ ] fold", "e edit", "ctrl+f find", "? keys"}
+				return []footerHint{
+					{"↑↓←→", "move"}, {"[ ]", "fold"}, {"e", "edit"},
+					{"ctrl+f", "find"}, {"ctrl+a", "ai"}, {"?", "keys"},
+				}
 			}
-			return []string{"↑↓←→ move", "e edit", "ctrl+f find", "? keys"}
+			return []footerHint{
+				{"↑↓←→", "move"}, {"e", "edit"}, {"ctrl+f", "find"},
+				{"ctrl+a", "ai"}, {"?", "keys"},
+			}
 		case previewCommit, previewDiff:
-			return []string{"↑↓ scroll", "esc close", "? keys"}
+			return []footerHint{{"↑↓", "scroll"}, {"esc", "close"}, {"ctrl+a", "ai"}, {"?", "keys"}}
 		}
-		return []string{"n new", "ctrl+p find", "? keys", "tab panes"}
+		return []footerHint{
+			{"n", "new"}, {"ctrl+p", "find"}, {"ctrl+a", "ai"},
+			{"?", "keys"}, {"tab", "panes"},
+		}
 	case PaneFiles:
-		return []string{"↑↓", "enter", "ctrl+p find", "? keys"}
+		return []footerHint{{"↑↓", ""}, {"enter", ""}, {"ctrl+p", "find"}, {"?", "keys"}}
 	case PaneHistory:
-		return []string{"↑↓", "←→ tab", "? keys"}
+		return []footerHint{{"↑↓", ""}, {"←→", "tab"}, {"?", "keys"}}
 	case PaneBuild:
-		return []string{"↑↓ pick", "enter run", "a mode", "r rerun", "? keys"}
+		return []footerHint{
+			{"↑↓", "pick"}, {"enter", "run"}, {"a", "mode"},
+			{"r", "rerun"}, {"?", "keys"},
+		}
 	case PaneTerminal:
-		return []string{"enter run", "ctrl+c stop", "esc back", "? keys"}
+		return []footerHint{
+			{"enter", "run"}, {"ctrl+c", "stop"}, {"esc", "back"}, {"?", "keys"},
+		}
 	case PaneAI:
 		if m.aiSession != nil {
 			return nil
 		}
 		if m.aiInstall != "" {
 			if m.running && m.runTarget == targetAI {
-				return []string{"esc cancel"}
+				return []footerHint{{"esc", "cancel"}}
 			}
-			return []string{"esc close"}
+			return []footerHint{{"esc", "close"}}
 		}
-		return []string{"↑↓ pick", "enter", "r rescan", "? keys"}
+		return []footerHint{
+			{"↑↓", "pick"}, {"enter", ""}, {"ctrl+a", "close"},
+			{"r", "rescan"}, {"?", "keys"},
+		}
 	}
-	return []string{"? keys"}
+	return []footerHint{{"?", "keys"}}
 }
 
 // newFileView is the modal prompt for a new project path.

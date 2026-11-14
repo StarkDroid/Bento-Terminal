@@ -55,6 +55,19 @@ func TestAIPanelOpensWithCtrlA(t *testing.T) {
 	}
 }
 
+func TestAIPanelFooterShowsToggleShortcut(t *testing.T) {
+	m, _ := previewSample(t)
+	m.width = 120
+	m.height = 32
+	m.aiOpen = true
+	m.aiReady = true
+	m.focus = PaneAI
+	plain := stripANSI(m.View())
+	if !strings.Contains(plain, "ctrl+a close") {
+		t.Fatalf("AI footer should show the toggle shortcut\n%s", plain)
+	}
+}
+
 func TestAIRowsPutInstalledFirst(t *testing.T) {
 	m := New(t.TempDir(), "test")
 	m.aiFound = map[string]string{"gemini": "/bin/gemini"}
