@@ -330,6 +330,11 @@ pre {
 	padding: 18px 20px;
 }
 
+/* An odd number of cards leaves one cell empty; let the last card fill it. */
+.feature:last-child:nth-child(odd) {
+	grid-column: span 2;
+}
+
 .feature::after {
 	content: "";
 	position: absolute;
@@ -741,6 +746,10 @@ kbd:hover {
 
 	.features {
 		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.feature:last-child:nth-child(odd) {
+		grid-column: auto;
 	}
 
 	.key-grid {

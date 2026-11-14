@@ -1,13 +1,13 @@
 # Bento terminal
 
-Bento terminal is a full-screen terminal workspace for one project directory. It previews and edits files with syntax highlighting and folding, lists the tree, the current branch's commits, and its working-tree changes, runs detected build commands, and runs your own commands in a shell. The supported terminals are macOS Terminal and Windows Terminal. The UI draws its own lagoon palette and does not read the user's theme.
+Bento terminal is a full-screen terminal workspace for one project directory. It previews and edits files with syntax highlighting and folding, lists the tree, the current branch's commits, and its working-tree changes, runs detected build commands, runs your own commands in a shell, and hosts coding agents in an optional AI panel. The supported terminals are macOS Terminal and Windows Terminal. The UI draws its own lagoon palette and does not read the user's theme.
 
 Every box draws its own shortcut footer. `?` opens that box's command list, and a listed command can be run with enter or by pressing its shortcut. When you change packages, commands, focus order, theme tokens, keybindings, or the install flow, update this file in the same change.
 
 ## Package map
 
 - `cmd/bento` — process entry. Uses the working directory, or one optional directory argument, as the project root. Starts Bubble Tea with the alternate screen and mouse cell motion.
-- `internal/ui` — Bubble Tea model, bento layout, theme, focus, keys, and rendering. Scroll position for the preview, the build output, and the terminal is a Bubbles viewport. The running indicator is a Bubbles spinner. Bindings are Bubbles keys.
+- `internal/ui` — Bubble Tea model, bento layout, theme, focus, keys, and rendering. Scroll position for the preview, the build output, and the terminal is a Bubbles viewport. The running indicator is a Bubbles spinner. Bindings are Bubbles keys. The AI panel draws a vt10x terminal instead of a viewport.
   - `commands.go` — one action table per box. Actions carry their binding and a pane-specific description, and `runAction` is the single dispatcher. This table drives both key handling and the `?` command list.
   - `palette.go` — the per-box command list: open/close, cursor movement, enter to run, direct shortcut to run.
   - `settings.go` — the settings overlay: wordmark, version, the tagline and two-column feature list, and the `github`/`commands`/`quit`/`close` chips.
@@ -19,12 +19,14 @@ Every box draws its own shortcut footer. `?` opens that box's command list, and 
   - `paint.go` — piece strings, left/right joins, tab chips, titles, rows, and panel frames.
   - `output.go` — sanitises captured process output before it reaches a viewport.
   - `editor.go` — the preview editor: open file, buffer edits, save, and the new-file prompt.
-  - `terminal.go` — the Terminal tab: prompt input, history, run dispatch, and terminal scrollback.
-  - `view.go` — pane bodies, the History and Build tab titles, footers, and overlays.
+  - `ai.go` — the AI panel: provider rows, install flow, agent session keys, and vt10x cell rendering.
+  - `terminal.go` — the Terminal panel: prompt input, history, run dispatch, and terminal scrollback.
+  - `view.go` — pane bodies, the History title, the Build, Terminal, and AI titles, footers, and overlays.
 - `internal/syntax` — Chroma-based language detection, highlighting with the lagoon palette, and foldable block discovery. Go and Python use dedicated strategies; the common brace languages share a balanced-brace scanner. Highlighting is capped at 8,000 lines.
+- `internal/agent` — the coding-agent catalogue (Claude Code, OpenCode, Gemini CLI, Codex CLI, GitHub Copilot CLI, Crush, Aider, Cursor CLI), PATH detection, and one PTY session per agent. `session.go` owns the vt10x emulator and the `termProcess` interface; `pty_unix.go` uses `creack/pty` and a process-group kill, `pty_windows.go` uses `conpty` and wraps `.cmd`/`.bat` shims in `%COMSPEC% /C`.
 - `internal/git` — parses `git status --porcelain=v2 --branch` and `git log` lines (`hash`, unix time, subject, tab-separated). `Load` shells out to git. Untracked paths count as unstaged. `Status.Files` keeps one `FileStatus` per changed path, and `Diff` returns the staged and unstaged patch, with a synthesised new-file patch for untracked files.
 - `internal/files` — lazy directory tree, a full file list for search, and a bounded text preview. `Create` and `Save` resolve project-relative paths and reject anything outside the project; `Tree.Refresh` re-reads loaded folders while keeping them open; `List` walks every file for the finder with the same skips. Dot entries are hidden. `node_modules`, `vendor`, `target`, `__pycache__`, `dist`, `.next`, `.venv`, and `venv` are skipped. Symlinks are not followed.
-- `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it with the process group (`run_unix.go`: `Setpgid` and `SIGTERM`; `run_windows.go`: `CREATE_NEW_PROCESS_GROUP` and `taskkill /T`). No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal tab through `$SHELL -c` on Unix and `%COMSPEC% /C` on Windows.
+- `internal/build` — `Inspect` reads project files and returns automatic and manual command lists. `Start` runs a command and cancels it with the process group (`run_unix.go`: `Setpgid` and `SIGTERM`; `run_windows.go`: `CREATE_NEW_PROCESS_GROUP` and `taskkill /T`). No shell is inserted unless the command itself is a shell; `ShellCommand` wraps a typed line for the Terminal panel through `$SHELL -c` on Unix and `%COMSPEC% /C` on Windows.
 - `scripts/install.sh` — macOS and Linux entrypoint. Release asset first, then `go build` from a local checkout or a clone; `--from-source` skips the download.
 - `scripts/install.ps1` — Windows entrypoint. The same order: the `.exe` release asset for the machine's architecture, then a build from the checkout this file lives in or a clone (`-FromSource`, `-Source`). Installs `bento.exe` into `%LOCALAPPDATA%\bento` and adds that folder to the user PATH (`-NoPath` skips it), so a new Windows Terminal finds `bento`.
 - `scripts/release.sh` — the release. Tests, builds the six assets, writes `SHA256SUMS`, tags, and publishes the GitHub release from the merged PRs' changelogs; `--auto` computes the version.
@@ -35,12 +37,13 @@ There is no `internal/install`. The installers are shell and PowerShell only.
 
 ## Platforms
 
-macOS Terminal and Windows Terminal are the supported terminals; Linux runs the same binary as macOS. Every user-facing feature works on every platform: panes, focus, keys, mouse, editing, diffs, build detection, and the Terminal tab are not allowed to be macOS-only or Windows-only, and the docs and README describe one feature set for all platforms.
+macOS Terminal and Windows Terminal are the supported terminals; Linux runs the same binary as macOS. Every user-facing feature works on every platform: panes, focus, keys, mouse, editing, diffs, build detection, the Terminal panel, and the AI panel are not allowed to be macOS-only or Windows-only, and the docs and README describe one feature set for all platforms.
 
 The only platform differences are the ones the OS forces:
 
-- The Terminal tab runs the user's shell: `$SHELL -c`, falling back to `/bin/sh`, on Unix; `%COMSPEC% /C`, falling back to `cmd.exe`, on Windows. Keep that behind `run_unix.go` and `run_windows.go` so the rest of `internal/build` stays shared.
+- The Terminal panel runs the user's shell: `$SHELL -c`, falling back to `/bin/sh`, on Unix; `%COMSPEC% /C`, falling back to `cmd.exe`, on Windows. Keep that behind `run_unix.go` and `run_windows.go` so the rest of `internal/build` stays shared.
 - Cancelling a run ends the process group: `Setpgid` and `SIGTERM` on Unix; `CREATE_NEW_PROCESS_GROUP` and `taskkill /T` on Windows.
+- Agent sessions start on a real pseudo-terminal: `creack/pty` plus `Setsize` on Unix; `UserExistsError/conpty` on Windows. Keep each starter behind `pty_unix.go` and `pty_windows.go` so `internal/agent/session.go` stays shared.
 - The installer: `scripts/install.sh` on macOS and Linux, `scripts/install.ps1` on Windows. The two must stay in step — a flag or fallback on one needs its equivalent on the other.
 
 Test a platform change on the platform whose file you touched, and leave the other to the CI matrix; the shared code still runs through `go vet ./...` on every platform. When you add a feature, add it to `internal/ui` once rather than branching on `runtime.GOOS`.
@@ -72,7 +75,7 @@ go build -o bento.exe ./cmd/bento
 
 Go 1.23 or newer. Dependencies are Go modules. The platform targets set `GOOS` and `GOARCH` and write `dist/bento_<os>_<arch>`, plus `.exe` on Windows; those are the installers' release asset names.
 
-Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, file listing and fuzzy ranking, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size, empty views, file preview, the finder modal, find-in-file jumps and tab-aware highlight cells, editor keys and save, the new-file prompt, the Changes tab and diff preview, the terminal tab and a real shell run, captured output sanitising, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. Process tests live in `run_unix_test.go` and `run_windows_test.go`; the two output tests that use `printf` and `clear` skip on Windows. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
+Tests cover command detection fixtures in `internal/build/testdata`, git status and log fixtures in `internal/git/testdata`, per-file status and diffs, create/save and tree refresh, file listing and fuzzy ranking, language detection and highlighting, Go/Python/brace folding, caret navigation, settings, focus cycling, layout size and the Build/Terminal split, empty views, file preview, the finder modal, find-in-file jumps and tab-aware highlight cells, editor keys and save, the new-file prompt, the Changes tab and diff preview, the Terminal panel and a real shell run, captured output sanitising, tab clicks, per-box footers and command lists, keyboard and mouse folding, and a real `echo` build. The AI panel tests drive install, key forwarding, vt10x rendering, and window size with a fake session; `internal/agent` tests the catalogue, Windows install overrides, PATH detection, and a real `sh` session on Unix. Process tests live in `run_unix_test.go` and `run_windows_test.go`; the two output tests that use `printf` and `clear` skip on Windows. A git binary is required for `internal/git` load tests; those tests skip when it is missing.
 
 CI runs gofmt, `go vet`, `go test`, and a build on Ubuntu, macOS, and Windows. The Windows job builds `bento.exe` and uploads it as the `bento-windows-amd64` artifact, so a platform change can be tested before a release.
 
@@ -89,7 +92,7 @@ npm run dev      # local preview
 npm run build    # writes website/build
 ```
 
-`BASE_PATH` sets the path prefix; the workflow passes the value from `actions/configure-pages`, so the same build works on the project page or a custom domain. The pages are `/` and `/docs/`. The docs page keeps all nine sections in the prerendered HTML and switches panels with tabs, so it stays short and stays crawlable: install, shortcuts, editing, changes, terminal, builds, layout, releases, about. Copy lives in the Svelte components, not Markdown: keep the landing page to one screen and do not duplicate whole README sections.
+`BASE_PATH` sets the path prefix; the workflow passes the value from `actions/configure-pages`, so the same build works on the project page or a custom domain. The pages are `/` and `/docs/`. The docs page keeps all ten sections in the prerendered HTML and switches panels with tabs, so it stays short and stays crawlable: install, shortcuts, editing, changes, terminal, builds, ai, layout, releases, about. Copy lives in the Svelte components, not Markdown: keep the landing page to one screen and do not duplicate whole README sections.
 
 The landing page reacts to a fine pointer: `+layout.svelte` moves the fixed `.spotlight`, and a handler on the feature grid sets `--cx`/`--cy` so each card lights under the cursor. Both use CSS-variable fallbacks, are set from `onMount` so prerendering stays static, and are switched off for coarse pointers and reduced motion.
 
@@ -124,7 +127,9 @@ The tag and the release are the version of record; nothing is committed back to 
 
 The minimum window is **72 × 22** cells; smaller windows show a single "make the terminal larger" panel. macOS Terminal and Windows Terminal 1.x or newer are the targets; the legacy Windows console (conhost) is not.
 
-Focus order is Main, Files, History, Build. The app starts on Files. Tab moves Files → History → Build → Main. Shift-Tab reverses. Changing focus re-renders the preview so the cursor row only highlights while Main is focused.
+The grid has a top row and a bottom row. The top row is Main (the preview, or an AI panel beside it) on the left and Files over History on the right. The bottom row is Build on the left and Terminal on the right, always both visible, split down the middle with a one-cell gap. The AI panel is not a third column: it takes the right half of Main, so the preview and the agent each get half of the main box.
+
+Focus order is Main, AI, Files, History, Build, Terminal. The app starts on Files. Tab moves Files → History → Build → Terminal → Main → AI, and Shift-Tab reverses. The AI panel is skipped while it is closed, so with no agent open Tab goes Files → History → Build → Terminal → Main → Files. `ctrl+a` opens the AI panel and focuses it, and closing it returns focus to Main if the panel had it. Changing focus re-renders the preview so the cursor row only highlights while Main is focused.
 
 The focused pane uses border `#3DDECE` and a bold title. Unfocused panes use border `#24555C`. A selected row uses fill `#1B5E5A` when its pane is focused and `#14343C` when it is not; tabs reuse those two fills, so the lighter one always means "this one". Borders are not the selection.
 
@@ -142,8 +147,11 @@ Each box reserves its last body row for a footer of its own shortcuts. Footer hi
 | Main, home | `n new · ctrl+p find · ? keys · tab panes` |
 | Files | `↑↓ · enter · ctrl+p find · ? keys` |
 | History | `↑↓ · ←→ tab · ? keys` |
-| Build | `↑↓ pick · enter run · a mode · r rerun · ←→ tab · ? keys` |
+| Build | `↑↓ pick · enter run · a mode · r rerun · ? keys` |
 | Terminal | `enter run · ctrl+c stop · esc back · ? keys` |
+| AI, browsing | `↑↓ pick · enter · r rescan · ? keys` |
+| AI, installing | `esc cancel` (while running) or `esc close` |
+| AI, session running | no footer; the status bar carries `ctrl+\ detach` |
 
 `?` opens the command list for the focused box (`? Keys · Files`). The list shows that box's commands and then a Global section. `↑` `↓` (or `k` `j`) move, `pgup`/`pgdown` jump, `enter` runs the selected row, and pressing a listed shortcut runs it directly and closes the list. `?` and `esc` close it. While the list is open, focus does not move, and mouse events are ignored.
 
@@ -151,17 +159,19 @@ Build commands (`a`, `r`, `c`) are listed under Build but work from any box. `q`
 
 `,` opens the settings overlay from any box. It draws the BENTO wordmark, the version passed to `ui.New` by `cmd/bento`, a one-line tagline with a two-column feature list, and a row of chips: `github` opens the repository in the default browser, `? commands` opens the command list, `q quit` quits, and `esc close` closes. `esc` or `,` also closes it. A left click on a chip runs it; other mouse events are ignored while it is open.
 
+The status bar carries the branch and change counts on the left. While an agent session runs it adds `▾ Name` on the right, followed by `ctrl+\ detach` when the AI panel has focus or `running` when it does not.
+
 To add a command: add the binding to `keyMap`, add an action to the right `paneActions` case (and `buildActions` if it must work globally), and handle its id in `runAction`. Update the footer hints if the command is important enough to show there.
 
 ### Tabs
 
-Tabs are chips drawn by `chip` and `tabColors` in `paint.go`: one cell of fill on each side of the label, the active tab on `#1B5E5A` with bold lagoon-bright text while its box is focused (sand when not), and inactive tabs on `#14343C` with sand-dim text. The chip is what separates a tab from the title bar; do not paint tabs on the panel colour.
+Tabs are chips drawn by `chip` and `tabColors` in `paint.go`: one cell of fill on each side of the label, the active tab on `#1B5E5A` with bold lagoon-bright text while its box is focused (sand when not), and inactive tabs on `#14343C` with sand-dim text. The chip is what separates a tab from the title bar; do not paint tabs on the panel colour. Build, Terminal, and AI have no second tab, but their titles use the same active chip so every box reads the same way.
 
-History draws its title as `⎇  History   Changes` and Build as `▶  Build   Terminal`. `←` `→` (and `h` `l`) switch tabs while that box is focused, and a click on a tab label switches too. Click zones are in inner-title cells: History has a 3-cell `⎇` prefix, then a 9-cell ` History `, a 1-cell gap, and a 9-cell ` Changes `; Build has a 3-cell state glyph, then a 7-cell ` Build `, a 1-cell gap, and a 10-cell ` Terminal `. Keep `historyTabAt` and `buildTabAt` in `update.go` in step with those widths.
+History draws its title as `⎇  History   Changes`. `←` `→` (and `h` `l`) switch tabs while that box is focused, and a click on a tab label switches too. Click zones are in inner-title cells: History has a 3-cell `⎇` prefix, then a 9-cell ` History `, a 1-cell gap, and a 9-cell ` Changes `. Keep `historyTabAt` in `update.go` in step with those widths.
 
 Main is a two-tab strip in the same style: the open file's tab (`fileTab`, always the active chip, with the language badge and save marker inside it) and the `+ new file` tab (`newFileTab`, inactive) directly after it with no gap, the way a browser keeps its new-tab button beside the last tab. The new-file tab is hidden while editing. Its click zone moves with the file name, so `newFileTabAt` measures `fileTab().width` and `newFileTab(false).width` instead of hard-coding cells; a long name that pushes the tab past the right edge leaves the clipped part dead.
 
-Each tab keeps its own cursor and scroll: commits and changes, commands and terminal output. Switching tabs does not run anything.
+History keeps its own cursor and scroll for commits and changes. Switching tabs does not run anything.
 
 ### Code preview
 
@@ -173,7 +183,7 @@ Commit and patch previews have no gutter, cursor, highlighting, or folding; they
 
 ### Search
 
-`ctrl+p` opens the project file finder from any box except the Terminal tab. The first open loads `files.List` once and the list is cached for the session. Input ranks a case-insensitive subsequence of the slash path; word starts, consecutive runs, and basename hits score highest. `↑`/`↓` (or `pgup`/`pgdown`) move the selection, `enter` opens the file in Main and focuses it, and `esc` closes. Matched runes are sun and bold, and the selected row uses the select fill. The finder stays closed while the editor is open, so an unsaved buffer is never replaced.
+`ctrl+p` opens the project file finder from any box except the Terminal panel and a running agent session. The first open loads `files.List` once and the list is cached for the session. Input ranks a case-insensitive subsequence of the slash path; word starts, consecutive runs, and basename hits score highest. `↑`/`↓` (or `pgup`/`pgdown`) move the selection, `enter` opens the file in Main and focuses it, and `esc` closes. Matched runes are sun and bold, and the selected row uses the select fill. The finder stays closed while the editor is open, so an unsaved buffer is never replaced.
 
 `ctrl+f` opens the find bar in the first body row of Main for the open text file, including while editing; matches come from `sourceLines()`, so the buffer is searched. It is case-insensitive and non-overlapping. Every match is sun and the current one is lagoon bright; the caret jumps to the current match and a fold hiding it opens. `↑`/`↓` and `enter` step through matches with wrap-around, `esc` closes and keeps the caret, and the bar shows `n/m`. While the bar is open the Main footer becomes `↑↓ match · enter next · esc close`.
 
@@ -195,19 +205,31 @@ Saving joins the buffer with newlines and adds a trailing newline when the buffe
 
 `enter` or a click opens the selected path in Main as a `±` patch. `git.Diff` joins the staged and unstaged patches and synthesises a new-file patch for an untracked file. A clean tree shows "Working tree clean".
 
-### Terminal tab
+### Build and Terminal panels
 
-The terminal prompt always has the keyboard while the tab is visible: printable keys type (including `q`, `?`, and `,`), `tab`/`shift+tab` still cycle focus, `↑`/`↓` walk the command history, `←`/`→` move the prompt caret, and `home`/`end` jump. `enter` runs the line through `build.ShellCommand`, which uses `$SHELL -c` and falls back to `/bin/sh`. `esc` clears the prompt, then returns to the Build tab. `ctrl+c` stops a running process, or clears the prompt when nothing runs. The command list and settings open on `?` and `,` only while the prompt is empty.
+Build and Terminal are separate panels in the bottom row, always both visible so a build command and a free-form shell can be seen at once. Build lists the detected commands; the Terminal is the user's shell. Each title is a single active chip: Build shows the run glyph, the mode, and the last command's name, and Terminal shows its own run glyph and `$SHELL`. Each panel keeps its own cursor, scroll, and run state.
 
-Terminal output has its own viewport and 2,000-line scrollback, separate from the Build output. `runTarget` selects which buffer receives lines and which state records the result; starting any run stops the previous one. The terminal output height is `Build.H - 5` (panel body minus the prompt and footer).
+The terminal prompt has the keyboard while the Terminal panel is focused: printable keys type (including `q`, `?`, and `,`), `tab`/`shift+tab` still cycle focus, `↑`/`↓` walk the command history, `←`/`→` move the prompt caret, and `home`/`end` jump. `enter` runs the line through `build.ShellCommand`, which uses `$SHELL -c` and falls back to `/bin/sh`. `esc` clears the prompt, then moves focus back to Build. `ctrl+c` stops a running process, or clears the prompt when nothing runs. `ctrl+a` opens the AI panel only while the prompt is empty. The command list and settings open on `?` and `,` only while the prompt is empty.
 
-Captured output is sanitised by `sanitizeLine` in `output.go` before it reaches either viewport: escape sequences are dropped, a carriage return keeps only its last segment, tabs become four spaces, and a line that held nothing but control sequences is skipped. A command still thinks it owns a terminal, so `clear` would otherwise send `\x1b[2J` into the scrollback and wipe the whole interface. Never append raw process output to a viewport, and do not try to keep colour codes: they would fight the pane background. Full-screen programs are not supported; the tab is for one-shot commands.
+Terminal output has its own viewport and 2,000-line scrollback, separate from the Build output and the AI install log. `runTarget` selects which buffer receives lines and which state records the result; starting any run stops the previous one. The terminal output height is `Build.H - 5` (panel body minus the prompt and footer).
+
+Captured output is sanitised by `sanitizeLine` in `output.go` before it reaches a viewport: escape sequences are dropped, a carriage return keeps only its last segment, tabs become four spaces, and a line that held nothing but control sequences is skipped. A command still thinks it owns a terminal, so `clear` would otherwise send `\x1b[2J` into the scrollback and wipe the whole interface. Never append raw process output to a viewport, and do not try to keep colour codes: they would fight the pane background. Full-screen programs are not supported in Build or Terminal; the Terminal is for one-shot commands.
+
+### AI panel
+
+`ctrl+a` opens and closes the AI panel. It takes the right half of Main, so the preview and the agent split the box evenly (`MainSplit`), and the preview reflows to its narrower width. Opening focuses the panel and rescans PATH. Closing returns focus to Main when the panel had it. The panel stays open after a session ends, so the agent list is ready for the next launch.
+
+The idle panel lists the catalogue in `internal/agent`: installed agents first, in catalogue order, then the rest. A row reads `● Name   ready` with the path-based command found by `agent.Detect`, or `○ Name   install`. `↑`/`↓` (and `pgup`/`pgdown`) move the selection. `enter` starts an installed agent; on a missing one it runs the installer through `build.ShellCommand` and streams its sanitised output into the panel. `r` rescans PATH, and `esc` closes the panel. The title shows `n ready`, `detecting`, the spinner and `installing`, `install failed`, or `● Name` while a session runs.
+
+An install runs in the panel and `esc` cancels it while it is running; once it finishes, `esc` closes the output and the panel rescans, then says either `Name is ready` or `Name is not on PATH yet`. The log is cleared on a successful rescan or when the output is closed.
+
+A session runs on a real pseudo-terminal (`agent.StartSession`) with a vt10x emulator, so the agent draws its own interface. Every key goes to the agent while the panel has focus, including `q`, `ctrl+a`, and `ctrl+c`, except `ctrl+\`, which detaches. Detaching closes the session and leaves a note in the panel; `q` then quits Bento again. Bento's footer is hidden while a session runs, and the status bar carries the keep-alive hints instead. The agent's cells are drawn with their own ANSI colours and attributes, reverse video included, and the cursor is a block while the panel has focus. `renderAgentScreen` locks the emulator while it reads cells; the read goroutine keeps an incomplete trailing rune between writes.
 
 ### Mouse
 
-Mouse reporting is on (`tea.WithMouseCellMotion`). A left click focuses the box under the pointer and moves its selection; clicking a directory toggles it, clicking a file opens the preview, clicking a commit or a changed path previews it, and clicking a tab label switches tabs. In Main's title, clicking the `+ new file` tab opens the new-file prompt (but not while editing). In Main, a click puts the caret at the start of that source line and, when the line opens a foldable block, toggles that block. The wheel scrolls the box under the pointer by three rows (Build scrolls the command output or the terminal scrollback). In the settings overlay, a click on a chip runs that chip; every other click is ignored.
+Mouse reporting is on (`tea.WithMouseCellMotion`). A left click focuses the box under the pointer and moves its selection; clicking a directory toggles it, clicking a file opens the preview, clicking a commit or a changed path previews it, clicking an agent row selects it, and clicking a tab label switches tabs. In Main's title, clicking the `+ new file` tab opens the new-file prompt (but not while editing). In Main, a click puts the caret at the start of that source line and, when the line opens a foldable block, toggles that block. The wheel scrolls the box under the pointer by three rows (Build scrolls the command output, Terminal the scrollback, and AI the agent list). In the settings overlay, a click on a chip runs that chip; every other click is ignored.
 
-`paneAt` in `layout.go` maps screen cells to boxes; body-top helpers keep click rows aligned with the rendered content.
+`paneAt` in `layout.go` maps screen cells to boxes and takes whether the AI panel is open, because the panel splits Main in half.
 
 Theme tokens:
 
@@ -241,6 +263,7 @@ Build mode defaults to automatic. `a` switches to manual. `c` cancels the comman
 - No detected commands: the build list says none were found. If the other mode has commands, it says to press `a`.
 - Build idle: the output area says to select a command and press enter.
 - Terminal idle: the prompt area says to type a command and press enter.
+- AI detecting: the panel says it is looking for coding agents.
 - No language detected in a file: no language badge, no fold markers, and `s` does nothing.
 
 ## Install

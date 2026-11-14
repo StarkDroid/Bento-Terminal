@@ -16,6 +16,7 @@
 		{ id: 'changes', label: 'Changes' },
 		{ id: 'terminal', label: 'Terminal' },
 		{ id: 'builds', label: 'Builds' },
+		{ id: 'ai', label: 'AI' },
 		{ id: 'layout', label: 'Layout' },
 		{ id: 'releases', label: 'Releases' },
 		{ id: 'about', label: 'About' }
@@ -61,17 +62,17 @@
 │ ≡ main.go  + new file    │ │ ≡ Files            │
 │  1 │ package main        │ │ ▾ internal         │
 │  2 │                     │ │   ≡ ui             │
-│  3 │ func main() {       │ ├────────────────────┤
-│  4 │     run()           │ │ History  Changes   │
-│  5 │ }                   │ │ ↑1 ↓0 · ● 2        │
-│ ↑↓←→ · e edit · ? keys   │ │ ↑↓ · ←→ tab        │
+│  3 │ func main() {       │ ╰────────────────────╯
+│  4 │     run()           │ ╭────────────────────╮
+│  5 │ }                   │ │ History  Changes   │
+│ ↑↓←→ · e edit · ? keys   │ │ ↑1 ↓0 · ● 2        │
 ╰──────────────────────────╯ ╰────────────────────╯
-╭─────────────────────────────────────────────────╮
-│ ▶ Build  Terminal  auto                         │
-│ $ go test ./...                                 │
-│ ✓ done                                          │
-│ ↑↓ pick · enter run · a · r · c · ←→ · ?        │
-╰─────────────────────────────────────────────────╯
+╭──────────────────────────╮ ╭────────────────────╮
+│ ▶ Build         auto     │ │ ▶ Terminal  $SHELL │
+│ $ go test ./...          │ │ $ go version       │
+│ ✓ done                   │ │ go version go1.23  │
+│ ↑↓ pick · enter · ? keys │ │ enter · esc · ?    │
+╰──────────────────────────╯ ╰────────────────────╯
  ⎇ main  ↑1 ↓0  ● staged 0  ● unstaged 2`;
 </script>
 
@@ -79,14 +80,14 @@
 	<title>Docs — Bento terminal</title>
 	<meta
 		name="description"
-		content="Install, shortcuts, editing, changes, the terminal, builds, layout, and releases for Bento terminal."
+		content="Install, shortcuts, editing, changes, the terminal, builds, coding agents, layout, and releases for Bento terminal."
 	/>
 	<link rel="canonical" href="https://starkdroid.github.io/Bento-Terminal/docs/" />
 	<meta property="og:type" content="article" />
 	<meta property="og:title" content="Docs — Bento terminal" />
 	<meta
 		property="og:description"
-		content="Every part of Bento terminal, one panel at a time: install, shortcuts, editing, changes, terminal, builds, layout, releases."
+		content="Every part of Bento terminal, one panel at a time: install, shortcuts, editing, changes, terminal, builds, coding agents, layout, releases."
 	/>
 	<meta property="og:url" content="https://starkdroid.github.io/Bento-Terminal/docs/" />
 	<meta name="twitter:card" content="summary" />
@@ -133,7 +134,7 @@
 				<h2>Install</h2>
 				<p>
 					Install is the published binary; development is a build from a checkout. The features are
-					the same in both, on every platform: only the shell the Terminal tab runs and the
+					the same in both, on every platform: only the shell the Terminal panel runs and the
 					installer differ.
 				</p>
 
@@ -212,6 +213,7 @@ go build -o bento.exe ./cmd/bento
 								<tr><th><kbd>tab</kbd> <kbd>shift+tab</kbd></th><td>Next or previous box</td></tr>
 								<tr><th><kbd>ctrl+p</kbd></th><td>Find a file in the project</td></tr>
 								<tr><th><kbd>ctrl+f</kbd></th><td>Find in the open file</td></tr>
+								<tr><th><kbd>ctrl+a</kbd></th><td>Open or close the AI panel</td></tr>
 								<tr><th><kbd>?</kbd></th><td>Commands for this box</td></tr>
 								<tr><th><kbd>,</kbd></th><td>Settings, version, and links</td></tr>
 								<tr><th><kbd>q</kbd></th><td>Quit</td></tr>
@@ -249,7 +251,6 @@ go build -o bento.exe ./cmd/bento
 								<tr><th><kbd>enter</kbd></th><td>Run the selected command</td></tr>
 								<tr><th><kbd>a</kbd></th><td>Automatic or manual list</td></tr>
 								<tr><th><kbd>r</kbd> <kbd>c</kbd></th><td>Rerun or cancel</td></tr>
-								<tr><th><kbd>←</kbd> <kbd>→</kbd></th><td>Build or Terminal</td></tr>
 							</tbody>
 						</table>
 						<h3>Terminal</h3>
@@ -261,13 +262,26 @@ go build -o bento.exe ./cmd/bento
 								<tr><th><kbd>esc</kbd></th><td>Clear, then back to Build</td></tr>
 							</tbody>
 						</table>
+						<h3>AI</h3>
+						<table>
+							<tbody>
+								<tr><th><kbd>↑</kbd> <kbd>↓</kbd></th><td>Pick an agent</td></tr>
+								<tr><th><kbd>enter</kbd></th><td>Start or install it</td></tr>
+								<tr><th><kbd>r</kbd></th><td>Rescan installed agents</td></tr>
+								<tr><th><kbd>ctrl+\</kbd></th><td>Detach from a session</td></tr>
+							</tbody>
+						</table>
 					</div>
 				</div>
 				<p class="muted">
-					In the Terminal tab every printable key goes to the prompt, including <kbd>q</kbd>;
+					In the Terminal panel every printable key goes to the prompt, including <kbd>q</kbd>;
 					<kbd>tab</kbd> still moves between boxes. While editing, printable keys type. The about
 					overlay from <kbd>,</kbd> also carries chips for the project on GitHub, the command
 					list, quit, and close; a click runs one.
+				</p>
+				<p class="muted">
+					While an agent session runs, every key goes to the agent, including <kbd>q</kbd> and
+					<kbd>ctrl+a</kbd>; <kbd>ctrl+\</kbd> detaches and gives Bento its keys back.
 				</p>
 				<p class="muted">
 					<kbd>ctrl+p</kbd> filters the project's files as you type; <kbd>enter</kbd> opens the
@@ -345,22 +359,23 @@ UU  unmerged</pre>
 					<BentoMap pane="build" />
 				</div>
 				<p>
-					Build's <strong>Terminal</strong> tab runs a typed line through your shell inside the
-					project root: <code>$SHELL -c</code>, falling back to <code>/bin/sh</code>, on macOS and
-					Linux; <code>%COMSPEC% /C</code>, falling back to <code>cmd.exe</code>, on Windows.
-					<kbd>enter</kbd> runs, <kbd>↑</kbd> <kbd>↓</kbd> recall earlier lines, <kbd>esc</kbd>
-					clears the prompt and then returns to Build, and <kbd>ctrl+c</kbd> stops a running command
-					or clears the prompt.
+					The <strong>Terminal</strong> panel sits beside Build in the bottom row and runs a typed
+					line through your shell inside the project root: <code>$SHELL -c</code>, falling back to
+					<code>/bin/sh</code>, on macOS and Linux; <code>%COMSPEC% /C</code>, falling back to
+					<code>cmd.exe</code>, on Windows. <kbd>enter</kbd> runs, <kbd>↑</kbd> <kbd>↓</kbd> recall
+					earlier lines, <kbd>esc</kbd> clears the prompt and then moves focus to Build, and
+					<kbd>ctrl+c</kbd> stops a running command or clears the prompt.
 				</p>
 				<p>
 					Output is captured as text: colour, cursor, and erase sequences are dropped so a command
 					like <code>clear</code> cannot touch Bento's own screen. The scrollback is separate from
-					the Build output, and starting a command stops the previous one.
+					the Build output and the AI install log, and starting a command stops the previous one.
 				</p>
 				<p>
-					Full-screen programs such as <code>vim</code> or <code>top</code> are not supported; the
-					tab is for one-shot commands. Pipes, globs, and builtins work because the line goes
-					through your shell.
+					Full-screen programs such as <code>vim</code> or <code>top</code> are not supported in
+					Build or Terminal; the Terminal is for one-shot commands. Pipes, globs, and builtins work
+					because the line goes through your shell. For a full-screen coding agent, use the
+					<a href="{base}/docs/#ai">AI panel</a>.
 				</p>
 			</div>
 
@@ -388,7 +403,46 @@ UU  unmerged</pre>
 				</p>
 				<p>
 					Detected commands run directly, without a shell, so pipes, globs, and builtins belong in
-					the Terminal tab.
+					the Terminal panel beside it.
+				</p>
+			</div>
+
+			<div
+				class="panel"
+				role="tabpanel"
+				id="ai"
+				aria-labelledby="tab-ai"
+				hidden={active !== 'ai'}
+			>
+				<h2>AI panel</h2>
+				<p>
+					<kbd>ctrl+a</kbd> opens the AI panel in the right half of Main, so the preview and the
+					agent split the box evenly. It finds the coding-agent CLIs already on your PATH and lists
+					them first; everything else is one key from being installed. The catalogue is Claude Code,
+					OpenCode, Gemini CLI, Codex CLI, GitHub Copilot CLI, Crush, Aider, and Cursor CLI.
+				</p>
+				<ul>
+					<li><strong>● Name, ready:</strong> installed and ready to run.</li>
+					<li><strong>○ Name, install:</strong> not on PATH yet; <kbd>enter</kbd> runs its installer in the panel.</li>
+				</ul>
+				<p>
+					<kbd>↑</kbd> <kbd>↓</kbd> pick an agent, <kbd>enter</kbd> starts an installed one or
+					installs a missing one, <kbd>r</kbd> rescans PATH, and <kbd>esc</kbd> returns to the
+					preview. Install output streams into the panel; <kbd>esc</kbd> cancels a running install
+					and closes the log afterwards. A successful install rescans and the title shows how many
+					agents are ready.
+				</p>
+				<p>
+					A session runs on a real pseudo-terminal with its own terminal emulator, so the agent
+					draws its own interface and keeps working the way it does in a normal terminal. Every key
+					goes to the agent while the panel is focused, including <kbd>q</kbd> and
+					<kbd>ctrl+a</kbd>. <kbd>ctrl+\</kbd> detaches: the session closes, Bento's footer comes
+					back, and <kbd>q</kbd> quits again. The status bar shows the agent and the detach hint
+					while a session runs.
+				</p>
+				<p class="muted">
+					The panel resizes the pseudo-terminal and its emulator together when the window changes.
+					Closing Bento ends the agent's process group.
 				</p>
 			</div>
 
@@ -402,15 +456,17 @@ UU  unmerged</pre>
 				<h2>Layout</h2>
 				<pre class="diagram">{layout}</pre>
 				<ul>
-					<li><strong>Main:</strong> the open file, commit, or patch, with the source caret.</li>
+					<li><strong>Main:</strong> the open file, commit, or patch, with the source caret; the AI panel shares this box.</li>
 					<li><strong>Files:</strong> the project tree, with hidden and vendor folders skipped.</li>
 					<li><strong>History:</strong> commits on the branch and the working-tree changes, as tabs.</li>
-					<li><strong>Build:</strong> detected commands and the terminal, as tabs.</li>
+					<li><strong>Build and Terminal:</strong> detected commands on the left and your shell on the right, both always visible.</li>
+					<li><strong>AI:</strong> <kbd>ctrl+a</kbd> splits Main in half and hosts a coding agent.</li>
 				</ul>
 				<p>
 					Click a box or a tab label to focus and switch; a click in Main puts the caret on that
 					line and toggles a fold marker. The wheel scrolls the box under the pointer. Focus starts
 					on Files, <kbd>tab</kbd> cycles the boxes, and the window needs at least 72 × 22 cells.
+					The AI panel joins the cycle only while it is open.
 				</p>
 				<p class="muted">
 					Missing git, an empty tree, no detected commands, and a clean working tree each say so
@@ -468,9 +524,9 @@ SHA256SUMS</pre>
 				<p>
 					It runs in the macOS Terminal and Windows Terminal, with Menlo or SF Mono on macOS and
 					Cascadia Mono or Consolas on Windows: rounded boxes, no Nerd Font, no braille spinners.
-					Linux uses the same build. Every platform gets the same panes, keys, and features; only
-					the shell the Terminal tab runs and the installer differ. MIT licensed, contributions
-					welcome.
+					Linux uses the same build. Every platform gets the same panes, keys, AI panel, and
+					features; only the shell the Terminal panel runs and the installer differ. MIT licensed,
+					contributions welcome.
 				</p>
 				<p>
 					<a href="https://github.com/StarkDroid/Bento-Terminal">Source on GitHub →</a>
