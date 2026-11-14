@@ -30,8 +30,7 @@ func TestTerminalOutputCannotClearTheScreen(t *testing.T) {
 		t.Skip("uses a Unix printf")
 	}
 	m, _ := previewSample(t)
-	m.focus = PaneBuild
-	m = press(t, m, "right")
+	m.focus = PaneTerminal
 	m = press(t, m, `printf 'before\033[2J\033[3J\033[Hafter\n'`)
 	next, cmd := m.Update(keyMsg("enter"))
 	m = drive(t, next.(Model), cmd)
@@ -69,8 +68,7 @@ func TestClearCommandKeepsTheInterface(t *testing.T) {
 		t.Skip("uses the Unix clear command")
 	}
 	m, _ := previewSample(t)
-	m.focus = PaneBuild
-	m = press(t, m, "right")
+	m.focus = PaneTerminal
 	m = press(t, m, "clear")
 	next, cmd := m.Update(keyMsg("enter"))
 	m = drive(t, next.(Model), cmd)

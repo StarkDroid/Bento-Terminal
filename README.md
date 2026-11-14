@@ -1,6 +1,6 @@
 ![Bento terminal — one project, multi-pane](assets/banner.png)
 
-Bento terminal is a full-screen workspace for one project, in the terminal: preview and edit files, read the tree, commits and working-tree changes, run builds, and open a shell — all in one keyboard-first bento layout. It is written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and runs in the macOS Terminal or Windows Terminal (Menlo, SF Mono, Cascadia Mono; no Nerd Font).
+Bento terminal is a full-screen workspace for one project, in the terminal: preview and edit files, read the tree, commits and working-tree changes, run builds, open a shell, and run a coding agent beside the preview — all in one keyboard-first bento layout. It is written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and runs in the macOS Terminal or Windows Terminal (Menlo, SF Mono, Cascadia Mono; no Nerd Font).
 
 [![CI](https://img.shields.io/github/actions/workflow/status/StarkDroid/Bento-Terminal/ci.yml?branch=main&style=flat-square&label=build)](https://github.com/StarkDroid/Bento-Terminal/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/StarkDroid/Bento-Terminal?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/releases/latest)
@@ -36,12 +36,13 @@ The Unix installer puts the binary in `~/.local/bin`; `--with-zsh` also adds tha
 - **Every change.** Modified, staged, untracked, and conflicted paths, with patches.
 - **Your shell.** Any command, run inside the project.
 - **Builds without setup.** Detected tests, builds, and lint commands.
+- **Coding agents.** `ctrl+a` lists Claude Code, OpenCode, Gemini CLI, Codex CLI, Copilot, Crush, Aider, and Cursor; install one or start it beside the preview.
 
 - **Find fast.** `ctrl+p` filters the project's files; `ctrl+f` searches the open file.
 
-Every build ships the same panes, keys, and behaviour. Only the shell the Terminal tab runs (`$SHELL` on macOS and Linux, `%COMSPEC%` on Windows) and the installer differ per platform.
+Every build ships the same panes, keys, and behaviour. Only the shell the Terminal panel runs (`$SHELL` on macOS and Linux, `%COMSPEC%` on Windows) and the installer differ per platform.
 
-Search, editing, changes, the terminal, build detection, shortcuts, mouse, and layout are in the [docs](https://starkdroid.github.io/Bento-Terminal/docs/).
+Search, editing, changes, the terminal, build detection, coding agents, shortcuts, mouse, and layout are in the [docs](https://starkdroid.github.io/Bento-Terminal/docs/).
 
 ## Develop
 
@@ -65,7 +66,7 @@ go build -o bento.exe ./cmd/bento
 
 `go run ./cmd/bento` is the quickest loop on any platform; it runs from a temp directory and touches neither PATH nor the repository. Cross-compile with `make darwin-arm64`, `make darwin-amd64`, `make linux-arm64`, `make linux-amd64`, `make windows-amd64`, and `make windows-arm64`; without `make`, use `go build -o dist\bento_windows_amd64.exe ./cmd/bento`.
 
-Read [AGENTS.md](AGENTS.md) before changing layout, focus order, theme tokens, or keybindings. The site lives in `website/`; [its README](website/README.md) covers the build. Issues and pull requests are welcome.
+The site lives in `website/`; [its README](website/README.md) covers the build. Issues and pull requests are welcome.
 
 ## License
 

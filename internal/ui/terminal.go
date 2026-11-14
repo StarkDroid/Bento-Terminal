@@ -11,8 +11,8 @@ import (
 // maxTermLines bounds the terminal scrollback.
 const maxTermLines = 2000
 
-// onTerminalKey owns every key while the terminal tab is visible, so typing a
-// command never triggers a pane shortcut.
+// onTerminalKey owns every key while the terminal panel is focused, so typing
+// a command never triggers a pane shortcut.
 func (m Model) onTerminalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyEnter:
@@ -32,13 +32,18 @@ func (m Model) onTerminalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.termHistPos = -1
 			return m, nil
 		}
-		m.buildTab = buildTabCommands
+		m.focus = PaneBuild
+		return m.reflowPreview(false), nil
+	case tea.KeyCtrlA:
+		if m.termInput == "" {
+			return m.toggleAI()
+		}
 		return m, nil
 	case tea.KeyTab:
-		m.focus = Cycle(m.focus, 1)
+		m.focus = m.nextPane(1)
 		return m.reflowPreview(false), nil
 	case tea.KeyShiftTab:
-		m.focus = Cycle(m.focus, -1)
+		m.focus = m.nextPane(-1)
 		return m.reflowPreview(false), nil
 	case tea.KeyUp:
 		return m.termHistoryStep(-1), nil
@@ -200,7 +205,7 @@ func (m Model) scrollTerminal(delta int) Model {
 
 func (m Model) terminalPage() int {
 	lay := computeLayout(m.width, m.height)
-	h := lay.Build.H - 5
+	h := lay.Terminal.H - 5
 	if h < 1 {
 		return 1
 	}
@@ -209,18 +214,24 @@ func (m Model) terminalPage() int {
 
 // appendRun writes process output to the buffer owned by the running target.
 func (m Model) appendRun(line string) Model {
-	if m.runTarget == targetTerminal {
+	switch m.runTarget {
+	case targetTerminal:
 		return m.appendTerm(line)
+	case targetAI:
+		return m.appendAILine(line)
 	}
 	return m.appendOut(line)
 }
 
 // setRunState records a result on the running target.
 func (m Model) setRunState(state runState) Model {
-	if m.runTarget == targetTerminal {
+	switch m.runTarget {
+	case targetTerminal:
 		m.termState = state
-		return m
+	case targetAI:
+		m.aiState = state
+	default:
+		m.buildState = state
 	}
-	m.buildState = state
 	return m
 }

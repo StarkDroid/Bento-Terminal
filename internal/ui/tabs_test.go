@@ -100,18 +100,18 @@ func TestHistoryTabClickSwitches(t *testing.T) {
 	}
 }
 
-func TestBuildTabClickSelectsTerminal(t *testing.T) {
+func TestTerminalPanelClickFocuses(t *testing.T) {
 	m, _ := previewSample(t)
 	lay := computeLayout(m.width, m.height)
 	next, _ := m.Update(tea.MouseMsg{
-		X:      1 + 11,
-		Y:      lay.BuildBodyTop() - 1,
+		X:      lay.Build.W + 3,
+		Y:      lay.TerminalBodyTop() - 1,
 		Action: tea.MouseActionPress,
 		Button: tea.MouseButtonLeft,
 	})
 	m = next.(Model)
-	if m.buildTab != buildTabTerminal || m.focus != PaneBuild {
-		t.Fatalf("tab %d focus %d", m.buildTab, m.focus)
+	if m.focus != PaneTerminal {
+		t.Fatalf("focus %d", m.focus)
 	}
 	plain := stripANSI(m.View())
 	for _, want := range []string{"Terminal", "Type a command and press enter.", "enter run", "ctrl+c stop"} {
@@ -121,13 +121,9 @@ func TestBuildTabClickSelectsTerminal(t *testing.T) {
 	}
 }
 
-func TestTerminalTabRunsCommands(t *testing.T) {
+func TestTerminalPanelRunsCommands(t *testing.T) {
 	m, _ := previewSample(t)
-	m.focus = PaneBuild
-	m = press(t, m, "right")
-	if m.buildTab != buildTabTerminal {
-		t.Fatal("right should select the terminal tab")
-	}
+	m.focus = PaneTerminal
 	next, cmd := m.Update(keyMsg("q"))
 	m = next.(Model)
 	if cmd != nil {
@@ -137,8 +133,8 @@ func TestTerminalTabRunsCommands(t *testing.T) {
 		t.Fatalf("typed input %q", m.termInput)
 	}
 	m = press(t, m, "esc")
-	if m.termInput != "" || m.buildTab != buildTabTerminal {
-		t.Fatal("esc should clear the input before leaving the tab")
+	if m.termInput != "" || m.focus != PaneTerminal {
+		t.Fatal("esc should clear the input before leaving the panel")
 	}
 	m = press(t, m, "echo bento-term")
 	next, cmd = m.Update(keyMsg("enter"))
@@ -157,15 +153,14 @@ func TestTerminalTabRunsCommands(t *testing.T) {
 		t.Fatalf("running should clear the prompt, got %q", m.termInput)
 	}
 	m = press(t, m, "esc")
-	if m.buildTab != buildTabCommands {
-		t.Fatal("esc on an empty prompt should return to the command list")
+	if m.focus != PaneBuild {
+		t.Fatal("esc on an empty prompt should return to the build panel")
 	}
 }
 
 func TestTerminalHistoryRecallsCommands(t *testing.T) {
 	m, _ := previewSample(t)
-	m.focus = PaneBuild
-	m = press(t, m, "right")
+	m.focus = PaneTerminal
 	m.termHistory = []string{"echo one", "echo two"}
 	m.termHistPos = -1
 	m = press(t, m, "up")
@@ -186,11 +181,10 @@ func TestTerminalHistoryRecallsCommands(t *testing.T) {
 	}
 }
 
-func TestTabViewsKeepWindowSize(t *testing.T) {
+func TestPanelViewsKeepWindowSize(t *testing.T) {
 	m, _ := previewSample(t)
 	for _, size := range []struct{ w, h int }{{72, 22}, {80, 24}, {120, 32}} {
 		m.width, m.height = size.w, size.h
-		m.buildTab = buildTabTerminal
 		views := []string{m.View()}
 		m.newFileOpen = true
 		views = append(views, m.View())

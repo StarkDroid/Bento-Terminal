@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type piece struct {
@@ -190,7 +191,9 @@ func fitBlock(body string, width, height int) string {
 	out := make([]string, height)
 	for i := 0; i < height; i++ {
 		if i < len(lines) && lines[i] != "" {
-			out[i] = lines[i]
+			// A panel is a fixed grid: a long line must be cut here rather
+			// than wrapped later, or the block would outgrow its box.
+			out[i] = ansi.Truncate(lines[i], width, "")
 			continue
 		}
 		if i < len(lines) {

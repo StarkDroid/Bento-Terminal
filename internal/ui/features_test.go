@@ -30,6 +30,18 @@ func TestFootersShowPaneShortcuts(t *testing.T) {
 			t.Fatalf("footer missing %q\n%s", want, plain)
 		}
 	}
+	if !strings.Contains(plain, "ctrl+a ai") {
+		t.Fatalf("footer should show the AI shortcut\n%s", plain)
+	}
+}
+
+func TestFooterKeysAndLabelsUseDifferentColours(t *testing.T) {
+	for _, focused := range []bool{false, true} {
+		key, label := footerColours(focused)
+		if key == label {
+			t.Fatalf("focused %v: key and label share a colour", focused)
+		}
+	}
 }
 
 func TestCommitPreviewClosesWithEsc(t *testing.T) {

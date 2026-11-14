@@ -38,8 +38,6 @@ const (
 	actBuildMode
 	actBuildRerun
 	actBuildCancel
-	actBuildTabPrev
-	actBuildTabNext
 	actTermRun
 	actTermCancel
 	actTermClear
@@ -61,6 +59,16 @@ const (
 
 	actFindFile
 	actFindText
+
+	actAIToggle
+	actAIUp
+	actAIDown
+	actAIPageUp
+	actAIPageDown
+	actAIEnter
+	actAIRescan
+	actAIBack
+	actAIStop
 )
 
 // action is one keyboard command. Binding supplies the keys and their label;
@@ -115,10 +123,11 @@ func (m Model) paneActions(p Pane) []action {
 			{actHistoryOpen, m.keys.Enter, "open the selection"},
 		}
 	case PaneBuild:
-		if m.buildTab == buildTabTerminal {
-			return m.terminalActions()
-		}
 		return m.buildActions()
+	case PaneTerminal:
+		return m.terminalActions()
+	case PaneAI:
+		return m.aiActions()
 	}
 	return nil
 }
@@ -133,8 +142,6 @@ func (m Model) buildActions() []action {
 		{actBuildMode, m.keys.Mode, "switch auto or manual"},
 		{actBuildRerun, m.keys.Rerun, "rerun last command"},
 		{actBuildCancel, m.keys.Cancel, "cancel the run"},
-		{actBuildTabPrev, m.keys.Left, "previous tab"},
-		{actBuildTabNext, m.keys.Right, "next tab"},
 	}
 }
 
@@ -142,7 +149,42 @@ func (m Model) terminalActions() []action {
 	return []action{
 		{actTermRun, m.keys.Enter, "run the typed command"},
 		{actTermCancel, m.keys.Interrupt, "stop the running command"},
-		{actTermClear, m.keys.Close, "clear the input"},
+		{actTermClear, m.keys.Close, "clear the input or go back to Build"},
+	}
+}
+
+// aiActions is the idle AI panel. A running agent owns its own keys, so the
+// panel lists nothing then.
+func (m Model) aiActions() []action {
+	if m.aiSession != nil {
+		return nil
+	}
+	if m.aiInstall != "" {
+		if m.running && m.runTarget == targetAI {
+			return []action{
+				{actAIStop, m.keys.Close, "cancel the install"},
+			}
+		}
+		return []action{
+			{actAIStop, m.keys.Close, "close the install output"},
+		}
+	}
+	enter := "start or install the selected agent"
+	if row, ok := m.aiCurrent(); ok {
+		if row.installed {
+			enter = "start " + row.provider.Name
+		} else {
+			enter = "install " + row.provider.Name
+		}
+	}
+	return []action{
+		{actAIUp, m.keys.Up, "move up"},
+		{actAIDown, m.keys.Down, "move down"},
+		{actAIPageUp, m.keys.PageUp, "page up"},
+		{actAIPageDown, m.keys.PageDown, "page down"},
+		{actAIEnter, m.keys.Enter, enter},
+		{actAIRescan, m.keys.Rerun, "rescan installed agents"},
+		{actAIBack, m.keys.Close, "back to the preview"},
 	}
 }
 
@@ -154,6 +196,7 @@ func (m Model) globalActions() []action {
 		{actSettings, m.keys.Settings, "settings and about"},
 		{actFindFile, m.keys.FindFile, "find a file in the project"},
 		{actFindText, m.keys.FindText, "find in this file"},
+		{actAIToggle, m.keys.ToggleAI, "open or close the AI panel"},
 		{actQuit, m.keys.Quit, "quit Bento terminal"},
 	}
 }
@@ -162,7 +205,7 @@ func (m Model) globalActions() []action {
 // pane, so they are kept in the list while another pane has focus.
 func (m Model) actions() []action {
 	list := m.paneActions(m.focus)
-	if m.focus != PaneBuild {
+	if m.focus != PaneBuild && m.focus != PaneTerminal {
 		list = append(list, m.buildActions()...)
 	}
 	return append(list, m.globalActions()...)
@@ -183,17 +226,19 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 	m.paletteOpen = false
 	switch id {
 	case actNext:
-		m.focus = Cycle(m.focus, 1)
+		m.focus = m.nextPane(1)
 		return m.reflowPreview(false), nil
 	case actPrev:
-		m.focus = Cycle(m.focus, -1)
+		m.focus = m.nextPane(-1)
 		return m.reflowPreview(false), nil
 	case actKeys:
 		return m.openPalette(), nil
 	case actSettings:
 		return m.openSettings(), nil
 	case actQuit:
-		return m.stopRun(), tea.Quit
+		m = m.stopRun()
+		m = m.closeAISession()
+		return m, tea.Quit
 
 	case actFileUp:
 		return m.moveFile(-1), nil
@@ -249,10 +294,6 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.rerun()
 	case actBuildCancel:
 		return m.stopRun(), nil
-	case actBuildTabPrev:
-		return m.switchBuildTab(-1), nil
-	case actBuildTabNext:
-		return m.switchBuildTab(1), nil
 	case actTermRun:
 		return m.runTerminal()
 	case actTermCancel:
@@ -295,6 +336,35 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.openFinder()
 	case actFindText:
 		return m.openFind(), nil
+
+	case actAIToggle:
+		return m.toggleAI()
+	case actAIUp:
+		return m.moveAI(-1), nil
+	case actAIDown:
+		return m.moveAI(1), nil
+	case actAIPageUp:
+		return m.moveAI(-m.aiPage()), nil
+	case actAIPageDown:
+		return m.moveAI(m.aiPage()), nil
+	case actAIEnter:
+		return m.activateAI()
+	case actAIRescan:
+		return m, detectAgentsCmd()
+	case actAIBack:
+		m.focus = PaneMain
+		return m.reflowPreview(false), nil
+	case actAIStop:
+		if m.aiInstall != "" {
+			if m.running && m.runTarget == targetAI {
+				m = m.stopRun()
+				m.aiNote = "install cancelled"
+			}
+			m.aiInstall = ""
+			m.aiLines = nil
+			return m, nil
+		}
+		return m.stopAISession("detached"), nil
 	}
 	return m, nil
 }
@@ -313,6 +383,10 @@ func (m Model) paneTitle(p Pane) string {
 		return "History"
 	case PaneBuild:
 		return "Build"
+	case PaneTerminal:
+		return "Terminal"
+	case PaneAI:
+		return "AI"
 	}
 	return "Bento"
 }

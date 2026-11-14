@@ -7,7 +7,7 @@ import (
 )
 
 func TestCycleFocus(t *testing.T) {
-	order := []Pane{PaneMain, PaneFiles, PaneHistory, PaneBuild}
+	order := []Pane{PaneMain, PaneAI, PaneFiles, PaneHistory, PaneBuild, PaneTerminal}
 	p := PaneMain
 	for i := 0; i < len(order)*2; i++ {
 		want := order[(i+1)%len(order)]
@@ -16,11 +16,26 @@ func TestCycleFocus(t *testing.T) {
 			t.Fatalf("step %d: got %d want %d", i, p, want)
 		}
 	}
-	if Cycle(PaneMain, -1) != PaneBuild {
-		t.Fatal("shift-tab from main should land on build")
+	if Cycle(PaneMain, -1) != PaneTerminal {
+		t.Fatal("shift-tab from main should land on terminal")
 	}
-	if Cycle(PaneFiles, -1) != PaneMain {
-		t.Fatal("shift-tab from files should land on main")
+	if Cycle(PaneFiles, -1) != PaneAI {
+		t.Fatal("shift-tab from files should land on the AI panel")
+	}
+}
+
+func TestNextPaneSkipsClosedAI(t *testing.T) {
+	m := New(t.TempDir(), "test")
+	m.focus = PaneMain
+	if got := m.nextPane(1); got != PaneFiles {
+		t.Fatalf("closed AI should be skipped, got %d", got)
+	}
+	if got := m.nextPane(-1); got != PaneTerminal {
+		t.Fatalf("closed AI should be skipped backwards, got %d", got)
+	}
+	m.aiOpen = true
+	if got := m.nextPane(1); got != PaneAI {
+		t.Fatalf("open AI should take focus, got %d", got)
 	}
 }
 
@@ -29,7 +44,7 @@ func TestTabCyclesFocus(t *testing.T) {
 	if m.Focus() != PaneFiles {
 		t.Fatalf("initial focus %d", m.Focus())
 	}
-	want := []Pane{PaneHistory, PaneBuild, PaneMain, PaneFiles}
+	want := []Pane{PaneHistory, PaneBuild, PaneTerminal, PaneMain, PaneFiles}
 	for i, pane := range want {
 		next, _ := m.Update(keyMsg("tab"))
 		m = next.(Model)
@@ -116,6 +131,10 @@ func keyMsg(s string) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyPgDown}
 	case "ctrl+c":
 		return tea.KeyMsg{Type: tea.KeyCtrlC}
+	case "ctrl+a":
+		return tea.KeyMsg{Type: tea.KeyCtrlA}
+	case "ctrl+\\":
+		return tea.KeyMsg{Type: tea.KeyCtrlBackslash}
 	default:
 		return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
 	}

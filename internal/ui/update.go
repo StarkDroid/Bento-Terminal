@@ -46,6 +46,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.systems = msg.result.Systems
 		m.buildReady = true
 		return m.clampCmd(), nil
+	case agentsDetectedMsg:
+		return m.onAgentsDetected(msg.found), nil
+	case aiEventMsg:
+		return m.onAIEvent(msg)
 	case filesListedMsg:
 		m.finderLoading = false
 		m.finderErr = ""
@@ -67,7 +71,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m.appendRun(msg.line), listenCmd(msg.id, msg.events)
 	case runDoneMsg:
-		return m.onDone(msg), nil
+		return m.onDone(msg)
 	case refreshMsg:
 		return m, tea.Batch(loadGitCmd(m.root), refreshCmd())
 	default:
@@ -85,14 +89,19 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.findOpen {
 		return m.onFindKey(msg)
 	}
+	// A running agent owns every key while its panel has focus, except the
+	// detach chord.
+	if m.aiSession != nil && m.focus == PaneAI && !m.paletteOpen && !m.settingsOpen {
+		return m.onAISessionKey(msg)
+	}
 	if m.previewEditing {
 		return m.onEditorKey(msg)
 	}
-	if !m.paletteOpen && !m.settingsOpen && m.focus == PaneBuild && m.buildTab == buildTabTerminal {
+	if !m.paletteOpen && !m.settingsOpen && m.focus == PaneTerminal {
 		return m.onTerminalKey(msg)
 	}
 	if key.Matches(msg, m.keys.Quit) {
-		return m.stopRun(), tea.Quit
+		return m.stopRun().closeAISession(), tea.Quit
 	}
 	if m.settingsOpen {
 		if key.Matches(msg, m.keys.Close, m.keys.Settings) {
@@ -130,7 +139,7 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if !lay.OK {
 		return m, nil
 	}
-	pane, ok := paneAt(lay, msg.X, msg.Y)
+	pane, ok := paneAt(lay, msg.X, msg.Y, m.aiOpen)
 	if !ok {
 		return m, nil
 	}
@@ -152,20 +161,17 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) click(pane Pane, x, y int, lay layout) (tea.Model, tea.Cmd) {
-	if y == 1 && m.previewKind == previewFile && !m.previewEditing && m.newFileTabAt(x-1, lay.Main.W-2) {
+	previewW := lay.Main.W
+	if m.aiOpen {
+		previewW, _ = lay.MainSplit()
+	}
+	if y == 1 && m.previewKind == previewFile && !m.previewEditing && m.newFileTabAt(x-1, previewW-2) {
 		return m.openNewFile(), nil
 	}
 	if y == lay.HistoryBodyTop()-1 {
 		if tab, ok := historyTabAt(x - (lay.Main.W + 2)); ok {
 			m.focus = PaneHistory
 			m.historyTab = tab
-			return m.reflowPreview(false), nil
-		}
-	}
-	if y == lay.BuildBodyTop()-1 {
-		if tab, ok := buildTabAt(x - 1); ok {
-			m.focus = PaneBuild
-			m.buildTab = tab
 			return m.reflowPreview(false), nil
 		}
 	}
@@ -215,14 +221,17 @@ func (m Model) click(pane Pane, x, y int, lay layout) (tea.Model, tea.Cmd) {
 		m.commitCursor = row
 		return m.openCommit()
 	case PaneBuild:
-		if m.buildTab == buildTabTerminal {
-			return m, nil
-		}
 		row := y - lay.BuildBodyTop() + m.cmdScroll
 		if row < 0 || row >= len(m.commands()) {
 			return m, nil
 		}
 		m.cmdCursor = row
+	case PaneAI:
+		row := y - lay.MainBodyTop() + m.aiScroll
+		if row < 0 || row >= len(m.aiRows()) {
+			return m, nil
+		}
+		m.aiCursor = row
 	}
 	return m, nil
 }
@@ -251,18 +260,6 @@ func historyTabAt(rel int) (historyTab, bool) {
 	return 0, false
 }
 
-// buildTabAt maps an inner title cell to a build tab. Tabs are drawn as a
-// three-cell state glyph then " Build " and " Terminal ".
-func buildTabAt(rel int) (buildTab, bool) {
-	switch {
-	case rel >= 3 && rel < 10:
-		return buildTabCommands, true
-	case rel >= 11 && rel < 21:
-		return buildTabTerminal, true
-	}
-	return 0, false
-}
-
 func (m Model) wheel(pane Pane, delta int) Model {
 	m.focus = pane
 	m = m.reflowPreview(false)
@@ -281,11 +278,11 @@ func (m Model) wheel(pane Pane, delta int) Model {
 	case PaneHistory:
 		m = m.moveHistory(delta)
 	case PaneBuild:
-		if m.buildTab == buildTabTerminal {
-			m = m.scrollTerminal(delta)
-		} else {
-			m = m.scrollOutput(delta)
-		}
+		m = m.scrollOutput(delta)
+	case PaneTerminal:
+		m = m.scrollTerminal(delta)
+	case PaneAI:
+		m = m.moveAI(delta)
 	}
 	return m
 }
@@ -403,19 +400,6 @@ func (m Model) switchHistoryTab(delta int) Model {
 		m.historyTab = histTabChanges
 	} else {
 		m.historyTab = histTabCommits
-	}
-	return m
-}
-
-// switchBuildTab flips between the command list and the terminal.
-func (m Model) switchBuildTab(delta int) Model {
-	if delta == 0 {
-		return m
-	}
-	if m.buildTab == buildTabCommands {
-		m.buildTab = buildTabTerminal
-	} else {
-		m.buildTab = buildTabCommands
 	}
 	return m
 }
@@ -705,9 +689,9 @@ func (m Model) onStarted(msg runStartedMsg) (tea.Model, tea.Cmd) {
 	return m, listenCmd(msg.id, msg.events)
 }
 
-func (m Model) onDone(msg runDoneMsg) Model {
+func (m Model) onDone(msg runDoneMsg) (tea.Model, tea.Cmd) {
 	if msg.id != m.runID {
-		return m
+		return m, nil
 	}
 	m.running = false
 	m.cancel = nil
@@ -722,7 +706,10 @@ func (m Model) onDone(msg runDoneMsg) Model {
 		m = m.setRunState(stateFailed)
 		m = m.appendRun("✗ " + msg.err.Error())
 	}
-	return m
+	if m.runTarget == targetAI {
+		return m, detectAgentsCmd()
+	}
+	return m, nil
 }
 
 func (m Model) appendOut(line string) Model {
@@ -787,7 +774,11 @@ func (m Model) syncSizes() Model {
 	if !lay.OK {
 		return m
 	}
-	m.preview.Width = lay.Main.W - 2
+	previewW := lay.Main.W
+	if m.aiOpen {
+		previewW, _ = lay.MainSplit()
+	}
+	m.preview.Width = previewW - 2
 	m.preview.Height = lay.Main.H - 4
 	if m.preview.Width < 1 {
 		m.preview.Width = 1
@@ -804,7 +795,7 @@ func (m Model) syncSizes() Model {
 	if m.output.Height < 1 {
 		m.output.Height = 1
 	}
-	termW := lay.Build.W - 2
+	termW := lay.Terminal.W - 2
 	termH := lay.Build.H - 5
 	if termW < 1 {
 		termW = 1
@@ -817,6 +808,13 @@ func (m Model) syncSizes() Model {
 	m.termOutput.Height = termH
 	if m.termFollow && prevH != termH {
 		m.termOutput.GotoBottom()
+	}
+	if m.aiSession != nil {
+		w, h := m.aiSessionSize()
+		if w != m.aiCols || h != m.aiScreenH {
+			_ = m.aiSession.Resize(w, h)
+			m.aiCols, m.aiScreenH = w, h
+		}
 	}
 	return m
 }
