@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/StarkDroid/Bento-Terminal/internal/agent"
 	"github.com/StarkDroid/Bento-Terminal/internal/build"
 	"github.com/StarkDroid/Bento-Terminal/internal/files"
 	"github.com/StarkDroid/Bento-Terminal/internal/git"
@@ -26,6 +27,26 @@ type buildLoadedMsg struct {
 type filesListedMsg struct {
 	files []string
 	err   error
+}
+
+type agentsDetectedMsg struct {
+	found map[string]string
+}
+
+func detectAgentsCmd() tea.Cmd {
+	return func() tea.Msg {
+		return agentsDetectedMsg{found: agent.Detect()}
+	}
+}
+
+func waitAICmd(events <-chan aiEvent) tea.Cmd {
+	return func() tea.Msg {
+		event, ok := <-events
+		if !ok {
+			return nil
+		}
+		return aiEventMsg{event: event}
+	}
 }
 
 type runStartedMsg struct {

@@ -47,7 +47,8 @@ func (m Model) onPaletteKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-	// A listed shortcut works straight from the list too.
+	// A listed shortcut works straight from the list too. Only a typed rune
+	// counts, so tab and the other focus keys stay with the list.
 	if len(msg.Runes) == 1 {
 		for _, it := range items {
 			if key.Matches(msg, it.action.binding) {

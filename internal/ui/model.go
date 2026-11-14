@@ -40,20 +40,13 @@ const (
 	histTabChanges
 )
 
-// buildTab selects the command list or the free-form terminal.
-type buildTab int
-
-const (
-	buildTabCommands buildTab = iota
-	buildTabTerminal
-)
-
 // runTarget says where a running process writes its output.
 type runTarget int
 
 const (
 	targetBuild runTarget = iota
 	targetTerminal
+	targetAI
 )
 
 // Model is the Bubble Tea model for Bento terminal.
@@ -91,7 +84,6 @@ type Model struct {
 	buildReady bool
 	cmdCursor  int
 	cmdScroll  int
-	buildTab   buildTab
 
 	running         bool
 	runID           int
@@ -111,6 +103,23 @@ type Model struct {
 	termCursor      int
 	termHistory     []string
 	termHistPos     int
+
+	aiOpen      bool
+	aiCursor    int
+	aiScroll    int
+	aiFound     map[string]string
+	aiReady     bool
+	aiErr       string
+	aiNote      string
+	aiInstall   string
+	aiLines     []string
+	aiState     runState
+	aiSession   aiSession
+	aiSessionID string
+	aiEvents    chan aiEvent
+	aiRun       int
+	aiCols      int
+	aiScreenH   int
 
 	previewKind      previewKind
 	previewTitle     string
@@ -185,6 +194,7 @@ func (m Model) Init() tea.Cmd {
 		loadTreeCmd(m.root),
 		loadGitCmd(m.root),
 		loadBuildCmd(m.root),
+		detectAgentsCmd(),
 		m.spinner.Tick,
 		refreshCmd(),
 	)

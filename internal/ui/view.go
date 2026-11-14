@@ -33,14 +33,28 @@ func (m Model) View() string {
 	if !lay.OK {
 		return m.tooSmall()
 	}
-	main := m.renderMain(lay.Main.W, lay.Main.H)
-	filesPane := m.renderFiles(lay.Files.W, lay.Files.H)
-	history := m.renderHistory(lay.History.W, lay.History.H)
-	buildPane := m.renderBuild(lay.Build.W, lay.Build.H)
-	status := m.renderStatus(lay.Status.W)
-	right := lipgloss.JoinVertical(lipgloss.Left, filesPane, gapRow(lay.Files.W), history)
-	top := lipgloss.JoinHorizontal(lipgloss.Top, main, gapCol(lay.Main.H), right)
-	return lipgloss.JoinVertical(lipgloss.Left, top, gapRow(m.width), buildPane, status)
+	previewW, aiW := lay.Main.W, 0
+	if m.aiOpen {
+		previewW, aiW = lay.MainSplit()
+	}
+	main := m.renderMain(previewW, lay.Main.H)
+	right := lipgloss.JoinVertical(lipgloss.Left,
+		m.renderFiles(lay.Files.W, lay.Files.H),
+		gapRow(lay.Files.W),
+		m.renderHistory(lay.History.W, lay.History.H),
+	)
+	topParts := []string{main}
+	if m.aiOpen {
+		topParts = append(topParts, gapCol(lay.Main.H), m.renderAI(aiW, lay.Main.H))
+	}
+	topParts = append(topParts, gapCol(lay.Main.H), right)
+	top := lipgloss.JoinHorizontal(lipgloss.Top, topParts...)
+	bottom := lipgloss.JoinHorizontal(lipgloss.Top,
+		m.renderBuild(lay.Build.W, lay.Build.H),
+		gapCol(lay.Build.H),
+		m.renderTerminal(lay.Terminal.W, lay.Build.H),
+	)
+	return lipgloss.JoinVertical(lipgloss.Left, top, gapRow(m.width), bottom, m.renderStatus(lay.Status.W))
 }
 
 func (m Model) renderMain(width, height int) string {
@@ -402,9 +416,6 @@ func (m Model) commitLine(c git.Commit, width int, selected bool) string {
 }
 
 func (m Model) renderBuild(width, height int) string {
-	if m.buildTab == buildTabTerminal {
-		return m.renderTerminal(width, height)
-	}
 	focused := m.focus == PaneBuild
 	innerW := width - 2
 	if innerW < 1 {
@@ -470,50 +481,56 @@ func (m Model) commandLine(c build.Command, width int, selected bool) string {
 
 func (m Model) buildTitle(width int) string {
 	focused := m.focus == PaneBuild
-	fg := lipgloss.TerminalColor(colorSandDim)
-	if focused {
-		fg = colorLagoonBright
+	left := []piece{
+		m.runGlyph(m.buildState, focused),
+		tabPiece("Build", true, focused),
 	}
-	state := m.buildState
-	if m.buildTab == buildTabTerminal {
-		state = m.termState
+	var right []piece
+	mode := "auto"
+	if m.mode == build.ModeManual {
+		mode = "manual"
 	}
-	var glyph piece
+	right = append(right, pieceText(" "+mode, colorLagoon, colorPanel))
+	if m.last != nil {
+		right = append(right, pieceText("  ·  "+m.last.Name, colorSandDim, colorPanel))
+	}
+	return joinLeftRight(width, colorPanel, left, right)
+}
+
+// runGlyph is the state marker in a panel title: a spinner while running, a
+// tick or cross after a run, and the panel glyph when idle.
+func (m Model) runGlyph(state runState, focused bool) piece {
 	switch state {
 	case stateRunning:
 		spin := m.spinner.View()
-		glyph = piece{
+		return piece{
 			view:  lipgloss.NewStyle().Background(colorPanel).Render(" ") + spin + lipgloss.NewStyle().Background(colorPanel).Render(" "),
 			width: 2 + lipgloss.Width(spin),
 		}
 	case stateOK:
-		glyph = pieceText(" ✓ ", colorPalm, colorPanel)
+		return pieceText(" ✓ ", colorPalm, colorPanel)
 	case stateFailed, stateCanceled:
-		glyph = pieceText(" ✗ ", colorCoral, colorPanel)
-	default:
-		glyph = pieceText(" ▶ ", fg, colorPanel)
+		return pieceText(" ✗ ", colorCoral, colorPanel)
 	}
+	fg := colorMoss
+	if focused {
+		fg = colorLagoonBright
+	}
+	return pieceText(" ▶ ", fg, colorPanel)
+}
+
+func (m Model) terminalTitle(width int) string {
+	focused := m.focus == PaneTerminal
 	left := []piece{
-		glyph,
-		tabPiece("Build", m.buildTab == buildTabCommands, focused),
-		pieceText(" ", colorSand, colorPanel),
-		tabPiece("Terminal", m.buildTab == buildTabTerminal, focused),
+		m.runGlyph(m.termState, focused),
+		tabPiece("Terminal", true, focused),
 	}
 	var right []piece
 	switch {
-	case m.buildTab == buildTabTerminal:
-		if m.running && m.runTarget == targetTerminal {
-			right = append(right, pieceText(" running ", colorPalm, colorPanel))
-		}
+	case m.running && m.runTarget == targetTerminal:
+		right = append(right, pieceText(" running ", colorPalm, colorPanel))
 	default:
-		mode := "auto"
-		if m.mode == build.ModeManual {
-			mode = "manual"
-		}
-		right = append(right, pieceText(" "+mode, colorLagoon, colorPanel))
-		if m.last != nil {
-			right = append(right, pieceText("  ·  "+m.last.Name, colorSandDim, colorPanel))
-		}
+		right = append(right, pieceText(" $SHELL ", colorSandDim, colorPanel))
 	}
 	return joinLeftRight(width, colorPanel, left, right)
 }
@@ -521,7 +538,7 @@ func (m Model) buildTitle(width int) string {
 // renderTerminal draws the terminal scrollback, the command prompt, and the
 // footer. The prompt always has the keyboard.
 func (m Model) renderTerminal(width, height int) string {
-	focused := m.focus == PaneBuild
+	focused := m.focus == PaneTerminal
 	innerW := width - 2
 	if innerW < 1 {
 		innerW = 1
@@ -537,8 +554,8 @@ func (m Model) renderTerminal(width, height int) string {
 		}
 	}
 	lines = append(lines, m.terminalPrompt(innerW))
-	lines = append(lines, m.footer(PaneBuild, innerW))
-	return renderPanel(m.buildTitle(innerW), strings.Join(lines, "\n"), width, height, focused)
+	lines = append(lines, m.footer(PaneTerminal, innerW))
+	return renderPanel(m.terminalTitle(innerW), strings.Join(lines, "\n"), width, height, focused)
 }
 
 func (m Model) terminalBlock(width, height int) string {
@@ -645,10 +662,20 @@ func (m Model) footerHints(p Pane) []string {
 	case PaneHistory:
 		return []string{"↑↓", "←→ tab", "? keys"}
 	case PaneBuild:
-		if m.buildTab == buildTabTerminal {
-			return []string{"enter run", "ctrl+c stop", "esc back", "? keys"}
+		return []string{"↑↓ pick", "enter run", "a mode", "r rerun", "? keys"}
+	case PaneTerminal:
+		return []string{"enter run", "ctrl+c stop", "esc back", "? keys"}
+	case PaneAI:
+		if m.aiSession != nil {
+			return nil
 		}
-		return []string{"↑↓ pick", "enter run", "a mode", "r rerun", "←→ tab", "? keys"}
+		if m.aiInstall != "" {
+			if m.running && m.runTarget == targetAI {
+				return []string{"esc cancel"}
+			}
+			return []string{"esc close"}
+		}
+		return []string{"↑↓ pick", "enter", "r rescan", "? keys"}
 	}
 	return []string{"? keys"}
 }
@@ -706,21 +733,22 @@ func (m Model) renderStatus(width int) string {
 }
 
 func (m Model) statusLine(width int) string {
-	brand := pieceText("bento", colorLagoon, colorStatus)
 	left := m.statusLeft()
-	used := 0
-	for _, p := range left {
-		used += p.width
+	var right []piece
+	if m.aiSession != nil {
+		name := providerName(m.aiSessionID)
+		right = append(right,
+			pieceText("▾ ", colorPalm, colorStatus),
+			pieceText(name, colorPalm, colorStatus),
+		)
+		if m.focus == PaneAI {
+			right = append(right, pieceText("  ctrl+\\ detach ", colorSandDim, colorStatus))
+		} else {
+			right = append(right, pieceText("  running ", colorSandDim, colorStatus))
+		}
 	}
-	gap := width - used - brand.width
-	if gap < 1 {
-		return joinPieces(width, colorStatus, left)
-	}
-	parts := append(append([]piece{}, left...), piece{
-		view:  lipgloss.NewStyle().Background(colorStatus).Width(gap).Render(""),
-		width: gap,
-	}, brand)
-	return joinPieces(width, colorStatus, parts)
+	right = append(right, pieceText("bento", colorLagoon, colorStatus))
+	return joinLeftRight(width, colorStatus, left, right)
 }
 
 func (m Model) statusLeft() []piece {
