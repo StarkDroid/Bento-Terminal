@@ -1,0 +1,88 @@
+name: Packages
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: "Version to package, without v"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to package, without v (for example 0.5.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  linux-packages:
+    name: Linux packages
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          version="${{ inputs.version }}"
+          version="${version#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "not a version: $version" >&2
+            exit 1
+          }
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install nfpm
+        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.0
+
+      - name: Download release assets
+        shell: bash
+        run: |
+          mkdir -p dist release
+          gh release download "v${{ steps.version.outputs.value }}" \
+            --pattern 'bento_linux_*' --dir dist
+          gh release download "v${{ steps.version.outputs.value }}" \
+            --pattern 'SHA256SUMS' --dir release
+
+      - name: Render manifests
+        run: |
+          python3 packaging/render.py \
+            --version "${{ steps.version.outputs.value }}" \
+            --sums release/SHA256SUMS \
+            --out packages
+
+      - name: Build deb, rpm, and apk
+        shell: bash
+        run: |
+          for arch in amd64 arm64; do
+            for format in deb rpm apk; do
+              "$HOME/go/bin/nfpm" package \
+                --config "packages/nfpm/${arch}.yaml" \
+                --packager "$format" \
+                --target dist
+            done
+          done
+          ls -lh dist/*.deb dist/*.rpm dist/*.apk
+
+      - name: Attach packages to the release
+        shell: bash
+        run: |
+          gh release upload "v${{ steps.version.outputs.value }}" \
+            dist/*.deb dist/*.rpm dist/*.apk --clobber
+
+      - name: Upload rendered manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: bento-packages-${{ steps.version.outputs.value }}
+          path: packages
+          if-no-files-found: error

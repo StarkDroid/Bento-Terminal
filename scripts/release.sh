@@ -342,4 +342,8 @@ gh release create "$tag" dist/bento_darwin_arm64 dist/bento_darwin_amd64 \
 	--notes-file "$notes" \
 	--verify-tag >/dev/null
 
+if [[ -n ${GITHUB_OUTPUT:-} ]]; then
+	printf 'version=%s\n' "$version" >>"$GITHUB_OUTPUT"
+fi
+
 gh release view "$tag" --json url --jq .url
