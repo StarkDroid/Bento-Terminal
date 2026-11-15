@@ -21,9 +21,12 @@ On macOS or Linux, push the same `.nupkg` through the Chocolatey API:
 curl -X PUT \
   -H "X-NuGet-ApiKey: $CHOCO_API_KEY" \
   --upload-file packaging/chocolatey/dist/bento-terminal.0.7.0.nupkg \
-  https://push.chocolatey.org/api/v2/package/
+  https://push.chocolatey.org/api/v2/package
 ```
 
 Get the API key from <https://community.chocolatey.org/account>. The first
 submission goes through Chocolatey moderation before it appears in the
 community repository.
+
+Use `PUT` without a trailing slash. Chocolatey returns
+`Resource not found for the segment 'package'` when the path ends in `/`.
