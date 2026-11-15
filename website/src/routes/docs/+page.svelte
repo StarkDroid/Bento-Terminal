@@ -230,6 +230,7 @@ go build -o bento.exe ./cmd/bento
 								<tr><th><kbd>ctrl+p</kbd></th><td>Find a file in the project</td></tr>
 								<tr><th><kbd>ctrl+f</kbd></th><td>Find in the open file</td></tr>
 								<tr><th><kbd>ctrl+a</kbd></th><td>Open or close the AI panel</td></tr>
+								<tr><th><kbd>ctrl+r</kbd></th><td>Open a recent project</td></tr>
 								<tr><th><kbd>?</kbd></th><td>Commands for this box</td></tr>
 								<tr><th><kbd>,</kbd></th><td>Settings, version, and links</td></tr>
 								<tr><th><kbd>q</kbd></th><td>Quit</td></tr>
@@ -242,6 +243,7 @@ go build -o bento.exe ./cmd/bento
 								<tr><th><kbd>pgup</kbd> <kbd>pgdown</kbd></th><td>Page the preview</td></tr>
 								<tr><th><kbd>[</kbd> <kbd>]</kbd></th><td>Fold or unfold a block</td></tr>
 								<tr><th><kbd>e</kbd></th><td>Edit; <kbd>ctrl+s</kbd> saves</td></tr>
+								<tr><th><kbd>esc</kbd></th><td>Close the file preview</td></tr>
 								<tr><th><kbd>n</kbd> or <kbd>+</kbd></th><td>New file</td></tr>
 								<tr><th><kbd>s</kbd></th><td>Highlighting on or off</td></tr>
 							</tbody>
@@ -483,6 +485,12 @@ UU  unmerged</pre>
 					line and toggles a fold marker. The wheel scrolls the box under the pointer. Focus starts
 					on Files, <kbd>tab</kbd> cycles the boxes, and the window needs at least 72 × 22 cells.
 					The AI panel joins the cycle only while it is open.
+				</p>
+				<p>
+					Bento remembers the projects you open, the file you were reading, and the caret and
+					scroll in that file. Starting <code>bento</code> in a project restores them by default;
+					<kbd>ctrl+r</kbd> lists recent projects and switches to one in place, saving the current
+					workspace first.
 				</p>
 				<p class="muted">
 					Missing git, an empty tree, no detected commands, and a clean working tree each say so

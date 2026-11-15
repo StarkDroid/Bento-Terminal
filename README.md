@@ -69,6 +69,7 @@ The Unix installer puts the binary in `~/.local/bin`; `--with-zsh` also adds tha
 - **Coding agents.** `ctrl+a` lists Claude Code, OpenCode, Gemini CLI, Codex CLI, Copilot, Crush, Aider, and Cursor; install one or start it beside the preview.
 
 - **Find fast.** `ctrl+p` filters the project's files; `ctrl+f` searches the open file.
+- **Pick up where you left off.** Bento remembers recent projects, reopens the file you were reading, and keeps its caret and scroll.
 
 Every build ships the same panes, keys, and behaviour. Only the shell the Terminal panel runs (`$SHELL` on macOS and Linux, `%COMSPEC%` on Windows) and the installer differ per platform.
 

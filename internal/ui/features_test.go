@@ -8,6 +8,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	appstate "github.com/StarkDroid/Bento-Terminal/internal/state"
 )
 
 const goSample = `package main
@@ -69,15 +71,41 @@ func TestCommitPreviewClosesWithEsc(t *testing.T) {
 	}
 }
 
-func TestEscLeavesAFilePreviewOpen(t *testing.T) {
+func TestEscClosesAFilePreview(t *testing.T) {
 	m, _ := previewSample(t)
 	if m.previewKind != previewFile {
 		t.Fatal("the sample should open a file")
 	}
 	next, _ := m.Update(keyMsg("esc"))
 	m = next.(Model)
+	if m.previewKind != previewNone {
+		t.Fatal("esc should close a file preview")
+	}
+	plain := stripANSI(m.View())
+	if !strings.Contains(plain, "Select a file to preview it.") {
+		t.Fatalf("Main should return to the home view\n%s", plain)
+	}
+}
+
+func TestEscInAIPanelLeavesTheFileOpen(t *testing.T) {
+	m, _ := previewSample(t)
+	m.aiOpen = true
+	m.aiReady = true
+	m.focus = PaneAI
+	next, _ := m.Update(keyMsg("esc"))
+	m = next.(Model)
 	if m.previewKind != previewFile {
-		t.Fatal("esc should keep a file preview")
+		t.Fatal("esc in the AI panel should not close the file")
+	}
+	if m.focus != PaneMain {
+		t.Fatalf("esc should return focus to Main, got %d", m.focus)
+	}
+}
+
+func TestFilePreviewFooterOffersClose(t *testing.T) {
+	m, _ := previewSample(t)
+	if !strings.Contains(stripANSI(m.View()), "esc close") {
+		t.Fatal("the file footer should offer esc close")
 	}
 }
 
@@ -461,4 +489,65 @@ func previewSample(t *testing.T) (Model, string) {
 	m.focus = PaneMain
 	m.previewCursor = 2
 	return m, dir
+}
+
+func TestClosingAFileClearsSavedState(t *testing.T) {
+	m, _ := previewSample(t)
+	store := appstate.NewMemory()
+	m.store = store
+	m.SaveState()
+	if got := store.Project(m.root).File; got != "main.go" {
+		t.Fatalf("saved file %q", got)
+	}
+	next, _ := m.Update(keyMsg("esc"))
+	m = next.(Model)
+	if got := store.Project(m.root).File; got != "" {
+		t.Fatalf("closed file should be cleared, got %q", got)
+	}
+}
+
+func TestRecentProjectSwitchesAndRestores(t *testing.T) {
+	dir := t.TempDir()
+	other := filepath.Join(dir, "other")
+	if err := os.MkdirAll(other, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(other, "app.go"), []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	store := appstate.NewMemory()
+	if err := store.Touch(other); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetProject(other, appstate.ProjectState{File: "app.go", Line: 2, Col: 0, Focus: "main"}); err != nil {
+		t.Fatal(err)
+	}
+
+	m, _ := previewSample(t)
+	m.store = store
+	m.width, m.height = 100, 32
+	m.focus = PaneFiles
+	next, _ := m.Update(keyMsg("ctrl+r"))
+	m = next.(Model)
+	if !m.recentOpen {
+		t.Fatal("ctrl+r should open recent projects")
+	}
+	plain := stripANSI(m.View())
+	if !strings.Contains(plain, "Recent projects") || !strings.Contains(plain, "other") {
+		t.Fatalf("recent modal missing the project\n%s", plain)
+	}
+	next, cmd := m.Update(keyMsg("enter"))
+	m = next.(Model)
+	if cmd == nil {
+		t.Fatal("switching projects should return the load commands")
+	}
+	if m.root != other {
+		t.Fatalf("root %q want %q", m.root, other)
+	}
+	if m.previewKind != previewFile || m.previewPath != "app.go" {
+		t.Fatalf("preview %d %q", m.previewKind, m.previewPath)
+	}
+	if m.focus != PaneMain {
+		t.Fatalf("restored focus %d", m.focus)
+	}
 }

@@ -39,6 +39,11 @@ func (m Model) onTerminalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.toggleAI()
 		}
 		return m, nil
+	case tea.KeyCtrlR:
+		if m.termInput == "" {
+			return m.openRecent()
+		}
+		return m, nil
 	case tea.KeyTab:
 		m.focus = m.nextPane(1)
 		return m.reflowPreview(false), nil

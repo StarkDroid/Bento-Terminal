@@ -23,6 +23,7 @@ type keyMap struct {
 	Save      key.Binding
 	FindFile  key.Binding
 	FindText  key.Binding
+	Recent    key.Binding
 	ToggleAI  key.Binding
 	Detach    key.Binding
 	Interrupt key.Binding
@@ -54,6 +55,7 @@ func newKeys() keyMap {
 		Save:      key.NewBinding(key.WithKeys("ctrl+s"), key.WithHelp("ctrl+s", "save")),
 		FindFile:  key.NewBinding(key.WithKeys("ctrl+p"), key.WithHelp("ctrl+p", "find file")),
 		FindText:  key.NewBinding(key.WithKeys("ctrl+f"), key.WithHelp("ctrl+f", "find in file")),
+		Recent:    key.NewBinding(key.WithKeys("ctrl+r"), key.WithHelp("ctrl+r", "recent projects")),
 		ToggleAI:  key.NewBinding(key.WithKeys("ctrl+a"), key.WithHelp("ctrl+a", "AI panel")),
 		Detach:    key.NewBinding(key.WithKeys("ctrl+\\"), key.WithHelp("ctrl+\\", "detach")),
 		Interrupt: key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "stop")),

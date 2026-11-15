@@ -24,6 +24,9 @@ func (m Model) View() string {
 	if m.finderOpen {
 		return m.finderView()
 	}
+	if m.recentOpen {
+		return m.recentView()
+	}
 	if m.paletteOpen {
 		return m.paletteView()
 	}
@@ -687,19 +690,19 @@ func (m Model) footerHints(p Pane) []footerHint {
 			if m.previewLang.Detected() {
 				return []footerHint{
 					{"↑↓←→", "move"}, {"[ ]", "fold"}, {"e", "edit"},
-					{"ctrl+f", "find"}, {"ctrl+a", "ai"}, {"?", "keys"},
+					{"ctrl+f", "find"}, {"esc", "close"}, {"ctrl+a", "ai"}, {"?", "keys"},
 				}
 			}
 			return []footerHint{
 				{"↑↓←→", "move"}, {"e", "edit"}, {"ctrl+f", "find"},
-				{"ctrl+a", "ai"}, {"?", "keys"},
+				{"esc", "close"}, {"ctrl+a", "ai"}, {"?", "keys"},
 			}
 		case previewCommit, previewDiff:
 			return []footerHint{{"↑↓", "scroll"}, {"esc", "close"}, {"ctrl+a", "ai"}, {"?", "keys"}}
 		}
 		return []footerHint{
-			{"n", "new"}, {"ctrl+p", "find"}, {"ctrl+a", "ai"},
-			{"?", "keys"}, {"tab", "panes"},
+			{"n", "new"}, {"ctrl+p", "find"}, {"ctrl+r", "recent"},
+			{"ctrl+a", "ai"}, {"?", "keys"}, {"tab", "panes"},
 		}
 	case PaneFiles:
 		return []footerHint{{"↑↓", ""}, {"enter", ""}, {"ctrl+p", "find"}, {"?", "keys"}}

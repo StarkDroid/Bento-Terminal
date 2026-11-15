@@ -54,7 +54,9 @@ func (m Model) openFile(rel, name string) Model {
 	m = m.prepareBlocks()
 	m = m.refreshSpans()
 	m.preview.GotoTop()
-	return m.reflowPreview(true)
+	m = m.reflowPreview(true)
+	m.SaveState()
+	return m
 }
 
 // startEditing turns the open text file into an editable buffer with the caret

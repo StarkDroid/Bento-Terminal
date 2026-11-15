@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	appstate "github.com/StarkDroid/Bento-Terminal/internal/state"
 	"github.com/StarkDroid/Bento-Terminal/internal/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -55,7 +56,15 @@ func run(args []string) error {
 	if !info.IsDir() {
 		return fmt.Errorf("%s is not a directory", abs)
 	}
-	p := tea.NewProgram(ui.New(abs, version), tea.WithAltScreen(), tea.WithMouseCellMotion())
-	_, err = p.Run()
+	store, err := appstate.OpenDefault()
+	if err != nil {
+		store = appstate.NewMemory()
+		fmt.Fprintf(os.Stderr, "bento: recent projects are unavailable: %s\n", err)
+	}
+	p := tea.NewProgram(ui.NewWithState(abs, version, store), tea.WithAltScreen(), tea.WithMouseCellMotion())
+	final, err := p.Run()
+	if model, ok := final.(ui.Model); ok {
+		model.SaveState()
+	}
 	return err
 }
