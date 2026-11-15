@@ -1,0 +1,65 @@
+name: Publish Chocolatey
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: "Version to publish, without v"
+    secrets:
+      CHOCO_API_KEY:
+        required: false
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, without v (for example 0.7.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  chocolatey:
+    name: Chocolatey
+    runs-on: windows-latest
+    env:
+      CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download checksums
+        shell: bash
+        run: |
+          mkdir -p release
+          gh release download "v${VERSION}" --pattern SHA256SUMS --dir release
+
+      - name: Render manifests
+        shell: bash
+        run: |
+          python packaging/render.py \
+            --version "${VERSION}" \
+            --sums release/SHA256SUMS \
+            --out packages
+
+      - name: Pack
+        working-directory: packages/chocolatey
+        run: choco pack
+
+      - name: Push
+        if: env.CHOCO_API_KEY != ''
+        working-directory: packages/chocolatey
+        run: |
+          choco push "bento-terminal.$env:VERSION.nupkg" `
+            --source https://push.chocolatey.org/ `
+            --api-key "$env:CHOCO_API_KEY"
+
+      - name: No token
+        if: env.CHOCO_API_KEY == ''
+        run: echo "CHOCO_API_KEY is not set; the Chocolatey package was not pushed." >> "$env:GITHUB_STEP_SUMMARY"

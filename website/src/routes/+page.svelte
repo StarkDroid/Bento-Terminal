@@ -3,7 +3,7 @@
 	import CopyCommand from '$lib/CopyCommand.svelte';
 
 	// npx works on every supported host; the docs carry Homebrew, Scoop,
-	// WinGet, Chocolatey, AUR, Go, Linux packages, and the direct installers.
+	// WinGet, Chocolatey, Go, Linux packages, and the direct installers.
 	const install = 'npx bento-terminal';
 
 	// The glow follows the pointer across a card, so each one lights where the

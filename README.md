@@ -7,7 +7,7 @@ Bento terminal is a full-screen workspace for one project, in the terminal: prev
 [![npm](https://img.shields.io/badge/npm-bento--terminal-CB3837?style=flat-square&logo=npm&logoColor=white)](https://www.npmjs.com/package/bento-terminal)
 [![Homebrew](https://img.shields.io/badge/homebrew-StarkDroid%2Ftap%2Fbento-FBB040?style=flat-square&logo=homebrew&logoColor=white)](https://github.com/StarkDroid/homebrew-tap)
 [![Scoop](https://img.shields.io/badge/scoop-bento-2B2B2B?style=flat-square)](https://github.com/StarkDroid/scoop-bucket)
-[![Linux packages](https://img.shields.io/badge/packages-deb%20%7C%20rpm%20%7C%20apk-5FB3C4?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/releases/latest)
+[![Linux packages](https://img.shields.io/badge/packages-deb%20%7C%20rpm-5FB3C4?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/releases/latest)
 [![Go version](https://img.shields.io/github/go-mod/go-version/StarkDroid/Bento-Terminal?style=flat-square)](go.mod)
 [![Go Reference](https://pkg.go.dev/badge/github.com/StarkDroid/Bento-Terminal.svg)](https://pkg.go.dev/github.com/StarkDroid/Bento-Terminal)
 [![License](https://img.shields.io/github/license/StarkDroid/Bento-Terminal?style=flat-square)](LICENSE)
@@ -31,14 +31,13 @@ installs the same release binary.
 | Scoop | `scoop bucket add starkdroid https://github.com/StarkDroid/scoop-bucket` then `scoop install bento` |
 | WinGet | `winget install StarkDroid.Bento` |
 | Chocolatey | `choco install bento-terminal` |
-| Arch / AUR | `yay -S bento-terminal-bin` |
 | Go | `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` |
-| Linux packages | `.deb`, `.rpm`, or `.apk` from [releases](https://github.com/StarkDroid/Bento-Terminal/releases/latest) |
+| Linux packages | `.deb` or `.rpm` from [releases](https://github.com/StarkDroid/Bento-Terminal/releases/latest) |
 
-WinGet, Chocolatey, and AUR manifests are generated with each release from
-[`packaging/`](packaging/README.md); they appear in those registries once their
-accounts are connected. Until then, use npm, Homebrew, Scoop, Go, or a release
-binary.
+WinGet and Chocolatey manifests are generated with each release from
+[`packaging/`](packaging/README.md). WinGet is submitted; Chocolatey publishes
+once its API key is connected. Until then, use npm, Homebrew, Scoop, Go, or a
+release binary.
 
 Then run `bento` inside any project. With no argument it uses the current
 directory; `bento <dir>` opens another one.

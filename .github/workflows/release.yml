@@ -69,3 +69,12 @@ jobs:
     with:
       version: ${{ needs.release.outputs.version }}
     secrets: inherit
+
+  publish-chocolatey:
+    name: publish Chocolatey
+    needs: release
+    if: needs.release.outputs.version != ''
+    uses: ./.github/workflows/publish-chocolatey.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit

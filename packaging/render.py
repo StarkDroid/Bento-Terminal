@@ -6,8 +6,8 @@ the same command works locally:
 
     python3 packaging/render.py --version 0.7.0 --sums SHA256SUMS --out /tmp/bento-packages
 
-The rendered tree is what the Homebrew, Scoop, Winget, Chocolatey, AUR, and
-nfpm publishers copy into their own repositories.
+The rendered tree is what the Homebrew, Scoop, WinGet, Chocolatey, and nfpm
+publishers copy into their own repositories.
 """
 
 from __future__ import annotations
@@ -96,8 +96,6 @@ def main() -> int:
         "scoop/bento.json.tmpl": "scoop/bento.json",
         "chocolatey/bento-terminal.nuspec.tmpl": "chocolatey/bento-terminal.nuspec",
         "chocolatey/tools/chocolateyinstall.ps1.tmpl": "chocolatey/tools/chocolateyinstall.ps1",
-        "aur/PKGBUILD.tmpl": "aur/PKGBUILD",
-        "aur/.SRCINFO.tmpl": "aur/.SRCINFO",
     }
     for source, target in templates.items():
         write(out, target, render((ROOT / source).read_text(encoding="utf-8"), values))

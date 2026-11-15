@@ -11,8 +11,7 @@ package managers below. Every manifest is rendered from the release's
 | Scoop | `scoop install bento` | `packaging/scoop` | Bucket update (manual or `SCOOP_TOKEN`) |
 | WinGet | `winget install StarkDroid.Bento` | `packaging/winget` | PR to `microsoft/winget-pkgs` |
 | Chocolatey | `choco install bento-terminal` | `packaging/chocolatey` | `choco push` with an API key |
-| Arch / AUR | `yay -S bento-terminal-bin` | `packaging/aur` | Push to the AUR |
-| Debian / RPM / Alpine | `.deb`, `.rpm`, `.apk` attachments | `packaging/nfpm` | Release workflow |
+| Debian / RPM | `.deb` and `.rpm` attachments | `packaging/nfpm` | Release workflow |
 | Go | `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` | module | Go proxy |
 | Direct binary | GitHub release asset | `scripts/install.sh`, `scripts/install.ps1` | Release workflow |
 
@@ -37,8 +36,6 @@ scoop/bento.json
 winget/manifests/s/StarkDroid/Bento/<version>/*.yaml
 chocolatey/bento-terminal.nuspec
 chocolatey/tools/*.ps1
-aur/PKGBUILD
-aur/.SRCINFO
 nfpm/amd64.yaml
 nfpm/arm64.yaml
 ```
@@ -169,26 +166,9 @@ choco push bento-terminal.0.7.0.nupkg \
 
 The Chocolatey package id is `bento-terminal`.
 
-## Arch / AUR
-
-The AUR package is `bento-terminal-bin`, built from the release binaries. Push
-`PKGBUILD` and `.SRCINFO` to the AUR repository:
-
-```sh
-git clone ssh://aur@aur.archlinux.org/bento-terminal-bin.git
-cp /tmp/bento-packages/aur/PKGBUILD /tmp/bento-packages/aur/.SRCINFO bento-terminal-bin/
-cd bento-terminal-bin
-git add PKGBUILD .SRCINFO
-git commit -m "bento-terminal-bin 0.7.0"
-git push
-```
-
-Regenerate `.SRCINFO` with `makepkg --printsrcinfo > .SRCINFO` on Arch before
-pushing; the renderer writes the equivalent fields.
-
 ## Linux packages
 
-The `Packages` workflow builds `.deb`, `.rpm`, and `.apk` for amd64 and arm64
+The `Packages` workflow builds `.deb` and `.rpm` for amd64 and arm64
 with [nfpm](https://nfpm.goreleaser.com), then attaches them to the GitHub
 release. It runs after every release. To build locally:
 
@@ -200,7 +180,7 @@ curl -fsSL \
   https://github.com/StarkDroid/Bento-Terminal/releases/download/v0.7.0/bento_linux_amd64 \
   -o dist/bento_linux_amd64
 
-for format in deb rpm apk; do
+for format in deb rpm; do
   nfpm package --config /tmp/bento-packages/nfpm/amd64.yaml \
     --packager "$format" --target dist
 done
@@ -220,8 +200,8 @@ than a tagged release build. That is expected.
 ## Notes
 
 - Never commit a token. The workflows read `NPM_TOKEN`, `TAP_TOKEN`,
-  `SCOOP_TOKEN`, `CHOCO_API_KEY`, and `AUR_SSH_KEY` from repository secrets.
+  `SCOOP_TOKEN` and `CHOCO_API_KEY` from repository secrets.
 - The release workflow only publishes npm and Linux packages automatically.
-  Homebrew, Scoop, AUR, Chocolatey, and WinGet need the one-time repository or
+  Homebrew, Scoop, Chocolatey, and WinGet need the one-time repository or
   account setup above.
 - Update this file when a new source is added or a package id changes.

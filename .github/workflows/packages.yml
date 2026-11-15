@@ -61,24 +61,24 @@ jobs:
             --sums release/SHA256SUMS \
             --out packages
 
-      - name: Build deb, rpm, and apk
+      - name: Build deb and rpm
         shell: bash
         run: |
           for arch in amd64 arm64; do
-            for format in deb rpm apk; do
+            for format in deb rpm; do
               "$HOME/go/bin/nfpm" package \
                 --config "packages/nfpm/${arch}.yaml" \
                 --packager "$format" \
                 --target dist
             done
           done
-          ls -lh dist/*.deb dist/*.rpm dist/*.apk
+          ls -lh dist/*.deb dist/*.rpm
 
       - name: Attach packages to the release
         shell: bash
         run: |
           gh release upload "v${{ steps.version.outputs.value }}" \
-            dist/*.deb dist/*.rpm dist/*.apk --clobber
+            dist/*.deb dist/*.rpm --clobber
 
       - name: Upload rendered manifests
         uses: actions/upload-artifact@v4

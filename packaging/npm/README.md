@@ -57,7 +57,6 @@ first run instead.
 - Scoop: `scoop install bento`
 - WinGet: `winget install StarkDroid.Bento`
 - Chocolatey: `choco install bento-terminal`
-- Arch: `yay -S bento-terminal-bin`
 - Go: `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest`
 - Direct release binary: [GitHub releases](https://github.com/StarkDroid/Bento-Terminal/releases/latest)
 
