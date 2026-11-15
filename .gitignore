@@ -12,3 +12,5 @@
 /packaging/npm/*.tgz
 __pycache__/
 *.pyc
+/packaging/chocolatey/dist/
+*.nupkg
