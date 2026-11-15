@@ -58,7 +58,8 @@ secret the job skips publishing and writes a note to the summary.
 One-time setup:
 
 1. `npm login` as the account that owns the `bento-terminal` name.
-2. Create an automation token with publish access.
+2. Create an Automation token with publish access. A granular token also works
+   if it has the 2FA bypass setting; a classic token still asks for an OTP.
 3. Add it to the repository as `NPM_TOKEN`.
 
 Local dry run:
