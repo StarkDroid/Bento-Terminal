@@ -133,25 +133,10 @@
 			>
 				<h2>Install</h2>
 				<p>
-					Install is the published binary; development is a build from a checkout. The features are
-					the same in both, on every platform: only the shell the Terminal panel runs and the
-					installer differ.
+					Install is the published binary; development is a build from a checkout. Every package
+					manager below installs the same release binary, and only the shell the Terminal panel
+					runs differs per platform.
 				</p>
-
-				<h3>macOS and Linux</h3>
-				<p>
-					One command. It downloads the release binary for your OS and architecture into
-					<code>~/.local/bin</code>. Add <code>--with-zsh</code> to put that folder on PATH.
-				</p>
-				<CopyCommand command={install} />
-
-				<h3>Windows</h3>
-				<p>
-					Run this in Windows Terminal. It downloads <code>bento.exe</code> into
-					<code>%LOCALAPPDATA%\bento</code>, adds that folder to your user PATH, and checks that
-					the binary runs. Open a new Windows Terminal and type <code>bento</code>.
-				</p>
-				<CopyCommand command={installWindows} prompt="PS>" />
 
 				<h3>Package managers</h3>
 				<pre>npx bento-terminal                 # npm, no global install
@@ -169,24 +154,19 @@ go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</pre>
 					<code>SHA256SUMS</code>.
 				</p>
 
-				<h3>Develop</h3>
-				<p>macOS and Linux:</p>
-				<pre>go test ./...
-make build
-./bento
-sh scripts/install.sh --from-source</pre>
-				<p>Windows, in Windows Terminal:</p>
-				<pre>go test ./...
-go build -o bento.exe ./cmd/bento
-.\bento.exe
-.\scripts\install.ps1 -FromSource</pre>
+				<h3>Direct download</h3>
 				<p>
-					<code>go run ./cmd/bento</code> is the quickest loop anywhere: it compiles to a temp
-					directory, so PATH and the checkout stay untouched. <code>--from-source</code> and
-					<code>-FromSource</code> install the checkout itself, which is how a branch is tried
-					before a release exists. <code>go install ./cmd/bento</code> also works, but writes to
-					<code>go env GOPATH</code>'s <code>bin</code>, which may not be on PATH.
+					macOS and Linux: the installer puts the binary in <code>~/.local/bin</code>. Add
+					<code>--with-zsh</code> to put that folder on PATH.
 				</p>
+				<CopyCommand command={install} />
+
+				<p>
+					Windows: run this in Windows Terminal. It downloads <code>bento.exe</code> into
+					<code>%LOCALAPPDATA%\bento</code>, adds that folder to your user PATH, and checks that
+					the binary runs. Open a new Windows Terminal and type <code>bento</code>.
+				</p>
+				<CopyCommand command={installWindows} prompt="PS>" />
 
 				<h3>Options</h3>
 				<ul>
@@ -211,6 +191,25 @@ go build -o bento.exe ./cmd/bento
 						<code>BENTO_REPO_URL</code> changes the clone URL the source build uses.
 					</li>
 				</ul>
+
+				<h3>Develop</h3>
+				<p>macOS and Linux:</p>
+				<pre>go test ./...
+make build
+./bento
+sh scripts/install.sh --from-source</pre>
+				<p>Windows, in Windows Terminal:</p>
+				<pre>go test ./...
+go build -o bento.exe ./cmd/bento
+.\bento.exe
+.\scripts\install.ps1 -FromSource</pre>
+				<p>
+					<code>go run ./cmd/bento</code> is the quickest loop anywhere: it compiles to a temp
+					directory, so PATH and the checkout stay untouched. <code>--from-source</code> and
+					<code>-FromSource</code> install the checkout itself, which is how a branch is tried
+					before a release exists. <code>go install ./cmd/bento</code> also works, but writes to
+					<code>go env GOPATH</code>'s <code>bin</code>, which may not be on PATH.
+				</p>
 			</div>
 
 			<div

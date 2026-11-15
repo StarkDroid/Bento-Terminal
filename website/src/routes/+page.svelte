@@ -1,24 +1,10 @@
 <script>
 	import { base } from '$app/paths';
-	import { onMount } from 'svelte';
 	import CopyCommand from '$lib/CopyCommand.svelte';
 
-	const unixInstall =
-		'curl -fsSL https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.sh | sh';
-	const windowsInstall =
-		'irm https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/install.ps1 | iex';
-
-	// The page is prerendered with the curl line; Windows swaps to PowerShell
-	// after hydration, because install.sh only handles macOS and Linux.
-	let install = $state(unixInstall);
-	let prompt = $state('$');
-
-	onMount(() => {
-		if (/windows/i.test(navigator.userAgent)) {
-			install = windowsInstall;
-			prompt = 'PS>';
-		}
-	});
+	// npx works on every supported host; the docs carry Homebrew, Scoop,
+	// WinGet, Chocolatey, AUR, Go, Linux packages, and the direct installers.
+	const install = 'npx bento-terminal';
 
 	// The glow follows the pointer across a card, so each one lights where the
 	// cursor is instead of in the middle.
@@ -63,11 +49,10 @@
 		</p>
 
 		<div class="install">
-			<CopyCommand command={install} {prompt} />
+			<CopyCommand command={install} prompt="$" />
 			<p class="hint">
-				macOS, Linux and Windows, or <code>npx bento-terminal</code>. <a href="{base}/docs/#install"
-					>Install options</a
-				> · <a href="{base}/docs/">Docs</a>
+				macOS, Linux and Windows. <a href="{base}/docs/#install">Homebrew, Scoop, WinGet and more</a>
+				· <a href="{base}/docs/">Docs</a>
 			</p>
 		</div>
 	</section>
