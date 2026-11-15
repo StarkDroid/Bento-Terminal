@@ -65,8 +65,9 @@
 		<div class="install">
 			<CopyCommand command={install} {prompt} />
 			<p class="hint">
-				macOS, Linux and Windows. <a href="{base}/docs/#install">Install options</a> ·
-				<a href="{base}/docs/">Docs</a>
+				macOS, Linux and Windows, or <code>npx bento-terminal</code>. <a href="{base}/docs/#install"
+					>Install options</a
+				> · <a href="{base}/docs/">Docs</a>
 			</p>
 		</div>
 	</section>

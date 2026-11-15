@@ -153,6 +153,22 @@
 				</p>
 				<CopyCommand command={installWindows} prompt="PS>" />
 
+				<h3>Package managers</h3>
+				<pre>npx bento-terminal                 # npm, no global install
+npm install -g bento-terminal      # npm, global
+brew install StarkDroid/tap/bento  # macOS and Linux
+scoop bucket add starkdroid https://github.com/StarkDroid/scoop-bucket
+scoop install bento                # Windows
+winget install StarkDroid.Bento    # Windows
+choco install bento-terminal       # Windows
+yay -S bento-terminal-bin          # Arch
+go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</pre>
+				<p class="muted">
+					Linux releases also attach <code>.deb</code>, <code>.rpm</code>, and <code>.apk</code>
+					packages. The npm package downloads the native binary and checks it against the release
+					<code>SHA256SUMS</code>.
+				</p>
+
 				<h3>Develop</h3>
 				<p>macOS and Linux:</p>
 				<pre>go test ./...

@@ -30,6 +30,24 @@ irm https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/ins
 
 The Unix installer puts the binary in `~/.local/bin`; `--with-zsh` also adds that folder to PATH. The Windows installer puts `bento.exe` in `%LOCALAPPDATA%\bento` and adds it to your user PATH, so a new Windows Terminal finds `bento`. Flags, install directories, and the source-build path are in the [install docs](https://starkdroid.github.io/Bento-Terminal/docs/#install).
 
+### Package managers
+
+```sh
+npx bento-terminal                 # npm, no global install
+npm install -g bento-terminal      # npm, global
+brew install StarkDroid/tap/bento  # macOS and Linux
+scoop bucket add starkdroid https://github.com/StarkDroid/scoop-bucket
+scoop install bento                # Windows
+winget install StarkDroid.Bento    # Windows
+choco install bento-terminal       # Windows
+yay -S bento-terminal-bin          # Arch
+go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest
+```
+
+Linux users can also take the `.deb`, `.rpm`, or `.apk` attached to each
+release. Every package downloads the same release binary; the npm package
+checks it against the release `SHA256SUMS` before first use.
+
 ## What it does
 
 - **Preview and edit.** Highlighting, folding, and a save in place.
