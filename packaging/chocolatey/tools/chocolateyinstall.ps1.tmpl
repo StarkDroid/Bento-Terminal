@@ -1,0 +1,16 @@
+$ErrorActionPreference = 'Stop'
+
+$toolsDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$packageName = 'bento-terminal'
+$file = Join-Path $toolsDir 'bento.exe'
+
+if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
+  $url = 'https://github.com/StarkDroid/Bento-Terminal/releases/download/v{{VERSION}}/bento_windows_arm64.exe'
+  $checksum = '{{SHA256_WINDOWS_ARM64}}'
+} else {
+  $url = 'https://github.com/StarkDroid/Bento-Terminal/releases/download/v{{VERSION}}/bento_windows_amd64.exe'
+  $checksum = '{{SHA256_WINDOWS_AMD64}}'
+}
+
+Get-ChocolateyWebFile -PackageName $packageName -FileFullPath $file -Url $url -Checksum $checksum -ChecksumType 'sha256'
+Install-BinFile -Name 'bento' -Path $file

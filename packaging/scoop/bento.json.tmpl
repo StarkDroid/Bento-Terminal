@@ -1,0 +1,31 @@
+{
+  "version": "{{VERSION}}",
+  "description": "A full-screen terminal workspace for one project: preview and edit files, review changes, run builds, open a shell, and run coding agents beside the preview.",
+  "homepage": "https://starkdroid.github.io/Bento-Terminal/",
+  "license": "MIT",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/StarkDroid/Bento-Terminal/releases/download/v{{VERSION}}/bento_windows_amd64.exe",
+      "hash": "{{SHA256_WINDOWS_AMD64}}",
+      "bin": [
+        [
+          "bento_windows_amd64.exe",
+          "bento"
+        ]
+      ]
+    },
+    "arm64": {
+      "url": "https://github.com/StarkDroid/Bento-Terminal/releases/download/v{{VERSION}}/bento_windows_arm64.exe",
+      "hash": "{{SHA256_WINDOWS_ARM64}}",
+      "bin": [
+        [
+          "bento_windows_arm64.exe",
+          "bento"
+        ]
+      ]
+    }
+  },
+  "checkver": {
+    "github": "https://github.com/StarkDroid/Bento-Terminal"
+  }
+}

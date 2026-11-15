@@ -1,0 +1,26 @@
+# Maintainer: Trishiraj <gamerprince.exp@gmail.com>
+pkgname=bento-terminal-bin
+pkgver={{VERSION}}
+pkgrel=1
+pkgdesc="A full-screen terminal workspace for one project directory"
+arch=('x86_64' 'aarch64')
+url="https://starkdroid.github.io/Bento-Terminal/"
+license=('MIT')
+provides=('bento' 'bento-terminal')
+conflicts=('bento' 'bento-terminal')
+options=('!strip')
+
+source_x86_64=("bento_linux_amd64::https://github.com/StarkDroid/Bento-Terminal/releases/download/v${pkgver}/bento_linux_amd64")
+source_aarch64=("bento_linux_arm64::https://github.com/StarkDroid/Bento-Terminal/releases/download/v${pkgver}/bento_linux_arm64")
+sha256sums_x86_64=('{{SHA256_LINUX_AMD64}}')
+sha256sums_aarch64=('{{SHA256_LINUX_ARM64}}')
+
+package() {
+  local _bin
+  if [[ $CARCH == 'aarch64' ]]; then
+    _bin='bento_linux_arm64'
+  else
+    _bin='bento_linux_amd64'
+  fi
+  install -Dm755 "$srcdir/$_bin" "$pkgdir/usr/bin/bento"
+}
