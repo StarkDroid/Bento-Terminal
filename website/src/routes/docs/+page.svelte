@@ -151,7 +151,9 @@ go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</pre>
 				<p class="muted">
 					Linux releases also attach <code>.deb</code>, <code>.rpm</code>, and <code>.apk</code>
 					packages. The npm package downloads the native binary and checks it against the release
-					<code>SHA256SUMS</code>.
+					<code>SHA256SUMS</code>. WinGet, Chocolatey, and AUR manifests are generated with each
+					release from <code>packaging/</code>; they appear in those registries once their
+					accounts are connected.
 				</p>
 
 				<h3>Direct download</h3>

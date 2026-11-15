@@ -35,6 +35,11 @@ installs the same release binary.
 | Go | `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` |
 | Linux packages | `.deb`, `.rpm`, or `.apk` from [releases](https://github.com/StarkDroid/Bento-Terminal/releases/latest) |
 
+WinGet, Chocolatey, and AUR manifests are generated with each release from
+[`packaging/`](packaging/README.md); they appear in those registries once their
+accounts are connected. Until then, use npm, Homebrew, Scoop, Go, or a release
+binary.
+
 Then run `bento` inside any project. With no argument it uses the current
 directory; `bento <dir>` opens another one.
 
