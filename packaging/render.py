@@ -124,6 +124,11 @@ def main() -> int:
         "chocolatey/tools/chocolateyuninstall.ps1",
         ROOT / "chocolatey/tools/chocolateyuninstall.ps1",
     )
+    legal = ROOT / "chocolatey/legal"
+    if legal.is_dir():
+        for source in sorted(legal.iterdir()):
+            if source.is_file():
+                copy(out, f"chocolatey/legal/{source.name}", source)
     return 0
 
 
