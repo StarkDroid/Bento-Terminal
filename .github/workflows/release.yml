@@ -1,7 +1,7 @@
 name: Release
 
-# A merged pull request can opt out of a release with a /silent line, a title
-# ending in /silent, or the "silent" label. The gate job below then skips the
+# A merged pull request can opt out of a release with a line that is exactly
+# /silent, a title ending in /silent, or the "silent" label. The gate job below then skips the
 # release and every publish job; CI and Pages still run.
 
 on:

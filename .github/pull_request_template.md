@@ -1,8 +1,8 @@
 Release:
 
 <!--
-Silent merge: add a line containing `/silent`, or apply the `silent` label, to
-merge without publishing a release. Remove it for a normal release.
+Silent merge: add a line that is exactly `/silent`, or apply the `silent`
+label, to merge without publishing a release. Remove it for a normal release.
 -->
 
 ## Changelog

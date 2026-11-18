@@ -4,7 +4,8 @@
 #
 # A push to main publishes automatically through .github/workflows/release.yml,
 # which runs this script with --auto. A merged pull request can opt out by
-# adding a /silent line or the "silent" label; the workflow then skips this
+# adding a line that is exactly /silent or the "silent" label; the workflow
+# then skips this
 # script. Run it by hand when you want a version the automation cannot infer:
 #
 #   scripts/release.sh --auto        # version from the merged pull requests
