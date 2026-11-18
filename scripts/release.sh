@@ -3,8 +3,9 @@
 # Publish a release from the pull requests merged since the last one.
 #
 # A push to main publishes automatically through .github/workflows/release.yml,
-# which runs this script with --auto. Run it by hand when you want a version the
-# automation cannot infer:
+# which runs this script with --auto. A merged pull request can opt out by
+# adding a /silent line or the "silent" label; the workflow then skips this
+# script. Run it by hand when you want a version the automation cannot infer:
 #
 #   scripts/release.sh --auto        # version from the merged pull requests
 #   scripts/release.sh 0.5.0         # or name the version yourself
@@ -26,7 +27,8 @@ usage() {
 Publish a release from the pull requests merged since the last one.
 
 A push to main publishes automatically through .github/workflows/release.yml.
-Run this by hand when you want a version the automation cannot infer:
+Mark a merged pull request /silent (or add the "silent" label) to skip that
+release. Run this by hand when you want a version the automation cannot infer:
 
   scripts/release.sh --auto          # version from the merged pull requests
   scripts/release.sh 0.5.0           # or name the version yourself
