@@ -99,6 +99,8 @@ go build -o bento.exe ./cmd/bento
 
 The site lives in `website/`; [its README](website/README.md) covers the build. Issues and pull requests are welcome.
 
+Privacy: the app has no telemetry. The website uses privacy-friendly GoatCounter analytics without cookies; see the [privacy page](https://starkdroid.github.io/Bento-Terminal/privacy/).
+
 ## License
 
 MIT. Copyright 2026 Trishiraj. See [LICENSE](LICENSE).

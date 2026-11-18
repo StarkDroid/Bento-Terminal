@@ -49,7 +49,7 @@
 		</p>
 
 		<div class="install">
-			<CopyCommand command={install} prompt="$" />
+			<CopyCommand command={install} prompt="$" event="copy-npx" />
 			<p class="hint">
 				macOS, Linux and Windows. <a href="{base}/docs/#install">Homebrew, Scoop, WinGet and more</a>
 				· <a href="{base}/docs/">Docs</a>

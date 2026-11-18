@@ -7,6 +7,10 @@
 
 	let { children } = $props();
 
+	// Vite inlines this at build time. Empty means the script is not emitted,
+	// so local builds and forks stay analytics-free.
+	const goatcounter = import.meta.env.VITE_GOATCOUNTER_CODE?.trim();
+
 	// Move a soft light with a fine pointer. CSS keeps a fixed glow for touch,
 	// for reduced motion, and for the prerendered page before hydration.
 	onMount(() => {
@@ -36,6 +40,16 @@
 		};
 	});
 </script>
+
+<svelte:head>
+	{#if goatcounter}
+		<script
+			data-goatcounter={`https://${goatcounter}.goatcounter.com/count`}
+			async
+			src="https://gc.zgo.at/count.js"
+		></script>
+	{/if}
+</svelte:head>
 
 <a class="skip-link" href="#content">Skip to content</a>
 

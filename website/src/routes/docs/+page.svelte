@@ -160,14 +160,14 @@ go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</pre>
 					macOS and Linux: the installer puts the binary in <code>~/.local/bin</code>. Add
 					<code>--with-zsh</code> to put that folder on PATH.
 				</p>
-				<CopyCommand command={install} />
+				<CopyCommand command={install} event="copy-install-sh" />
 
 				<p>
 					Windows: run this in Windows Terminal. It downloads <code>bento.exe</code> into
 					<code>%LOCALAPPDATA%\bento</code>, adds that folder to your user PATH, and checks that
 					the binary runs. Open a new Windows Terminal and type <code>bento</code>.
 				</p>
-				<CopyCommand command={installWindows} prompt="PS>" />
+				<CopyCommand command={installWindows} prompt="PS>" event="copy-install-ps1" />
 
 				<h3>Options</h3>
 				<ul>
