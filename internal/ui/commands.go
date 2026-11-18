@@ -59,6 +59,7 @@ const (
 
 	actFindFile
 	actFindText
+	actRecent
 
 	actAIToggle
 	actAIUp
@@ -98,7 +99,7 @@ func (m Model) paneActions(p Pane) []action {
 			{actMainSave, m.keys.Save, "save the file"},
 			{actMainSyntax, m.keys.Syntax, "toggle code highlighting"},
 		}
-		if m.previewKind == previewCommit || m.previewKind == previewDiff {
+		if m.previewKind != previewNone {
 			actions = append(actions, action{actMainClose, m.keys.Close, "close the preview"})
 		}
 		return actions
@@ -196,6 +197,7 @@ func (m Model) globalActions() []action {
 		{actSettings, m.keys.Settings, "settings and about"},
 		{actFindFile, m.keys.FindFile, "find a file in the project"},
 		{actFindText, m.keys.FindText, "find in this file"},
+		{actRecent, m.keys.Recent, "open a recent project"},
 		{actAIToggle, m.keys.ToggleAI, "open or close the AI panel"},
 		{actQuit, m.keys.Quit, "quit Bento terminal"},
 	}
@@ -238,6 +240,7 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 	case actQuit:
 		m = m.stopRun()
 		m = m.closeAISession()
+		m.SaveState()
 		return m, tea.Quit
 
 	case actFileUp:
@@ -330,12 +333,14 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 	case actMainSave:
 		return m.savePreview()
 	case actMainClose:
-		return m.closeCommitPreview(), nil
+		return m.closePreview(), nil
 
 	case actFindFile:
 		return m.openFinder()
 	case actFindText:
 		return m.openFind(), nil
+	case actRecent:
+		return m.openRecent()
 
 	case actAIToggle:
 		return m.toggleAI()

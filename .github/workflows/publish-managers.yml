@@ -1,0 +1,113 @@
+name: Publish managers
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: "Version to publish, without v"
+    secrets:
+      TAP_TOKEN:
+        required: false
+      SCOOP_TOKEN:
+        required: false
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, without v (for example 0.5.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  homebrew:
+    name: Homebrew tap
+    runs-on: ubuntu-latest
+    env:
+      TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release
+          gh release download "v${VERSION}" --pattern SHA256SUMS --dir release
+
+      - name: Render manifests
+        run: |
+          python3 packaging/render.py \
+            --version "${VERSION}" \
+            --sums release/SHA256SUMS \
+            --out packages
+
+      - name: Update tap
+        if: env.TAP_TOKEN != ''
+        shell: bash
+        run: |
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/StarkDroid/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          cp packages/homebrew/bento.rb tap/Formula/bento.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/bento.rb
+          if git diff --cached --quiet; then
+            echo "formula is already current"
+            exit 0
+          fi
+          git commit -m "bento ${VERSION}"
+          git push
+
+      - name: No token
+        if: env.TAP_TOKEN == ''
+        run: echo "TAP_TOKEN is not set; the Homebrew tap was not updated." >> "$GITHUB_STEP_SUMMARY"
+
+  scoop:
+    name: Scoop bucket
+    runs-on: ubuntu-latest
+    env:
+      SCOOP_TOKEN: ${{ secrets.SCOOP_TOKEN }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release
+          gh release download "v${VERSION}" --pattern SHA256SUMS --dir release
+
+      - name: Render manifests
+        run: |
+          python3 packaging/render.py \
+            --version "${VERSION}" \
+            --sums release/SHA256SUMS \
+            --out packages
+
+      - name: Update bucket
+        if: env.SCOOP_TOKEN != ''
+        shell: bash
+        run: |
+          git clone "https://x-access-token:${SCOOP_TOKEN}@github.com/StarkDroid/scoop-bucket.git" bucket
+          mkdir -p bucket/bucket
+          cp packages/scoop/bento.json bucket/bucket/bento.json
+          cd bucket
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bucket/bento.json
+          if git diff --cached --quiet; then
+            echo "manifest is already current"
+            exit 0
+          fi
+          git commit -m "bento: ${VERSION}"
+          git push
+
+      - name: No token
+        if: env.SCOOP_TOKEN == ''
+        run: echo "SCOOP_TOKEN is not set; the Scoop bucket was not updated." >> "$GITHUB_STEP_SUMMARY"

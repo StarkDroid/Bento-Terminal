@@ -1,0 +1,72 @@
+name: Publish npm
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: "Version to publish, without v"
+    secrets:
+      NPM_TOKEN:
+        required: false
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, without v (for example 0.5.0)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  npm:
+    name: npm
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          version="${{ inputs.version }}"
+          version="${version#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "not a version: $version" >&2
+            exit 1
+          }
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Test the package
+        working-directory: packaging/npm
+        run: |
+          node --check bin/bento.js
+          node --check lib/install.js
+          node --check lib/platform.js
+          node --check scripts/postinstall.js
+          npm test
+
+      - name: Set version
+        if: env.NPM_TOKEN != ''
+        working-directory: packaging/npm
+        run: npm version "${{ steps.version.outputs.value }}" --no-git-tag-version --allow-same-version
+
+      - name: Publish
+        if: env.NPM_TOKEN != ''
+        working-directory: packaging/npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
+
+      - name: No token
+        if: env.NPM_TOKEN == ''
+        run: echo "NPM_TOKEN is not set; the npm package was not published." >> "$GITHUB_STEP_SUMMARY"

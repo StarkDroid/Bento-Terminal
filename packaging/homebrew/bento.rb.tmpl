@@ -1,0 +1,41 @@
+# typed: strict
+# frozen_string_literal: true
+
+# Bento terminal.
+class Bento < Formula
+  desc "Full-screen terminal workspace for one project"
+  homepage "https://starkdroid.github.io/Bento-Terminal/"
+  license "MIT"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/StarkDroid/Bento-Terminal/releases/download/v{{VERSION}}/bento_darwin_arm64"
+      sha256 "{{SHA256_DARWIN_ARM64}}"
+    end
+
+    on_intel do
+      url "https://github.com/StarkDroid/Bento-Terminal/releases/download/v{{VERSION}}/bento_darwin_amd64"
+      sha256 "{{SHA256_DARWIN_AMD64}}"
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "https://github.com/StarkDroid/Bento-Terminal/releases/download/v{{VERSION}}/bento_linux_arm64"
+      sha256 "{{SHA256_LINUX_ARM64}}"
+    end
+
+    on_intel do
+      url "https://github.com/StarkDroid/Bento-Terminal/releases/download/v{{VERSION}}/bento_linux_amd64"
+      sha256 "{{SHA256_LINUX_AMD64}}"
+    end
+  end
+
+  def install
+    bin.install Dir["bento_*"].first => "bento"
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/bento --version")
+  end
+end

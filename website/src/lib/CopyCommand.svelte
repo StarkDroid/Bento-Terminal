@@ -1,5 +1,7 @@
 <script>
-	let { command, prompt = '$' } = $props();
+	import { trackEvent } from '$lib/analytics';
+
+	let { command, prompt = '$', event = 'copy-command' } = $props();
 
 	let copied = $state(false);
 	let timer;
@@ -18,6 +20,7 @@
 			document.execCommand('copy');
 			area.remove();
 		}
+		trackEvent(event);
 		copied = true;
 		clearTimeout(timer);
 		timer = setTimeout(() => (copied = false), 1600);

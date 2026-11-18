@@ -89,6 +89,9 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.findOpen {
 		return m.onFindKey(msg)
 	}
+	if m.recentOpen {
+		return m.onRecentKey(msg)
+	}
 	// A running agent owns every key while its panel has focus, except the
 	// detach chord.
 	if m.aiSession != nil && m.focus == PaneAI && !m.paletteOpen && !m.settingsOpen {
@@ -101,7 +104,9 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.onTerminalKey(msg)
 	}
 	if key.Matches(msg, m.keys.Quit) {
-		return m.stopRun().closeAISession(), tea.Quit
+		m = m.stopRun().closeAISession()
+		m.SaveState()
+		return m, tea.Quit
 	}
 	if m.settingsOpen {
 		if key.Matches(msg, m.keys.Close, m.keys.Settings) {
@@ -112,8 +117,9 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.paletteOpen {
 		return m.onPaletteKey(msg)
 	}
-	if (m.previewKind == previewCommit || m.previewKind == previewDiff) && key.Matches(msg, m.keys.Close) {
-		return m.closeCommitPreview(), nil
+	if m.previewKind != previewNone && key.Matches(msg, m.keys.Close) &&
+		(m.previewKind != previewFile || m.focus == PaneMain) {
+		return m.closePreview(), nil
 	}
 	if key.Matches(msg, m.keys.Help) {
 		return m.openPalette(), nil
@@ -132,7 +138,7 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if m.settingsOpen {
 		return m.settingsClick(msg)
 	}
-	if m.paletteOpen || m.newFileOpen || m.finderOpen || m.findOpen {
+	if m.paletteOpen || m.newFileOpen || m.finderOpen || m.findOpen || m.recentOpen {
 		return m, nil
 	}
 	lay := computeLayout(m.width, m.height)
@@ -366,10 +372,9 @@ func (m Model) resetPreviewState() Model {
 	return m
 }
 
-// closeCommitPreview drops a commit or patch from Main and returns to the home
-// view. A file preview is left alone; esc only clears what History or Changes
-// opened.
-func (m Model) closeCommitPreview() Model {
+// closePreview drops the open file, commit, or patch from Main and returns to
+// the home view.
+func (m Model) closePreview() Model {
 	m.previewKind = previewNone
 	m.previewTitle = ""
 	m.previewPath = ""
@@ -379,7 +384,9 @@ func (m Model) closeCommitPreview() Model {
 	m.previewVisible = nil
 	m.preview.SetContent("")
 	m = m.resetPreviewState()
-	return m.reflowPreview(true)
+	m = m.reflowPreview(true)
+	m.SaveState()
+	return m
 }
 
 // openHistorySelection opens a commit or a patch depending on the visible tab.
@@ -785,6 +792,10 @@ func (m Model) syncSizes() Model {
 	}
 	if m.preview.Height < 1 {
 		m.preview.Height = 1
+	}
+	if m.restoreScrollSet {
+		m.preview.SetYOffset(m.restoreScroll)
+		m.restoreScrollSet = false
 	}
 	_, outH := buildParts(lay.Build.H)
 	m.output.Width = lay.Build.W - 2

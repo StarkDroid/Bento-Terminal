@@ -7,3 +7,10 @@
 /.serena/
 /AGENTS.md
 .DS_Store
+/packaging/npm/node_modules/
+/packaging/npm/vendor/
+/packaging/npm/*.tgz
+__pycache__/
+*.pyc
+/packaging/chocolatey/dist/
+*.nupkg

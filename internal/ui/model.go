@@ -2,6 +2,9 @@
 package ui
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,6 +13,7 @@ import (
 	"github.com/StarkDroid/Bento-Terminal/internal/build"
 	"github.com/StarkDroid/Bento-Terminal/internal/files"
 	"github.com/StarkDroid/Bento-Terminal/internal/git"
+	appstate "github.com/StarkDroid/Bento-Terminal/internal/state"
 	"github.com/StarkDroid/Bento-Terminal/internal/syntax"
 )
 
@@ -121,6 +125,16 @@ type Model struct {
 	aiCols      int
 	aiScreenH   int
 
+	store            *appstate.Store
+	saved            appstate.ProjectState
+	restoreScroll    int
+	restoreScrollSet bool
+
+	recentOpen   bool
+	recent       []appstate.Project
+	recentCursor int
+	recentScroll int
+
 	previewKind      previewKind
 	previewTitle     string
 	previewPath      string
@@ -166,12 +180,23 @@ type Model struct {
 }
 
 // New returns a TUI model rooted at the project directory.
+// New builds a model with no persistent project state. Tests and callers that
+// do not need recent projects use this; cmd/bento uses NewWithState.
 func New(root, version string) Model {
+	return NewWithState(root, version, appstate.NewMemory())
+}
+
+// NewWithState builds a model and restores the last file and focus saved for
+// root. The store is also given the root as the newest recent project.
+func NewWithState(root, version string, store *appstate.Store) Model {
+	if store == nil {
+		store = appstate.NewMemory()
+	}
 	sp := spinner.New(
 		spinner.WithSpinner(spinner.Line),
 		spinner.WithStyle(lipgloss.NewStyle().Foreground(colorPalm).Background(colorPanel)),
 	)
-	return Model{
+	m := Model{
 		root:         root,
 		version:      version,
 		focus:        PaneFiles,
@@ -185,7 +210,99 @@ func New(root, version string) Model {
 		preview:      viewport.New(0, 0),
 		output:       viewport.New(0, 0),
 		termOutput:   viewport.New(0, 0),
+		store:        store,
+		saved:        store.Project(root),
 	}
+	_ = store.Touch(root)
+	return m.restore()
+}
+
+// restore reopens the file and focus saved for this project. A missing file or
+// an AI focus falls back to a safe pane.
+func (m Model) restore() Model {
+	ps := m.saved
+	if ps.File != "" {
+		abs := filepath.Join(m.root, filepath.FromSlash(ps.File))
+		if info, err := os.Stat(abs); err == nil && !info.IsDir() {
+			m = m.openFile(ps.File, info.Name())
+			if len(m.previewLines) > 0 {
+				m.previewCursor = clamp(ps.Line, 0, len(m.previewLines)-1)
+				line := m.previewLines[m.previewCursor]
+				m.previewCol = clamp(ps.Col, 0, len([]rune(line)))
+			}
+			if ps.Scroll > 0 {
+				m.restoreScroll = ps.Scroll
+				m.restoreScrollSet = true
+			}
+		}
+	}
+	if p, ok := paneFromName(ps.Focus); ok && p != PaneAI {
+		m.focus = p
+	} else if m.previewKind == previewFile {
+		m.focus = PaneMain
+	}
+	m.SaveState()
+	return m
+}
+
+// paneName returns the stable name saved in the state file.
+func paneName(p Pane) string {
+	switch p {
+	case PaneMain:
+		return "main"
+	case PaneAI:
+		return "ai"
+	case PaneFiles:
+		return "files"
+	case PaneHistory:
+		return "history"
+	case PaneBuild:
+		return "build"
+	case PaneTerminal:
+		return "terminal"
+	}
+	return ""
+}
+
+func paneFromName(name string) (Pane, bool) {
+	switch name {
+	case "main":
+		return PaneMain, true
+	case "ai":
+		return PaneAI, true
+	case "files":
+		return PaneFiles, true
+	case "history":
+		return PaneHistory, true
+	case "build":
+		return PaneBuild, true
+	case "terminal":
+		return PaneTerminal, true
+	}
+	return 0, false
+}
+
+// SaveState writes the current file, caret, scroll, and focus for this project.
+// It is safe to call on a model with a memory store.
+func (m *Model) SaveState() {
+	if m == nil || m.store == nil {
+		return
+	}
+	ps := m.saved
+	if m.previewKind == previewFile {
+		ps.File = m.previewPath
+		ps.Line = m.previewCursor
+		ps.Col = m.previewCol
+		ps.Scroll = m.preview.YOffset
+	} else if m.previewKind == previewNone {
+		ps.File = ""
+		ps.Line = 0
+		ps.Col = 0
+		ps.Scroll = 0
+	}
+	ps.Focus = paneName(m.focus)
+	m.saved = ps
+	_ = m.store.SetProject(m.root, ps)
 }
 
 // Init loads the tree, git status, and detected commands.

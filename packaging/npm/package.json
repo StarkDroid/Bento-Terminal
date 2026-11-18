@@ -1,0 +1,41 @@
+{
+  "name": "bento-terminal",
+  "version": "0.7.0",
+  "description": "A full-screen terminal workspace: preview and edit files, review changes, run builds, open a shell, and run coding agents beside the preview.",
+  "license": "MIT",
+  "homepage": "https://starkdroid.github.io/Bento-Terminal/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StarkDroid/Bento-Terminal.git"
+  },
+  "bugs": {
+    "url": "https://github.com/StarkDroid/Bento-Terminal/issues"
+  },
+  "keywords": [
+    "terminal",
+    "tui",
+    "workspace",
+    "developer-tools",
+    "file-manager",
+    "git",
+    "coding-agent"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "bento": "bin/bento.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "prepublishOnly": "node scripts/check-version.js",
+    "test": "node --test"
+  }
+}

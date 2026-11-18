@@ -779,3 +779,27 @@ kbd:hover {
 		transition: none;
 	}
 }
+
+/* Legal */
+
+.legal {
+	max-width: 760px;
+	padding-bottom: clamp(40px, 8vh, 72px);
+}
+
+.legal .panel {
+	min-height: 0;
+}
+
+.legal .panel h2 + p {
+	margin-top: 10px;
+}
+
+.legal .panel p + h2 {
+	margin-top: 26px;
+}
+
+.legal .panel p.muted {
+	color: var(--sand-dim);
+	font-size: 0.86rem;
+}
