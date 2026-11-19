@@ -1,10 +1,5 @@
 <script>
-	import { base } from '$app/paths';
-	import CopyCommand from '$lib/CopyCommand.svelte';
-
-	// npx works on every supported host; the docs carry Homebrew, Scoop,
-	// WinGet, Chocolatey, Go, Linux packages, and the direct installers.
-	const install = 'npx bento-terminal';
+	import PlatformInstall from '$lib/PlatformInstall.svelte';
 
 	// The glow follows the pointer across a card, so each one lights where the
 	// cursor is instead of in the middle.
@@ -48,13 +43,7 @@
 			shell, and hand the project to a coding agent — without leaving the directory you are in.
 		</p>
 
-		<div class="install">
-			<CopyCommand command={install} prompt="$" event="copy-npx" />
-			<p class="hint">
-				macOS, Linux and Windows. <a href="{base}/docs/#install">Homebrew, Scoop, WinGet and more</a>
-				· <a href="{base}/docs/">Docs</a>
-			</p>
-		</div>
+		<PlatformInstall />
 	</section>
 
 	<section aria-label="What it does">
