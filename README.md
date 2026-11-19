@@ -31,13 +31,13 @@ yet.
 | Homebrew | `brew install StarkDroid/tap/bento` |
 | Scoop | `scoop bucket add starkdroid https://github.com/StarkDroid/scoop-bucket` then `scoop install bento` |
 | ❌ WinGet | `winget install StarkDroid.Bento` |
-| ❌ Chocolatey | `choco install bento-terminal` |
+| Chocolatey | `choco install bento-terminal` |
 | Go | `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` |
 | Linux packages | `.deb` or `.rpm` from [releases](https://github.com/StarkDroid/Bento-Terminal/releases/latest) |
 
-WinGet and Chocolatey are not on the 0.8.1 release yet. WinGet has an open
-0.7.0 PR, and Chocolatey is in moderation. Until then, use npm, Homebrew,
-Scoop, Go, or a release binary.
+WinGet is not on the 0.8.1 release yet; it has an open 0.7.0 PR. Chocolatey is
+live on 0.7.0, and the 0.8.1 package is not published yet. Until then, use npm,
+Homebrew, Scoop, Chocolatey, Go, or a release binary.
 
 Then run `bento` inside any project. With no argument it uses the current
 directory; `bento <dir>` opens another one.
