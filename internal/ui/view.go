@@ -18,6 +18,9 @@ func (m Model) View() string {
 	if m.width <= 0 || m.height <= 0 {
 		return "Bento terminal"
 	}
+	if m.updateOpen {
+		return m.updateView()
+	}
 	if m.newFileOpen {
 		return m.newFileView()
 	}
@@ -790,6 +793,10 @@ func (m Model) renderStatus(width int) string {
 func (m Model) statusLine(width int) string {
 	left := m.statusLeft()
 	var right []piece
+	if badge := m.updateBadge(); len(badge) > 0 {
+		right = append(right, badge...)
+		right = append(right, pieceText(" ", colorSand, colorStatus))
+	}
 	if m.aiSession != nil {
 		name := providerName(m.aiSessionID)
 		right = append(right,

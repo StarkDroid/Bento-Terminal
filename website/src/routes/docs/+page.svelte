@@ -152,6 +152,13 @@ go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</pre>
 					On Windows, use the PowerShell installer below or Scoop.
 				</p>
 
+				<p class="muted">
+					Bento checks the public GitHub releases API on startup. A newer release shows an
+					update prompt and a <code>u</code> badge in the status bar. Press <code>u</code> to
+					run the update command for your install method, or open About with <code>,</code> to
+					see the current version. Set <code>BENTO_NO_UPDATE_CHECK=1</code> to skip the check.
+				</p>
+
 				<h3>Direct download</h3>
 				<p>
 					macOS and Linux: the installer puts the binary in <code>~/.local/bin</code>. Add

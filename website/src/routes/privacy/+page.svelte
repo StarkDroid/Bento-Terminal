@@ -21,6 +21,11 @@
 				agent conversations anywhere. There is no account and no telemetry.
 			</p>
 			<p>
+				On startup, Bento asks the public GitHub releases API whether a newer version exists.
+				The request contains no account, project, file, path, or usage data. It only reads the
+				latest release tag. Set <code>BENTO_NO_UPDATE_CHECK=1</code> to skip the check.
+			</p>
+			<p>
 				Recent-project state is stored locally in your platform config directory under
 				<code>bento/state.json</code>. It contains project paths and the file, caret, scroll, and
 				focus you left in each one. Deleting that file clears the state.
@@ -52,7 +57,7 @@
 				Questions or removal requests:
 				<a href="https://github.com/StarkDroid/Bento-Terminal/issues">open an issue</a>.
 			</p>
-			<p class="muted">Last updated: November 18, 2026.</p>
+			<p class="muted">Last updated: November 19, 2026.</p>
 		</div>
 	</div>
 </main>

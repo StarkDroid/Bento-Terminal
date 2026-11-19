@@ -15,6 +15,7 @@ import (
 	"github.com/StarkDroid/Bento-Terminal/internal/git"
 	appstate "github.com/StarkDroid/Bento-Terminal/internal/state"
 	"github.com/StarkDroid/Bento-Terminal/internal/syntax"
+	upd "github.com/StarkDroid/Bento-Terminal/internal/update"
 )
 
 type previewKind int
@@ -63,6 +64,13 @@ type Model struct {
 	paletteCursor int
 	settingsOpen  bool
 	version       string
+
+	updateRelease   upd.Release
+	updateOpen      bool
+	updateDismissed bool
+	updateRunning   bool
+	updateDone      bool
+	updateMethod    upd.Method
 
 	keys    keyMap
 	spinner spinner.Model
@@ -307,14 +315,18 @@ func (m *Model) SaveState() {
 
 // Init loads the tree, git status, and detected commands.
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(
+	cmds := []tea.Cmd{
 		loadTreeCmd(m.root),
 		loadGitCmd(m.root),
 		loadBuildCmd(m.root),
 		detectAgentsCmd(),
 		m.spinner.Tick,
 		refreshCmd(),
-	)
+	}
+	if updateCmd := checkUpdateCmd(m.version); updateCmd != nil {
+		cmds = append(cmds, updateCmd)
+	}
+	return tea.Batch(cmds...)
 }
 
 // Focus returns the pane that receives movement keys.

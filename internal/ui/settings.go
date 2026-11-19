@@ -5,6 +5,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	upd "github.com/StarkDroid/Bento-Terminal/internal/update"
 )
 
 // bentoArt is the about wordmark. It uses block glyphs that Menlo and SF Mono
@@ -21,6 +23,7 @@ var bentoArt = []string{
 // About overlay button ids.
 const (
 	aboutGitHub   = "github"
+	aboutUpdate   = "update"
 	aboutCommands = "commands"
 	aboutQuit     = "quit"
 	aboutClose    = "close"
@@ -88,6 +91,14 @@ func (m Model) settingsFrame() settingsFrame {
 	rows = append(rows, settingsBlank(innerW))
 	rows = append(rows, settingsRow("terminal workspace", colorSand, innerW, true))
 	rows = append(rows, settingsRow(versionLabel(m.version), colorLagoon, innerW, true))
+	if m.updateAvailable() {
+		rows = append(rows, settingsRow("update "+upd.Display(m.updateRelease.Version)+" available", colorSun, innerW, true))
+		rows = append(rows, settingsRow(m.updateAboutLine(), colorSandDim, innerW, true))
+	} else if m.updateRunning {
+		rows = append(rows, settingsRow("updating via "+m.updateMethod.Name+"…", colorSun, innerW, true))
+	} else if m.updateDone {
+		rows = append(rows, settingsRow("updated · restart Bento", colorPalm, innerW, true))
+	}
 	rows = append(rows, settingsBlank(innerW))
 	rows = append(rows, settingsRow("Everything in reach, nothing in the way.", colorSand, innerW, true))
 	rows = append(rows, settingsBlank(innerW))
@@ -97,7 +108,7 @@ func (m Model) settingsFrame() settingsFrame {
 	rows = append(rows, settingsBlank(innerW))
 
 	buttonRow := len(rows)
-	row, buttons := aboutRow(innerW)
+	row, buttons := aboutRow(innerW, m.updateAvailable())
 	rows = append(rows, row)
 
 	boxH := len(rows) + 3
@@ -149,12 +160,12 @@ func settingsBlank(width int) string {
 func versionLabel(version string) string {
 	version = strings.TrimSpace(version)
 	switch {
-	case version == "", version == "dev", version == "development":
-		return "development build"
+	case version == "", version == "dev", version == "development", version == "(devel)":
+		return "current development build"
 	case strings.HasPrefix(version, "v"):
-		return version
+		return "current " + version
 	}
-	return "v" + version
+	return "current v" + version
 }
 
 // aboutFeatures is the two-column feature list, in simple terms.
@@ -202,7 +213,7 @@ func aboutFeatureCell(text string, width int) piece {
 	return piece{view: view, width: width}
 }
 
-func aboutRow(innerW int) (string, []aboutButton) {
+func aboutRow(innerW int, canUpdate bool) (string, []aboutButton) {
 	specs := []struct {
 		id    string
 		key   string
@@ -213,6 +224,14 @@ func aboutRow(innerW int) (string, []aboutButton) {
 		{aboutCommands, "?", "commands", colorSand},
 		{aboutQuit, "q", "quit", colorSand},
 		{aboutClose, "esc", "close", colorSand},
+	}
+	if canUpdate {
+		specs = append([]struct {
+			id    string
+			key   string
+			label string
+			fg    lipgloss.TerminalColor
+		}{{aboutUpdate, "u", "update", colorSun}}, specs...)
 	}
 
 	bg := colorSelectDim
@@ -264,6 +283,8 @@ func (m Model) settingsClick(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		switch hit.id {
 		case aboutGitHub:
 			return m, openURL(projectURL)
+		case aboutUpdate:
+			return m.startUpdate()
 		case aboutCommands:
 			return m.openPalette(), nil
 		case aboutQuit:

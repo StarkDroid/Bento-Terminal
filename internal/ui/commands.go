@@ -12,6 +12,7 @@ const (
 	actPrev
 	actKeys
 	actSettings
+	actUpdate
 	actQuit
 
 	actFileUp
@@ -190,7 +191,7 @@ func (m Model) aiActions() []action {
 }
 
 func (m Model) globalActions() []action {
-	return []action{
+	list := []action{
 		{actNext, m.keys.Next, "focus next pane"},
 		{actPrev, m.keys.Prev, "focus previous pane"},
 		{actKeys, m.keys.Help, "command list for this pane"},
@@ -201,6 +202,10 @@ func (m Model) globalActions() []action {
 		{actAIToggle, m.keys.ToggleAI, "open or close the AI panel"},
 		{actQuit, m.keys.Quit, "quit Bento terminal"},
 	}
+	if m.updateAvailable() {
+		list = append(list, action{actUpdate, m.keys.Update, "update Bento"})
+	}
+	return list
 }
 
 // actions returns every command that may run now. Build commands work from any
@@ -237,6 +242,8 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.openPalette(), nil
 	case actSettings:
 		return m.openSettings(), nil
+	case actUpdate:
+		return m.startUpdate()
 	case actQuit:
 		m = m.stopRun()
 		m = m.closeAISession()

@@ -22,6 +22,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.onKey(msg)
 	case tea.MouseMsg:
 		return m.onMouse(msg)
+	case updateCheckedMsg:
+		return m.onUpdateChecked(msg)
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -80,6 +82,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.updateOpen {
+		return m.onUpdateKey(msg)
+	}
 	if m.newFileOpen {
 		return m.onNewFileKey(msg)
 	}
@@ -111,6 +116,10 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.settingsOpen {
 		if key.Matches(msg, m.keys.Close, m.keys.Settings) {
 			m.settingsOpen = false
+			return m, nil
+		}
+		if m.updateAvailable() && key.Matches(msg, m.keys.Update) {
+			return m.startUpdate()
 		}
 		return m, nil
 	}
@@ -135,6 +144,9 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // onMouse focuses a pane on click and lets the pointer move the selection, fold
 // a block, or scroll a list.
 func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	if m.updateOpen {
+		return m.onUpdateMouse(msg)
+	}
 	if m.settingsOpen {
 		return m.settingsClick(msg)
 	}
@@ -684,14 +696,15 @@ func (m Model) onStarted(msg runStartedMsg) (tea.Model, tea.Cmd) {
 		m.running = false
 		m = m.setRunState(stateFailed)
 		m.cancel = nil
-		return m.appendRun("✗ " + msg.err.Error()), nil
+		m = m.appendRun("✗ " + msg.err.Error())
+		return m.updateStartFailed(), nil
 	}
 	m.cancel = msg.cancel
 	m.running = true
 	if msg.events == nil {
 		m.running = false
 		m = m.setRunState(stateFailed)
-		return m, nil
+		return m.updateStartFailed(), nil
 	}
 	return m, listenCmd(msg.id, msg.events)
 }
@@ -712,6 +725,15 @@ func (m Model) onDone(msg runDoneMsg) (tea.Model, tea.Cmd) {
 	default:
 		m = m.setRunState(stateFailed)
 		m = m.appendRun("✗ " + msg.err.Error())
+	}
+	if m.runTarget == targetTerminal && m.updateRunning {
+		m.updateRunning = false
+		if msg.err == nil {
+			m.updateDone = true
+			m = m.appendTerm("✓ Bento updated. Restart Bento to use the new version.")
+		} else {
+			m = m.appendTerm("✗ Update failed. Run the command manually in the terminal.")
+		}
 	}
 	if m.runTarget == targetAI {
 		return m, detectAgentsCmd()
