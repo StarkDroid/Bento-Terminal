@@ -64,8 +64,8 @@ The Unix installer puts the binary in `~/.local/bin`; `--with-zsh` also adds tha
 
 - **Preview and edit.** Highlighting, folding, and a save in place.
 - **Every change.** Modified, staged, untracked, and conflicted paths, with patches.
-- **Your shell.** Any command, run inside the project.
-- **Builds without setup.** Detected tests, builds, and lint commands.
+- **Your shell, in tabs.** Any command, run inside the project; `ctrl+t` opens another shell tab with its own history and scrollback.
+- **Builds without setup.** Detected tests, builds, and lint commands, with Commands and Output tabs.
 - **Coding agents.** `ctrl+a` lists Claude Code, OpenCode, Gemini CLI, Codex CLI, Copilot, Crush, Aider, and Cursor; install one or start it beside the preview.
 
 - **Find fast.** `ctrl+p` filters the project's files; `ctrl+f` searches the open file.

@@ -425,49 +425,53 @@ func (m Model) renderBuild(width, height int) string {
 	if innerW < 1 {
 		innerW = 1
 	}
-	listH, outH := buildParts(height)
+	bodyH := height - 4
+	if bodyH < 0 {
+		bodyH = 0
+	}
 	var body []string
-	cmds := m.commands()
-	switch {
-	case !m.buildReady:
-		body = append(body, noteLine(" Detecting commands…", innerW))
-	case len(cmds) == 0:
-		msg := " No commands detected"
-		if m.mode == build.ModeManual {
-			msg = " No run commands"
+	if m.buildTab == buildTabOutput {
+		if block := m.outputBlock(innerW, bodyH); block != "" {
+			body = strings.Split(block, "\n")
 		}
-		body = append(body, noteLine(msg, innerW))
-		other := m.manualCmds
-		if m.mode == build.ModeManual {
-			other = m.autoCmds
-		}
-		if len(other) > 0 {
-			body = append(body, noteLine(" Press a to switch mode", innerW))
-		}
-	default:
-		scroll := ensure(m.cmdCursor, m.cmdScroll, listH)
-		end := scroll + listH
-		if end > len(cmds) {
-			end = len(cmds)
-		}
-		for i := scroll; i < end; i++ {
-			body = append(body, m.commandLine(cmds[i], innerW, i == m.cmdCursor))
+	} else {
+		cmds := m.commands()
+		switch {
+		case !m.buildReady:
+			body = append(body, noteLine(" Detecting commands…", innerW))
+		case len(cmds) == 0:
+			msg := " No commands detected"
+			if m.mode == build.ModeManual {
+				msg = " No run commands"
+			}
+			body = append(body, noteLine(msg, innerW))
+			other := m.manualCmds
+			if m.mode == build.ModeManual {
+				other = m.autoCmds
+			}
+			if len(other) > 0 {
+				body = append(body, noteLine(" Press a to switch mode", innerW))
+			}
+		default:
+			scroll := ensure(m.cmdCursor, m.cmdScroll, bodyH)
+			end := scroll + bodyH
+			if end > len(cmds) {
+				end = len(cmds)
+			}
+			for i := scroll; i < end; i++ {
+				body = append(body, m.commandLine(cmds[i], innerW, i == m.cmdCursor))
+			}
 		}
 	}
-	for len(body) < listH {
+	for len(body) < bodyH {
 		body = append(body, noteLine("", innerW))
 	}
-	if len(body) > listH && listH > 0 {
-		body = body[:listH]
+	if len(body) > bodyH {
+		body = body[:bodyH]
 	}
-	if outH > 0 {
-		body = append(body, sepLine(innerW))
-		block := m.outputBlock(innerW, outH)
-		if block != "" {
-			body = append(body, strings.Split(block, "\n")...)
-		}
+	if bodyH > 0 {
+		body = append(body, m.footer(PaneBuild, innerW))
 	}
-	body = append(body, m.footer(PaneBuild, innerW))
 	return renderPanel(m.buildTitle(innerW), strings.Join(body, "\n"), width, height, focused)
 }
 
@@ -487,7 +491,10 @@ func (m Model) buildTitle(width int) string {
 	focused := m.focus == PaneBuild
 	left := []piece{
 		m.runGlyph(m.buildState, focused),
-		tabPiece("Build", true, focused),
+		pieceText(" Build ", colorSandDim, colorPanel),
+		tabPiece("Commands", m.buildTab == buildTabCommands, focused),
+		pieceText(" ", colorSand, colorPanel),
+		tabPiece("Output", m.buildTab == buildTabOutput, focused),
 	}
 	var right []piece
 	mode := "auto"
@@ -499,6 +506,19 @@ func (m Model) buildTitle(width int) string {
 		right = append(right, pieceText("  ·  "+m.last.Name, colorSandDim, colorPanel))
 	}
 	return joinLeftRight(width, colorPanel, left, right)
+}
+
+// buildTabAt maps an inner title cell to a build tab.
+func (m Model) buildTabAt(rel int) (buildTab, bool) {
+	start := m.runGlyph(m.buildState, false).width + lipgloss.Width(" Build ")
+	if rel >= start && rel < start+lipgloss.Width(" Commands ") {
+		return buildTabCommands, true
+	}
+	start += lipgloss.Width(" Commands ") + 1
+	if rel >= start && rel < start+lipgloss.Width(" Output ") {
+		return buildTabOutput, true
+	}
+	return 0, false
 }
 
 // runGlyph is the state marker in a panel title: a spinner while running, a
@@ -527,16 +547,40 @@ func (m Model) terminalTitle(width int) string {
 	focused := m.focus == PaneTerminal
 	left := []piece{
 		m.runGlyph(m.termState, focused),
-		tabPiece("Terminal", true, focused),
+		pieceText(" Terminal ", colorSandDim, colorPanel),
 	}
+	for i := range m.termTabs {
+		left = append(left, tabPiece(fmt.Sprintf("%d", i+1), i == m.termIndex, focused))
+	}
+	left = append(left, tabPiece("+", false, focused))
+
 	var right []piece
 	switch {
-	case m.running && m.runTarget == targetTerminal:
+	case m.running && m.runTarget == targetTerminal && m.termRunIndex == m.termIndex:
 		right = append(right, pieceText(" running ", colorPalm, colorPanel))
+	case m.running && m.runTarget == targetTerminal:
+		right = append(right, pieceText(fmt.Sprintf(" shell %d running ", m.termRunIndex+1), colorPalm, colorPanel))
 	default:
 		right = append(right, pieceText(" $SHELL ", colorSandDim, colorPanel))
 	}
 	return joinLeftRight(width, colorPanel, left, right)
+}
+
+// terminalTabAt maps an inner title cell to a shell tab. The second result is
+// true for the + tab, which creates a new shell.
+func (m Model) terminalTabAt(rel int) (int, bool, bool) {
+	start := m.runGlyph(m.termState, false).width + lipgloss.Width(" Terminal ")
+	for i := range m.termTabs {
+		w := lipgloss.Width(fmt.Sprintf(" %d ", i+1))
+		if rel >= start && rel < start+w {
+			return i, false, true
+		}
+		start += w
+	}
+	if rel >= start && rel < start+3 {
+		return 0, true, true
+	}
+	return 0, false, false
 }
 
 // renderTerminal draws the terminal scrollback, the command prompt, and the
@@ -620,7 +664,7 @@ func (m Model) outputBlock(width, height int) string {
 		return ""
 	}
 	if len(m.outLines) == 0 {
-		return windowLines([]string{noteLine(" Idle. Select a command and press enter.", width)}, 0, width, height)
+		return windowLines([]string{noteLine(" No output yet. Run a command from Commands.", width)}, 0, width, height)
 	}
 	y := m.output.YOffset
 	if y < 0 {
@@ -709,13 +753,20 @@ func (m Model) footerHints(p Pane) []footerHint {
 	case PaneHistory:
 		return []footerHint{{"↑↓", ""}, {"←→", "tab"}, {"?", "keys"}}
 	case PaneBuild:
+		if m.buildTab == buildTabOutput {
+			return []footerHint{
+				{"↑↓", "scroll"}, {"←→", "tab"}, {"r", "rerun"},
+				{"c", "stop"}, {"?", "keys"},
+			}
+		}
 		return []footerHint{
 			{"↑↓", "pick"}, {"enter", "run"}, {"a", "mode"},
-			{"r", "rerun"}, {"?", "keys"},
+			{"r", "rerun"}, {"←→", "tab"}, {"?", "keys"},
 		}
 	case PaneTerminal:
 		return []footerHint{
-			{"enter", "run"}, {"ctrl+c", "stop"}, {"esc", "back"}, {"?", "keys"},
+			{"enter", "run"}, {"ctrl+c", "stop"}, {"esc", "back"},
+			{"ctrl+t", "new shell"}, {"ctrl+n/p", "shell"}, {"?", "keys"},
 		}
 	case PaneAI:
 		if m.aiSession != nil {

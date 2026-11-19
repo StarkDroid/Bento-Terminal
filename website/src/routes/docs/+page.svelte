@@ -382,6 +382,12 @@ UU  unmerged</pre>
 					<kbd>ctrl+c</kbd> stops a running command or clears the prompt.
 				</p>
 				<p>
+					Each shell has its own tab, input, history, and scrollback. <kbd>ctrl+t</kbd> opens a new
+					shell; <kbd>ctrl+n</kbd> and <kbd>ctrl+p</kbd> (or the numbered tabs and <code>+</code>)
+					switch between them. Only one command runs at a time, so starting one stops the previous
+					command.
+				</p>
+				<p>
 					Output is captured as text: colour, cursor, and erase sequences are dropped so a command
 					like <code>clear</code> cannot touch Bento's own screen. The scrollback is separate from
 					the Build output and the AI install log, and starting a command stops the previous one.
@@ -413,8 +419,9 @@ UU  unmerged</pre>
 				</ul>
 				<p>
 					<kbd>a</kbd> switches to a shorter manual list, <kbd>enter</kbd> runs the selected
-					command, <kbd>r</kbd> reruns it, and <kbd>c</kbd> cancels the process group. The output
-					streams under the list.
+					command, <kbd>r</kbd> reruns it, and <kbd>c</kbd> cancels the process group. Build has two
+					tabs: <strong>Commands</strong> and <strong>Output</strong>. <kbd>←</kbd> and
+					<kbd>→</kbd> switch tabs, and running a command jumps to Output automatically.
 				</p>
 				<p>
 					Detected commands run directly, without a shell, so pipes, globs, and builtins belong in
@@ -443,7 +450,9 @@ UU  unmerged</pre>
 				<p>
 					<kbd>↑</kbd> <kbd>↓</kbd> pick an agent, <kbd>enter</kbd> starts an installed one or
 					installs a missing one, <kbd>r</kbd> rescans PATH, and <kbd>esc</kbd> returns to the
-					preview. Install output streams into the panel; <kbd>esc</kbd> cancels a running install
+					preview. While an agent runs, the mouse wheel is forwarded to it; agents without mouse
+					reporting receive <kbd>pgup</kbd> and <kbd>pgdn</kbd> so their conversation still
+					scrolls. Install output streams into the panel; <kbd>esc</kbd> cancels a running install
 					and closes the log afterwards. A successful install rescans and the title shows how many
 					agents are ready.
 				</p>

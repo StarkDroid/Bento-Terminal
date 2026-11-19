@@ -12,6 +12,9 @@ const (
 	actPrev
 	actKeys
 	actSettings
+	actNewTerm
+	actNextTerm
+	actPrevTerm
 	actQuit
 
 	actFileUp
@@ -30,6 +33,8 @@ const (
 	actHistoryTabNext
 	actHistoryOpen
 
+	actBuildTabPrev
+	actBuildTabNext
 	actBuildUp
 	actBuildDown
 	actBuildPageUp
@@ -124,7 +129,7 @@ func (m Model) paneActions(p Pane) []action {
 			{actHistoryOpen, m.keys.Enter, "open the selection"},
 		}
 	case PaneBuild:
-		return m.buildActions()
+		return m.buildPaneActions()
 	case PaneTerminal:
 		return m.terminalActions()
 	case PaneAI:
@@ -133,12 +138,30 @@ func (m Model) paneActions(p Pane) []action {
 	return nil
 }
 
+func (m Model) buildPaneActions() []action {
+	tabs := []action{
+		{actBuildTabPrev, m.keys.Left, "previous tab"},
+		{actBuildTabNext, m.keys.Right, "next tab"},
+	}
+	return append(tabs, m.buildActions()...)
+}
+
 func (m Model) buildActions() []action {
+	if m.buildTab == buildTabOutput {
+		return []action{
+			{actBuildUp, m.keys.Up, "scroll output up"},
+			{actBuildDown, m.keys.Down, "scroll output down"},
+			{actBuildPageUp, m.keys.PageUp, "scroll output up a page"},
+			{actBuildPageDown, m.keys.PageDown, "scroll output down a page"},
+			{actBuildRerun, m.keys.Rerun, "rerun last command"},
+			{actBuildCancel, m.keys.Cancel, "cancel the run"},
+		}
+	}
 	return []action{
 		{actBuildUp, m.keys.Up, "move up"},
 		{actBuildDown, m.keys.Down, "move down"},
-		{actBuildPageUp, m.keys.PageUp, "scroll output up"},
-		{actBuildPageDown, m.keys.PageDown, "scroll output down"},
+		{actBuildPageUp, m.keys.PageUp, "move up a page"},
+		{actBuildPageDown, m.keys.PageDown, "move down a page"},
 		{actBuildRun, m.keys.Enter, "run selected command"},
 		{actBuildMode, m.keys.Mode, "switch auto or manual"},
 		{actBuildRerun, m.keys.Rerun, "rerun last command"},
@@ -151,6 +174,8 @@ func (m Model) terminalActions() []action {
 		{actTermRun, m.keys.Enter, "run the typed command"},
 		{actTermCancel, m.keys.Interrupt, "stop the running command"},
 		{actTermClear, m.keys.Close, "clear the input or go back to Build"},
+		{actNextTerm, m.keys.NextTerm, "next shell tab"},
+		{actPrevTerm, m.keys.PrevTerm, "previous shell tab"},
 	}
 }
 
@@ -199,6 +224,7 @@ func (m Model) globalActions() []action {
 		{actFindText, m.keys.FindText, "find in this file"},
 		{actRecent, m.keys.Recent, "open a recent project"},
 		{actAIToggle, m.keys.ToggleAI, "open or close the AI panel"},
+		{actNewTerm, m.keys.NewTerm, "new shell tab"},
 		{actQuit, m.keys.Quit, "quit Bento terminal"},
 	}
 }
@@ -237,6 +263,12 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		return m.openPalette(), nil
 	case actSettings:
 		return m.openSettings(), nil
+	case actNewTerm:
+		return m.newTerminalTab()
+	case actNextTerm:
+		return m.cycleTerminalTab(1), nil
+	case actPrevTerm:
+		return m.cycleTerminalTab(-1), nil
 	case actQuit:
 		m = m.stopRun()
 		m = m.closeAISession()
@@ -277,14 +309,30 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 	case actHistoryOpen:
 		return m.openHistorySelection()
 
+	case actBuildTabPrev:
+		return m.switchBuildTab(-1), nil
+	case actBuildTabNext:
+		return m.switchBuildTab(1), nil
 	case actBuildUp:
+		if m.buildTab == buildTabOutput {
+			return m.scrollOutput(-1), nil
+		}
 		return m.moveCmd(-1), nil
 	case actBuildDown:
+		if m.buildTab == buildTabOutput {
+			return m.scrollOutput(1), nil
+		}
 		return m.moveCmd(1), nil
 	case actBuildPageUp:
-		return m.scrollOutput(-m.outputPage()), nil
+		if m.buildTab == buildTabOutput {
+			return m.scrollOutput(-m.outputPage()), nil
+		}
+		return m.moveCmd(-m.commandPage()), nil
 	case actBuildPageDown:
-		return m.scrollOutput(m.outputPage()), nil
+		if m.buildTab == buildTabOutput {
+			return m.scrollOutput(m.outputPage()), nil
+		}
+		return m.moveCmd(m.commandPage()), nil
 	case actBuildRun:
 		cmds := m.commands()
 		if m.cmdCursor < 0 || m.cmdCursor >= len(cmds) {
