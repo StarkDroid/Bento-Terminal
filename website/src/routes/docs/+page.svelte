@@ -147,8 +147,8 @@ scoop install bento                # Windows
 go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</pre>
 				<p class="muted">
 					Linux releases also attach <code>.deb</code> and <code>.rpm</code>
-					packages. npm is live. WinGet and Chocolatey are not on the 0.8.0 release
-					yet; WinGet has an open 0.7.0 PR, and Chocolatey 0.8.0 is in moderation.
+					packages. npm is live. WinGet and Chocolatey are not on the 0.8.1 release
+					yet; WinGet has an open 0.7.0 PR, and Chocolatey is in moderation.
 					On Windows, use the PowerShell installer below or Scoop.
 				</p>
 
