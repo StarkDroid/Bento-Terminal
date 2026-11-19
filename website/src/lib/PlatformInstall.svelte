@@ -37,6 +37,14 @@
 			note: 'Windows PowerShell'
 		},
 		{
+			id: 'npm',
+			label: 'npm',
+			prompt: '$',
+			command: 'npx bento-terminal',
+			event: 'copy-hero-npm',
+			note: 'npm / npx'
+		},
+		{
 			id: 'go',
 			label: 'Go',
 			prompt: '$',
@@ -96,7 +104,7 @@
 
 <div class="install">
 	{#if mobile || !known}
-		<div class="platforms" role="group" aria-label="Choose your platform">
+		<div class="platforms" role="group" aria-label="Choose your install method">
 			{#each platforms as item (item.id)}
 				<button
 					type="button"
@@ -114,8 +122,12 @@
 
 	<p class="hint">
 		{current.note}.
-		<a href="{base}/docs/#install">Homebrew, Scoop, Go and more</a>
-		· <a href="{base}/docs/">Docs</a>
+		{#if mobile}
+			<a href="{base}/docs/#install">More install options</a>
+		{:else}
+			<a href="{base}/docs/#install">Homebrew, Scoop, Go, npm and more</a>
+			· <a href="{base}/docs/">Docs</a>
+		{/if}
 	</p>
 </div>
 
