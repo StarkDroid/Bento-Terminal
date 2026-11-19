@@ -7,6 +7,11 @@ on:
         required: true
         type: string
         description: "Version to publish, without v"
+      oidc_only:
+        required: false
+        type: boolean
+        default: false
+        description: "Skip the NPM_TOKEN fallback and use trusted publishing"
     secrets:
       NPM_TOKEN:
         required: false
@@ -15,6 +20,11 @@ on:
       version:
         description: "Version to publish, without v (for example 0.5.0)"
         required: true
+      oidc_only:
+        description: "Skip the NPM_TOKEN fallback and test trusted publishing"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -65,7 +75,13 @@ jobs:
         working-directory: packaging/npm
         run: npm version "${{ steps.version.outputs.value }}" --no-git-tag-version --allow-same-version
 
+      - name: Publish with OIDC
+        if: inputs.oidc_only
+        working-directory: packaging/npm
+        run: npm publish --provenance --access public
+
       - name: Publish
+        if: ${{ !inputs.oidc_only }}
         working-directory: packaging/npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
