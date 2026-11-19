@@ -45,6 +45,28 @@ const (
 	histTabChanges
 )
 
+// buildTab selects the command list or the last run's output.
+type buildTab int
+
+const (
+	buildTabCommands buildTab = iota
+	buildTabOutput
+)
+
+// terminalTab is one terminal buffer. The active tab is mirrored in the
+// Model's term* fields so rendering and input keep their old shape.
+type terminalTab struct {
+	title   string
+	lines   []string
+	follow  bool
+	scroll  int
+	input   string
+	cursor  int
+	history []string
+	histPos int
+	state   runState
+}
+
 // runTarget says where a running process writes its output.
 type runTarget int
 
@@ -94,6 +116,7 @@ type Model struct {
 	manualCmds []build.Command
 	systems    []string
 	buildReady bool
+	buildTab   buildTab
 	cmdCursor  int
 	cmdScroll  int
 
@@ -108,6 +131,9 @@ type Model struct {
 	outLines        []string
 	output          viewport.Model
 	follow          bool
+	termTabs        []terminalTab
+	termIndex       int
+	termRunIndex    int
 	termLines       []string
 	termOutput      viewport.Model
 	termFollow      bool
@@ -212,6 +238,8 @@ func NewWithState(root, version string, store *appstate.Store) Model {
 		spinner:      sp,
 		mode:         build.ModeAuto,
 		follow:       true,
+		termTabs:     []terminalTab{{title: "shell 1", follow: true, histPos: -1}},
+		termRunIndex: -1,
 		termFollow:   true,
 		termHistPos:  -1,
 		previewFolds: map[int]bool{},

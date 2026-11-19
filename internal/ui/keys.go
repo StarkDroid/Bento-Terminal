@@ -29,6 +29,9 @@ type keyMap struct {
 	Interrupt key.Binding
 	Settings  key.Binding
 	Update    key.Binding
+	NewTerm   key.Binding
+	NextTerm  key.Binding
+	PrevTerm  key.Binding
 	Help      key.Binding
 	Close     key.Binding
 	Quit      key.Binding
@@ -62,6 +65,9 @@ func newKeys() keyMap {
 		Interrupt: key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "stop")),
 		Settings:  key.NewBinding(key.WithKeys(","), key.WithHelp(",", "settings")),
 		Update:    key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "update")),
+		NewTerm:   key.NewBinding(key.WithKeys("ctrl+t"), key.WithHelp("ctrl+t", "new shell")),
+		NextTerm:  key.NewBinding(key.WithKeys("ctrl+right", "ctrl+n"), key.WithHelp("ctrl+→/n", "next shell")),
+		PrevTerm:  key.NewBinding(key.WithKeys("ctrl+left", "ctrl+p"), key.WithHelp("ctrl+←/p", "previous shell")),
 		Help:      key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "commands")),
 		Close:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close commands")),
 		Quit:      key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
