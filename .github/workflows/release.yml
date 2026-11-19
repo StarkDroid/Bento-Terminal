@@ -1,5 +1,9 @@
 name: Release
 
+# A merged pull request can opt out of a release with a line that is exactly
+# /silent, a title ending in /silent, or the "silent" label. The gate job below then skips the
+# release and every publish job; CI and Pages still run.
+
 on:
   push:
     branches: [main]
@@ -15,8 +19,73 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  gate:
+    name: release gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - name: Check for /silent
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+
+          # A manual dispatch always releases.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          is_silent=0
+
+          # A line containing only /silent in the merge or squash commit.
+          if printf '%s\n' "$COMMIT_MESSAGE" \
+            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
+            | grep -qx '/silent'; then
+            is_silent=1
+          fi
+
+          # Or a PR whose title ends in /silent, whose body has a /silent
+          # line, or that carries the "silent" label.
+          if [ "$is_silent" -eq 0 ]; then
+            prs=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
+              --jq '.[].number' 2>/dev/null || true)
+            for pr in $prs; do
+              pr_json=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr}")
+              title=$(jq -r '.title // ""' <<<"$pr_json")
+              body=$(jq -r '.body // ""' <<<"$pr_json")
+              labels=$(jq -r '.labels[]?.name' <<<"$pr_json")
+              if printf '%s' "$title" \
+                | grep -qE '(^|[[:space:]])/silent[[:space:]]*$'; then
+                is_silent=1
+              elif printf '%s\n' "$body" \
+                | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
+                | grep -qx '/silent'; then
+                is_silent=1
+              elif printf '%s\n' "$labels" | grep -qix 'silent'; then
+                is_silent=1
+              fi
+              [ "$is_silent" -eq 1 ] && break
+            done
+          fi
+
+          if [ "$is_silent" -eq 1 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Release skipped: /silent marker found." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
   release:
     name: release
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.release.outputs.version }}

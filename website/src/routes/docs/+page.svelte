@@ -144,15 +144,12 @@ npm install -g bento-terminal      # npm, global
 brew install StarkDroid/tap/bento  # macOS and Linux
 scoop bucket add starkdroid https://github.com/StarkDroid/scoop-bucket
 scoop install bento                # Windows
-winget install StarkDroid.Bento    # Windows
-choco install bento-terminal       # Windows
 go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</pre>
 				<p class="muted">
 					Linux releases also attach <code>.deb</code> and <code>.rpm</code>
-					packages. The npm package downloads the native binary and checks it against the release
-					<code>SHA256SUMS</code>. WinGet and Chocolatey manifests are generated with each release
-					from <code>packaging/</code>. WinGet is submitted; Chocolatey publishes once its
-					API key is connected.
+					packages. npm is live. WinGet and Chocolatey are not on the 0.8.0 release
+					yet; WinGet has an open 0.7.0 PR, and Chocolatey 0.8.0 is in moderation.
+					On Windows, use the PowerShell installer below or Scoop.
 				</p>
 
 				<h3>Direct download</h3>

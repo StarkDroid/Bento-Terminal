@@ -22,22 +22,22 @@ Bento terminal is a full-screen workspace for one project, in the terminal: prev
 ## Install
 
 Bento ships as a native binary for macOS, Linux, and Windows. Every route below
-installs the same release binary.
+installs the same release binary. ❌ means the route is not on the 0.8.0 release
+yet.
 
 | Source | Install |
 | --- | --- |
 | npm / npx | `npx bento-terminal` or `npm install -g bento-terminal` |
 | Homebrew | `brew install StarkDroid/tap/bento` |
 | Scoop | `scoop bucket add starkdroid https://github.com/StarkDroid/scoop-bucket` then `scoop install bento` |
-| WinGet | `winget install StarkDroid.Bento` |
-| Chocolatey | `choco install bento-terminal` |
+| ❌ WinGet | `winget install StarkDroid.Bento` |
+| ❌ Chocolatey | `choco install bento-terminal` |
 | Go | `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` |
 | Linux packages | `.deb` or `.rpm` from [releases](https://github.com/StarkDroid/Bento-Terminal/releases/latest) |
 
-WinGet and Chocolatey manifests are generated with each release from
-[`packaging/`](packaging/README.md). WinGet is submitted; Chocolatey publishes
-once its API key is connected. Until then, use npm, Homebrew, Scoop, Go, or a
-release binary.
+WinGet and Chocolatey are not on the 0.8.0 release yet. WinGet has an open
+0.7.0 PR, and Chocolatey 0.8.0 is in moderation. Until then, use npm, Homebrew,
+Scoop, Go, or a release binary.
 
 Then run `bento` inside any project. With no argument it uses the current
 directory; `bento <dir>` opens another one.

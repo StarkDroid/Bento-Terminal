@@ -7,6 +7,11 @@ on:
         required: true
         type: string
         description: "Version to publish, without v"
+      oidc_only:
+        required: false
+        type: boolean
+        default: false
+        description: "Skip the NPM_TOKEN fallback and use trusted publishing"
     secrets:
       NPM_TOKEN:
         required: false
@@ -15,11 +20,19 @@ on:
       version:
         description: "Version to publish, without v (for example 0.5.0)"
         required: true
+      oidc_only:
+        description: "Skip the NPM_TOKEN fallback and test trusted publishing"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   id-token: write
 
+# Trusted publishing uses GitHub OIDC. Configure release.yml (the caller) and
+# publish-npm.yml (manual runs) as trusted publishers on npm. npm uses OIDC
+# first and falls back to NPM_TOKEN while the migration is in progress.
 jobs:
   npm:
     name: npm
@@ -31,8 +44,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
+
+      - name: Use latest npm
+        run: npm install -g npm@latest
 
       - name: Resolve version
         id: version
@@ -56,17 +72,17 @@ jobs:
           npm test
 
       - name: Set version
-        if: env.NPM_TOKEN != ''
         working-directory: packaging/npm
         run: npm version "${{ steps.version.outputs.value }}" --no-git-tag-version --allow-same-version
 
+      - name: Publish with OIDC
+        if: inputs.oidc_only
+        working-directory: packaging/npm
+        run: npm publish --provenance --access public
+
       - name: Publish
-        if: env.NPM_TOKEN != ''
+        if: ${{ !inputs.oidc_only }}
         working-directory: packaging/npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
-
-      - name: No token
-        if: env.NPM_TOKEN == ''
-        run: echo "NPM_TOKEN is not set; the npm package was not published." >> "$GITHUB_STEP_SUMMARY"
