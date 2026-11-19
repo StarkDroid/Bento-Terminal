@@ -16,9 +16,9 @@
 			id: 'macos',
 			label: 'macOS',
 			prompt: '$',
-			command: installSh,
+			command: 'brew install StarkDroid/tap/bento',
 			event: 'copy-hero-macos',
-			note: 'macOS'
+			note: 'macOS · Homebrew'
 		},
 		{
 			id: 'linux',
@@ -26,7 +26,7 @@
 			prompt: '$',
 			command: installSh,
 			event: 'copy-hero-linux',
-			note: 'Linux'
+			note: 'Linux · installer'
 		},
 		{
 			id: 'windows',
@@ -55,8 +55,6 @@
 	];
 
 	let platform = $state('macos');
-	let mobile = $state(false);
-	let known = $state(true);
 
 	const current = $derived(
 		platforms.find((item) => item.id === platform) ?? platforms[0]
@@ -75,59 +73,39 @@
 		const isWindows = /Windows/.test(ua);
 		const isMac = /Macintosh|Mac OS X/.test(ua) && !isIPad;
 		const isLinux = /Linux|X11|CrOS/.test(ua) && !isAndroid;
-		const isMobileUA = isIOS || isAndroid || /Mobile/.test(ua);
-		const narrow = window.matchMedia('(max-width: 760px)');
 
-		const apply = () => {
-			mobile = isMobileUA || narrow.matches;
-			if (isWindows) {
-				platform = 'windows';
-			} else if (isMac) {
-				platform = 'macos';
-			} else if (isAndroid) {
-				platform = 'linux';
-			} else if (isLinux) {
-				platform = 'linux';
-			} else if (isIOS) {
-				platform = 'macos';
-			} else {
-				platform = 'macos';
-				known = false;
-			}
-		};
-
-		apply();
-		narrow.addEventListener('change', apply);
-		return () => narrow.removeEventListener('change', apply);
+		if (isWindows) {
+			platform = 'windows';
+		} else if (isMac) {
+			platform = 'macos';
+		} else if (isAndroid) {
+			platform = 'linux';
+		} else if (isLinux) {
+			platform = 'linux';
+		} else if (isIOS) {
+			platform = 'macos';
+		}
 	});
 </script>
 
 <div class="install">
-	{#if mobile || !known}
-		<div class="platforms" role="group" aria-label="Choose your install method">
-			{#each platforms as item (item.id)}
-				<button
-					type="button"
-					class:active={item.id === platform}
-					aria-pressed={item.id === platform}
-					onclick={() => choose(item.id)}
-				>
-					{item.label}
-				</button>
-			{/each}
-		</div>
-	{/if}
-
 	<CopyCommand command={current.command} prompt={current.prompt} event={current.event} />
 
+	<div class="platforms" role="group" aria-label="Choose your install method">
+		{#each platforms as item (item.id)}
+			<button
+				type="button"
+				class:active={item.id === platform}
+				aria-pressed={item.id === platform}
+				onclick={() => choose(item.id)}
+			>
+				{item.label}
+			</button>
+		{/each}
+	</div>
+
 	<p class="hint">
-		{current.note}.
-		{#if mobile}
-			<a href="{base}/docs/#install">More install options</a>
-		{:else}
-			<a href="{base}/docs/#install">Homebrew, Scoop, Go, npm and more</a>
-			· <a href="{base}/docs/">Docs</a>
-		{/if}
+		{current.note}. <a href="{base}/docs/">Docs</a>
 	</p>
 </div>
 
@@ -136,7 +114,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
-		margin-bottom: 10px;
+		margin-top: 10px;
 	}
 
 	.platforms button {
