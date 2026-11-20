@@ -22,7 +22,7 @@ Bento terminal is a full-screen workspace for one project, in the terminal: prev
 ## Install
 
 Bento ships as a native binary for macOS, Linux, and Windows. Every route below
-installs the same release binary. ❌ means the route is not on the 0.8.1 release
+installs the same release binary. ❌ means the route is not on the 0.9.0 release
 yet.
 
 | Source | Install |
@@ -35,8 +35,8 @@ yet.
 | Go | `go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest` |
 | Linux packages | `.deb` or `.rpm` from [releases](https://github.com/StarkDroid/Bento-Terminal/releases/latest) |
 
-WinGet is not on the 0.8.1 release yet; it has an open 0.7.0 PR. Chocolatey is
-live on 0.7.0, and the 0.8.1 package is not published yet. Until then, use npm,
+WinGet is not on the 0.9.0 release yet; it has an open 0.7.0 PR. Chocolatey is
+live on 0.7.0, and the 0.9.0 package is not published yet. Until then, use npm,
 Homebrew, Scoop, Chocolatey, Go, or a release binary.
 
 Then run `bento` inside any project. With no argument it uses the current
