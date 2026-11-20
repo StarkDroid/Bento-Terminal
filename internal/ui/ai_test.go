@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hinshun/vt10x"
 
@@ -209,5 +210,40 @@ func TestAIViewKeepsWindowSize(t *testing.T) {
 		if w, h := lipgloss.Width(view), lipgloss.Height(view); w != size.w || h != size.h {
 			t.Fatalf("%dx%d rendered %dx%d", size.w, size.h, w, h)
 		}
+	}
+}
+
+func TestAIWheelScrollsTheAgent(t *testing.T) {
+	m, _ := previewSample(t)
+	m.width = 120
+	m.height = 32
+	m.aiOpen = true
+	m.focus = PaneAI
+	fake := &fakeSession{term: vt10x.New(vt10x.WithSize(40, 10))}
+	m.aiSession = fake
+	m.aiCols, m.aiScreenH = 40, 10
+	lay := computeLayout(m.width, m.height)
+	previewW, _ := lay.MainSplit()
+
+	next, _ := m.Update(tea.MouseMsg{
+		X:      previewW + 3,
+		Y:      3,
+		Button: tea.MouseButtonWheelUp,
+		Action: tea.MouseActionPress,
+	})
+	m = next.(Model)
+	if got := fake.written.String(); !strings.Contains(got, "\x1b[5~") {
+		t.Fatalf("wheel up wrote %q, want PageUp", got)
+	}
+	fake.written.Reset()
+	next, _ = m.Update(tea.MouseMsg{
+		X:      previewW + 3,
+		Y:      3,
+		Button: tea.MouseButtonWheelDown,
+		Action: tea.MouseActionPress,
+	})
+	m = next.(Model)
+	if got := fake.written.String(); !strings.Contains(got, "\x1b[6~") {
+		t.Fatalf("wheel down wrote %q, want PageDown", got)
 	}
 }

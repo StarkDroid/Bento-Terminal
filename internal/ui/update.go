@@ -22,6 +22,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.onKey(msg)
 	case tea.MouseMsg:
 		return m.onMouse(msg)
+	case updateCheckedMsg:
+		return m.onUpdateChecked(msg)
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -80,6 +82,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.updateOpen {
+		return m.onUpdateKey(msg)
+	}
 	if m.newFileOpen {
 		return m.onNewFileKey(msg)
 	}
@@ -111,6 +116,10 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.settingsOpen {
 		if key.Matches(msg, m.keys.Close, m.keys.Settings) {
 			m.settingsOpen = false
+			return m, nil
+		}
+		if m.updateAvailable() && key.Matches(msg, m.keys.Update) {
+			return m.startUpdate()
 		}
 		return m, nil
 	}
@@ -135,6 +144,9 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // onMouse focuses a pane on click and lets the pointer move the selection, fold
 // a block, or scroll a list.
 func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	if m.updateOpen {
+		return m.onUpdateMouse(msg)
+	}
 	if m.settingsOpen {
 		return m.settingsClick(msg)
 	}
@@ -152,10 +164,16 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	switch msg.Button {
 	case tea.MouseButtonWheelUp:
 		if msg.Action == tea.MouseActionPress {
+			if pane == PaneAI && m.aiSession != nil {
+				return m.aiWheel(-3, msg.X, msg.Y)
+			}
 			return m.wheel(pane, -3), nil
 		}
 	case tea.MouseButtonWheelDown:
 		if msg.Action == tea.MouseActionPress {
+			if pane == PaneAI && m.aiSession != nil {
+				return m.aiWheel(3, msg.X, msg.Y)
+			}
 			return m.wheel(pane, 3), nil
 		}
 	case tea.MouseButtonLeft:
@@ -179,6 +197,21 @@ func (m Model) click(pane Pane, x, y int, lay layout) (tea.Model, tea.Cmd) {
 			m.focus = PaneHistory
 			m.historyTab = tab
 			return m.reflowPreview(false), nil
+		}
+	}
+	if pane == PaneBuild && y == lay.BuildBodyTop()-1 && x >= 0 && x < lay.Build.W {
+		if tab, ok := m.buildTabAt(x - 1); ok {
+			m.focus = PaneBuild
+			m.buildTab = tab
+			return m.syncSizes(), nil
+		}
+	}
+	if pane == PaneTerminal && y == lay.TerminalBodyTop()-1 {
+		if index, plus, ok := m.terminalTabAt(x - (lay.Build.W + 2)); ok {
+			if plus {
+				return m.newTerminalTab()
+			}
+			return m.switchTerminalTab(index), nil
 		}
 	}
 	m.focus = pane
@@ -227,6 +260,9 @@ func (m Model) click(pane Pane, x, y int, lay layout) (tea.Model, tea.Cmd) {
 		m.commitCursor = row
 		return m.openCommit()
 	case PaneBuild:
+		if m.buildTab != buildTabCommands {
+			return m, nil
+		}
 		row := y - lay.BuildBodyTop() + m.cmdScroll
 		if row < 0 || row >= len(m.commands()) {
 			return m, nil
@@ -284,7 +320,11 @@ func (m Model) wheel(pane Pane, delta int) Model {
 	case PaneHistory:
 		m = m.moveHistory(delta)
 	case PaneBuild:
-		m = m.scrollOutput(delta)
+		if m.buildTab == buildTabOutput {
+			m = m.scrollOutput(delta)
+		} else {
+			m = m.moveCmd(delta)
+		}
 	case PaneTerminal:
 		m = m.scrollTerminal(delta)
 	case PaneAI:
@@ -598,6 +638,18 @@ func (m Model) moveCommit(delta int) Model {
 	return m
 }
 
+func (m Model) switchBuildTab(delta int) Model {
+	if delta == 0 {
+		return m
+	}
+	if m.buildTab == buildTabCommands {
+		m.buildTab = buildTabOutput
+	} else {
+		m.buildTab = buildTabCommands
+	}
+	return m.syncSizes()
+}
+
 func (m Model) moveCmd(delta int) Model {
 	n := len(m.commands())
 	if n == 0 {
@@ -650,6 +702,7 @@ func (m Model) launch(c build.Command) (tea.Model, tea.Cmd) {
 	copied := c
 	m.last = &copied
 	m.outLines = nil
+	m.buildTab = buildTabOutput
 	m = m.appendRun("$ " + c.Name)
 	m = m.syncSizes()
 	return m, tea.Batch(startCmd(id, m.root, c), m.spinner.Tick)
@@ -684,14 +737,15 @@ func (m Model) onStarted(msg runStartedMsg) (tea.Model, tea.Cmd) {
 		m.running = false
 		m = m.setRunState(stateFailed)
 		m.cancel = nil
-		return m.appendRun("✗ " + msg.err.Error()), nil
+		m = m.appendRun("✗ " + msg.err.Error())
+		return m.updateStartFailed(), nil
 	}
 	m.cancel = msg.cancel
 	m.running = true
 	if msg.events == nil {
 		m.running = false
 		m = m.setRunState(stateFailed)
-		return m, nil
+		return m.updateStartFailed(), nil
 	}
 	return m, listenCmd(msg.id, msg.events)
 }
@@ -712,6 +766,15 @@ func (m Model) onDone(msg runDoneMsg) (tea.Model, tea.Cmd) {
 	default:
 		m = m.setRunState(stateFailed)
 		m = m.appendRun("✗ " + msg.err.Error())
+	}
+	if m.runTarget == targetTerminal && m.updateRunning {
+		m.updateRunning = false
+		if msg.err == nil {
+			m.updateDone = true
+			m = m.appendTerm("✓ Bento updated. Restart Bento to use the new version.")
+		} else {
+			m = m.appendTerm("✗ Update failed. Run the command manually in the terminal.")
+		}
 	}
 	if m.runTarget == targetAI {
 		return m, detectAgentsCmd()
@@ -797,9 +860,8 @@ func (m Model) syncSizes() Model {
 		m.preview.SetYOffset(m.restoreScroll)
 		m.restoreScrollSet = false
 	}
-	_, outH := buildParts(lay.Build.H)
 	m.output.Width = lay.Build.W - 2
-	m.output.Height = outH
+	m.output.Height = lay.Build.H - 4
 	if m.output.Width < 1 {
 		m.output.Width = 1
 	}
@@ -884,11 +946,11 @@ func (m Model) historyPage() int {
 
 func (m Model) commandPage() int {
 	lay := computeLayout(m.width, m.height)
-	listH, _ := buildParts(lay.Build.H)
-	if listH < 1 {
+	h := lay.Build.H - 4
+	if h < 1 {
 		return 1
 	}
-	return listH
+	return h
 }
 
 func (m Model) previewPage() int {
@@ -902,11 +964,11 @@ func (m Model) previewPage() int {
 
 func (m Model) outputPage() int {
 	lay := computeLayout(m.width, m.height)
-	_, outH := buildParts(lay.Build.H)
-	if outH < 1 {
+	h := lay.Build.H - 4
+	if h < 1 {
 		return 1
 	}
-	return outH
+	return h
 }
 
 func (m Model) scrollOutput(delta int) Model {

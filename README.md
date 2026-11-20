@@ -60,12 +60,21 @@ irm https://raw.githubusercontent.com/StarkDroid/Bento-Terminal/main/scripts/ins
 
 The Unix installer puts the binary in `~/.local/bin`; `--with-zsh` also adds that folder to PATH. The Windows installer puts `bento.exe` in `%LOCALAPPDATA%\bento` and adds it to your user PATH, so a new Windows Terminal finds `bento`. Flags, install directories, and the source-build path are in the [install docs](https://starkdroid.github.io/Bento-Terminal/docs/#install).
 
+## Updates
+
+Bento checks the public GitHub releases API on startup. If a newer release
+exists, it shows an update prompt. Choose **Later** to keep a `u` badge in the
+status bar; press `u` to run the update command for your install method
+(Homebrew, Scoop, Chocolatey, npm, Go, or the installer). The About overlay
+(`,`) shows the current version and the update command. Set
+`BENTO_NO_UPDATE_CHECK=1` to skip the check.
+
 ## What it does
 
 - **Preview and edit.** Highlighting, folding, and a save in place.
 - **Every change.** Modified, staged, untracked, and conflicted paths, with patches.
-- **Your shell.** Any command, run inside the project.
-- **Builds without setup.** Detected tests, builds, and lint commands.
+- **Your shell, in tabs.** Any command, run inside the project; `ctrl+t` opens another shell tab with its own history and scrollback.
+- **Builds without setup.** Detected tests, builds, and lint commands, with Commands and Output tabs.
 - **Coding agents.** `ctrl+a` lists Claude Code, OpenCode, Gemini CLI, Codex CLI, Copilot, Crush, Aider, and Cursor; install one or start it beside the preview.
 
 - **Find fast.** `ctrl+p` filters the project's files; `ctrl+f` searches the open file.

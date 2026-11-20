@@ -245,6 +245,40 @@ func (m Model) startAISession(p agent.Provider) (tea.Model, tea.Cmd) {
 }
 
 // onAISessionKey forwards every key to the agent except the detach chord.
+// aiWheel forwards the wheel to a running agent. Agents that request mouse
+// reporting get an SGR or X10 wheel event; the rest get PageUp/PageDown, which
+// is the usual conversation scroll in a TUI.
+func (m Model) aiWheel(delta, x, y int) (tea.Model, tea.Cmd) {
+	if m.aiSession == nil || delta == 0 {
+		return m, nil
+	}
+	lay := computeLayout(m.width, m.height)
+	if !lay.OK {
+		return m, nil
+	}
+	previewW, _ := lay.MainSplit()
+	ax := clamp(x-previewW-1, 1, max(1, m.aiCols))
+	ay := clamp(y-1, 1, max(1, m.aiScreenH))
+	mode := m.aiSession.Screen().Mode()
+	code := 64
+	if delta > 0 {
+		code = 65
+	}
+	switch {
+	case mode&vt10x.ModeMouseSgr != 0:
+		_ = m.aiSession.Write([]byte(fmt.Sprintf("\x1b[<%d;%d;%dM", code, ax, ay)))
+	case mode&vt10x.ModeMouseMask != 0:
+		_ = m.aiSession.Write([]byte{0x1b, '[', 'M', byte(32 + code), byte(32 + ax), byte(32 + ay)})
+	default:
+		key := "\x1b[5~"
+		if delta > 0 {
+			key = "\x1b[6~"
+		}
+		_ = m.aiSession.Write([]byte(key))
+	}
+	return m, nil
+}
+
 func (m Model) onAISessionKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, m.keys.Detach) {
 		return m.stopAISession("detached from " + providerName(m.aiSessionID)), nil

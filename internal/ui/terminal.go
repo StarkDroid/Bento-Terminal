@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -44,6 +45,12 @@ func (m Model) onTerminalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.openRecent()
 		}
 		return m, nil
+	case tea.KeyCtrlT:
+		return m.newTerminalTab()
+	case tea.KeyCtrlRight, tea.KeyCtrlN:
+		return m.cycleTerminalTab(1), nil
+	case tea.KeyCtrlLeft, tea.KeyCtrlP:
+		return m.cycleTerminalTab(-1), nil
 	case tea.KeyTab:
 		m.focus = m.nextPane(1)
 		return m.reflowPreview(false), nil
@@ -148,6 +155,91 @@ func (m Model) termHistoryStep(delta int) Model {
 	return m
 }
 
+// saveTermTab copies the active terminal fields into its tab slot.
+func (m Model) saveTermTab() Model {
+	if m.termIndex < 0 || m.termIndex >= len(m.termTabs) {
+		return m
+	}
+	m.termTabs[m.termIndex] = terminalTab{
+		title:   m.termTabs[m.termIndex].title,
+		lines:   append([]string(nil), m.termLines...),
+		follow:  m.termFollow,
+		scroll:  m.termOutput.YOffset,
+		input:   m.termInput,
+		cursor:  m.termCursor,
+		history: append([]string(nil), m.termHistory...),
+		histPos: m.termHistPos,
+		state:   m.termState,
+	}
+	return m
+}
+
+// loadTermTab copies a tab slot into the active terminal fields.
+func (m Model) loadTermTab(index int) Model {
+	if index < 0 || index >= len(m.termTabs) {
+		return m
+	}
+	tab := m.termTabs[index]
+	m.termIndex = index
+	m.termLines = append([]string(nil), tab.lines...)
+	m.termFollow = tab.follow
+	m.termInput = tab.input
+	m.termCursor = tab.cursor
+	m.termHistory = append([]string(nil), tab.history...)
+	m.termHistPos = tab.histPos
+	m.termState = tab.state
+	m.termOutput.SetContent(strings.Join(m.termLines, "\n"))
+	m = m.syncSizes()
+	if m.termFollow {
+		m.termOutput.GotoBottom()
+	} else {
+		m.termOutput.SetYOffset(tab.scroll)
+	}
+	return m
+}
+
+func (m Model) switchTerminalTab(index int) Model {
+	if index < 0 || index >= len(m.termTabs) || index == m.termIndex {
+		return m
+	}
+	m = m.saveTermTab()
+	m = m.loadTermTab(index)
+	m.focus = PaneTerminal
+	return m
+}
+
+func (m Model) cycleTerminalTab(delta int) Model {
+	if len(m.termTabs) < 2 || delta == 0 {
+		return m
+	}
+	index := (m.termIndex + delta) % len(m.termTabs)
+	if index < 0 {
+		index += len(m.termTabs)
+	}
+	return m.switchTerminalTab(index)
+}
+
+func (m Model) newTerminalTab() (tea.Model, tea.Cmd) {
+	m = m.saveTermTab()
+	m.termTabs = append(m.termTabs, terminalTab{
+		title:   fmt.Sprintf("shell %d", len(m.termTabs)+1),
+		follow:  true,
+		histPos: -1,
+	})
+	m.termIndex = len(m.termTabs) - 1
+	m.termLines = nil
+	m.termInput = ""
+	m.termCursor = 0
+	m.termHistory = nil
+	m.termHistPos = -1
+	m.termState = stateIdle
+	m.termFollow = true
+	m.termOutput.SetContent("")
+	m.termOutput.GotoTop()
+	m.focus = PaneTerminal
+	return m, nil
+}
+
 // runTerminal sends the typed line to the user's shell inside the project.
 func (m Model) runTerminal() (tea.Model, tea.Cmd) {
 	script := strings.TrimSpace(m.termInput)
@@ -160,12 +252,19 @@ func (m Model) runTerminal() (tea.Model, tea.Cmd) {
 	m.termHistPos = -1
 	m.termInput = ""
 	m.termCursor = 0
+	wasTerminalRun := m.running && m.runTarget == targetTerminal
 	m = m.stopRun()
 	m.cancelRequested = false
+	if wasTerminalRun && m.termRunIndex >= 0 && m.termRunIndex < len(m.termTabs) && m.termRunIndex != m.termIndex {
+		tab := m.termTabs[m.termRunIndex]
+		tab.state = stateCanceled
+		m.termTabs[m.termRunIndex] = tab
+	}
 	m.runID++
 	id := m.runID
 	m.running = true
 	m.runTarget = targetTerminal
+	m.termRunIndex = m.termIndex
 	m.termState = stateRunning
 	m.termFollow = true
 	m.termLines = append(m.termLines, sanitizeLine("$ "+script))
@@ -177,6 +276,15 @@ func (m Model) appendTerm(line string) Model {
 	clean := sanitizeLine(line)
 	if line != "" && clean == "" {
 		// The command wrote nothing but control sequences, as "clear" does.
+		return m
+	}
+	if m.termRunIndex >= 0 && m.termRunIndex != m.termIndex && m.termRunIndex < len(m.termTabs) {
+		tab := m.termTabs[m.termRunIndex]
+		tab.lines = append(tab.lines, clean)
+		if len(tab.lines) > maxTermLines {
+			tab.lines = tab.lines[len(tab.lines)-maxTermLines:]
+		}
+		m.termTabs[m.termRunIndex] = tab
 		return m
 	}
 	m.termLines = append(m.termLines, clean)
@@ -232,7 +340,13 @@ func (m Model) appendRun(line string) Model {
 func (m Model) setRunState(state runState) Model {
 	switch m.runTarget {
 	case targetTerminal:
-		m.termState = state
+		if m.termRunIndex >= 0 && m.termRunIndex != m.termIndex && m.termRunIndex < len(m.termTabs) {
+			tab := m.termTabs[m.termRunIndex]
+			tab.state = state
+			m.termTabs[m.termRunIndex] = tab
+		} else {
+			m.termState = state
+		}
 	case targetAI:
 		m.aiState = state
 	default:

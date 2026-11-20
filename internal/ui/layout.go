@@ -125,26 +125,3 @@ func paneAt(l layout, x, y int, aiOpen bool) (Pane, bool) {
 	}
 	return 0, false
 }
-
-func buildParts(panelH int) (listH, outH int) {
-	body := panelH - 4
-	if body <= 0 {
-		return 0, 0
-	}
-	if body < 4 {
-		return body, 0
-	}
-	listH = body / 2
-	if listH < 2 {
-		listH = 2
-	}
-	outH = body - 1 - listH
-	if outH < 1 {
-		outH = 1
-		listH = body - 2
-	}
-	if listH < 1 {
-		listH = 1
-	}
-	return listH, outH
-}

@@ -27,10 +27,6 @@ func TestComputeLayout(t *testing.T) {
 		if l.Main.H+1+l.Build.H+l.Status.H != sz.h {
 			t.Fatalf("%dx%d height sum %d", sz.w, sz.h, l.Main.H+1+l.Build.H+l.Status.H)
 		}
-		listH, outH := buildParts(l.Build.H)
-		if listH < 2 || outH < 1 {
-			t.Fatalf("%dx%d build parts %d %d", sz.w, sz.h, listH, outH)
-		}
 		previewW, aiW := l.MainSplit()
 		if previewW+1+aiW != l.Main.W {
 			t.Fatalf("%dx%d main split %d+%d", sz.w, sz.h, previewW, aiW)
