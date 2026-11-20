@@ -36,7 +36,7 @@ yet.
 | Linux packages | `.deb` or `.rpm` from [releases](https://github.com/StarkDroid/Bento-Terminal/releases/latest) |
 
 WinGet is not on the 0.9.0 release yet; it has an open 0.7.0 PR. Chocolatey is
-live on 0.7.0, and the 0.9.0 package is not published yet. Until then, use npm,
+live on 0.7.0, and the 0.9.0 package is in review. Until then, use npm,
 Homebrew, Scoop, Chocolatey, Go, or a release binary.
 
 Then run `bento` inside any project. With no argument it uses the current
