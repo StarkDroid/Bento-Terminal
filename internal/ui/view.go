@@ -93,7 +93,7 @@ func (m Model) renderMain(width, height int) string {
 		title = paintTitle(" ⎇ "+m.previewTitle, innerW, focused)
 		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
 	case previewDiff:
-		title = paintTitle(" ± "+m.previewTitle, innerW, focused)
+		title = paintTitle(m.diffTitle(), innerW, focused)
 		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
 	default:
 		body = m.homeBody(innerW, bodyH)
@@ -325,6 +325,17 @@ func (m Model) renderHistory(width, height int) string {
 	}
 	lines = append(lines, m.footer(PaneHistory, bodyW))
 	return renderPanel(m.historyTitle(bodyW), strings.Join(lines, "\n"), width, height, focused)
+}
+
+// diffTitle is the Main title for a working-tree patch: the path plus the
+// added and removed line counts.
+func (m Model) diffTitle() string {
+	title := " ± " + m.previewTitle
+	added, removed := diffStat(m.previewRaw)
+	if added > 0 || removed > 0 {
+		title += fmt.Sprintf("  +%d −%d", added, removed)
+	}
+	return title
 }
 
 // historyTitle draws the History and Changes tabs, with a change count on the
@@ -761,7 +772,7 @@ func (m Model) footerHints(p Pane) []footerHint {
 	case PaneFiles:
 		return []footerHint{{"↑↓", ""}, {"enter", ""}, {"R d", "manage"}, {"ctrl+p", "find"}, {"?", "keys"}}
 	case PaneHistory:
-		return []footerHint{{"↑↓", ""}, {"←→", "tab"}, {"?", "keys"}}
+		return []footerHint{{"↑↓", ""}, {"←→", "tab"}, {"enter", "diff"}, {"?", "keys"}}
 	case PaneBuild:
 		if m.buildTab == buildTabOutput {
 			return []footerHint{

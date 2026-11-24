@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -214,5 +215,96 @@ func TestFooterHintsCoverTabsAndEditing(t *testing.T) {
 	m.focus = PaneHistory
 	if plain := stripANSI(m.View()); !strings.Contains(plain, "←→ tab") {
 		t.Fatalf("history footer missing the tab hint\n%s", plain)
+	}
+}
+
+func TestChangeRowClickShowsDiff(t *testing.T) {
+	m, _ := changesSample(t)
+	m.focus = PaneHistory
+	m.historyTab = histTabChanges
+	m.gitReady = true
+	lay := computeLayout(m.width, m.height)
+
+	next, _ := m.Update(tea.MouseMsg{
+		X:      lay.Main.W + 3,
+		Y:      lay.HistoryBodyTop() + 1,
+		Action: tea.MouseActionPress,
+		Button: tea.MouseButtonLeft,
+	})
+	m = next.(Model)
+	if m.changeCursor != 1 {
+		t.Fatalf("click selected %d", m.changeCursor)
+	}
+	if m.previewKind != previewDiff || m.previewTitle != "note.md" {
+		t.Fatalf("preview %q kind %d", m.previewTitle, m.previewKind)
+	}
+	if m.focus != PaneHistory {
+		t.Fatalf("click should keep browsing focus in History, got %d", m.focus)
+	}
+	if plain := stripANSI(m.View()); !strings.Contains(plain, "+hello") {
+		t.Fatalf("diff body missing\n%s", plain)
+	}
+}
+
+func gitIn(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
+
+func TestOpenDiffFollowsTheWorkingTree(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "a.txt")
+	write := func(body string) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("one\n")
+	gitIn(t, dir, "init", "-q")
+	gitIn(t, dir, "config", "user.email", "test@example.com")
+	gitIn(t, dir, "config", "user.name", "Test")
+	gitIn(t, dir, "add", ".")
+	gitIn(t, dir, "commit", "-qm", "init")
+
+	write("one\ntwo\n")
+	m := readyEmpty(dir)
+	m.width, m.height = 120, 32
+	m.gitReady = true
+	m.gitSnap = git.Load(dir)
+	m.historyTab = histTabChanges
+	for i, f := range m.gitSnap.Status.Files {
+		if f.Path == "a.txt" {
+			m.changeCursor = i
+		}
+	}
+	next, _ := m.openChange()
+	m = next.(Model)
+	if !strings.Contains(m.previewRaw, "+two") {
+		t.Fatalf("initial diff %q", m.previewRaw)
+	}
+	if plain := stripANSI(m.View()); !strings.Contains(plain, "± a.txt") {
+		t.Fatalf("diff title missing\n%s", plain)
+	}
+
+	write("one\ntwo\nthree\n")
+	next, cmd := m.Update(gitLoadedMsg{snap: git.Load(dir)})
+	m = drive(t, next.(Model), cmd)
+	if !strings.Contains(m.previewRaw, "+three") {
+		t.Fatalf("diff did not refresh: %q", m.previewRaw)
+	}
+	if plain := stripANSI(m.View()); !strings.Contains(plain, "+2") {
+		t.Fatalf("diff title should count additions\n%s", plain)
+	}
+
+	gitIn(t, dir, "checkout", "--", "a.txt")
+	next, cmd = m.Update(gitLoadedMsg{snap: git.Load(dir)})
+	m = drive(t, next.(Model), cmd)
+	if m.previewRaw != "(no changes to show)" {
+		t.Fatalf("reverted file should clear the diff, got %q", m.previewRaw)
 	}
 }

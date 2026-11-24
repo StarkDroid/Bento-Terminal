@@ -72,7 +72,7 @@ status bar; press `u` to run the update command for your install method
 ## What it does
 
 - **Preview and edit.** Highlighting, folding, and a save in place.
-- **Every change.** Modified, staged, untracked, and conflicted paths, with patches.
+- **Every change.** Modified, staged, untracked, and conflicted paths, with patches. Click a path (or press `enter`) to open its diff in Main; the title counts added and removed lines and the patch reloads as the file changes.
 - **Your shell, in tabs.** Any command, run inside the project; `ctrl+t` opens another shell tab with its own history and scrollback, and `ctrl+w` closes it. Tabs are capped to what the pane can show, so widen the window or close one to add more.
 - **Files, handled.** `R` renames, `m` moves, `y` copies, and `d` deletes from the tree; a delete asks first.
 - **Builds without setup.** Detected tests, builds, and lint commands, with Commands and Output tabs.

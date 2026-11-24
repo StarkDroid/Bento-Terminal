@@ -42,7 +42,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.fileScroll = 0
 		return m, nil
 	case gitLoadedMsg:
-		return m.applyGit(msg.snap), nil
+		m = m.applyGit(msg.snap)
+		m, cmd := m.refreshDiff()
+		return m, cmd
+	case diffLoadedMsg:
+		if m.previewKind != previewDiff || m.previewDiffPath != msg.path {
+			return m, nil
+		}
+		if msg.err != nil {
+			m.previewRaw = msg.err.Error()
+		} else {
+			m.previewRaw = msg.body
+		}
+		return m.reflowPreview(false), nil
 	case buildLoadedMsg:
 		m.autoCmds = msg.result.Auto
 		m.manualCmds = msg.result.Manual
@@ -403,6 +415,7 @@ func (m Model) openChange() (tea.Model, tea.Cmd) {
 	m.previewTitle = f.Path
 	m.previewPath = ""
 	m = m.resetPreviewState()
+	m.previewDiffPath = f.Path
 	if err != nil {
 		m.previewRaw = err.Error()
 	} else {
@@ -416,6 +429,7 @@ func (m Model) openChange() (tea.Model, tea.Cmd) {
 // patch replaces a file in the preview.
 func (m Model) resetPreviewState() Model {
 	m.previewNumbered = false
+	m.previewDiffPath = ""
 	m.previewLang = syntax.Language{}
 	m.previewSyntax = false
 	m.previewEditing = false
@@ -818,6 +832,22 @@ func (m Model) appendOut(line string) Model {
 		m.output.GotoBottom()
 	}
 	return m
+}
+
+// refreshDiff reloads an open patch after the git snapshot changes, so the
+// diff keeps following edits made while it is on screen. When the path is no
+// longer modified it falls back to the same empty state git.Diff uses.
+func (m Model) refreshDiff() (Model, tea.Cmd) {
+	if m.previewKind != previewDiff || m.previewDiffPath == "" {
+		return m, nil
+	}
+	for _, f := range m.gitSnap.Status.Files {
+		if f.Path == m.previewDiffPath {
+			return m, loadDiffCmd(m.root, f)
+		}
+	}
+	m.previewRaw = "(no changes to show)"
+	return m.reflowPreview(false), nil
 }
 
 func (m Model) applyGit(snap git.Snapshot) Model {

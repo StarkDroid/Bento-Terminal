@@ -372,8 +372,9 @@ go build -o bento.exe ./cmd/bento
 				</div>
 				<p>
 					History's <strong>Changes</strong> tab lists every path git reports, in order, with its
-					two porcelain columns. <kbd>enter</kbd> or a click opens the patch in Main, and the tab
-					title carries the number of changed paths.
+					two porcelain columns. <kbd>enter</kbd> or a click opens the patch in Main; the title
+					carries the path and the added and removed line counts, and the patch reloads as the file
+					changes while it is open. The tab title carries the number of changed paths.
 				</p>
 				<pre>M   staged             M   unstaged
 MM  staged and unstaged

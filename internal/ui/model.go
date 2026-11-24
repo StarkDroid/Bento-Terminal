@@ -183,6 +183,7 @@ type Model struct {
 	previewKind      previewKind
 	previewTitle     string
 	previewPath      string
+	previewDiffPath  string
 	previewRaw       string
 	previewNumbered  bool
 	previewLang      syntax.Language
