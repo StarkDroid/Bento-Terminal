@@ -88,6 +88,9 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.newFileOpen {
 		return m.onNewFileKey(msg)
 	}
+	if m.fileOpOpen {
+		return m.onFileOpKey(msg)
+	}
 	if m.finderOpen {
 		return m.onFinderKey(msg)
 	}
@@ -97,9 +100,23 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.recentOpen {
 		return m.onRecentKey(msg)
 	}
-	// A running agent owns every key while its panel has focus, except the
-	// detach chord.
+	// A running agent owns its panel's keys, but Bento keeps the keys that
+	// leave the panel: tab, shift+tab, the pane numbers, and ctrl+a.
 	if m.aiSession != nil && m.focus == PaneAI && !m.paletteOpen && !m.settingsOpen {
+		if key.Matches(msg, m.keys.Next) {
+			m.focus = m.nextPane(1)
+			return m.reflowPreview(false), nil
+		}
+		if key.Matches(msg, m.keys.Prev) {
+			m.focus = m.nextPane(-1)
+			return m.reflowPreview(false), nil
+		}
+		if key.Matches(msg, m.keys.ToggleAI) {
+			return m.toggleAI()
+		}
+		if a, ok := paneJump(msg); ok {
+			return m.runAction(a.id)
+		}
 		return m.onAISessionKey(msg)
 	}
 	if m.previewEditing {
@@ -150,7 +167,7 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if m.settingsOpen {
 		return m.settingsClick(msg)
 	}
-	if m.paletteOpen || m.newFileOpen || m.finderOpen || m.findOpen || m.recentOpen {
+	if m.paletteOpen || m.newFileOpen || m.fileOpOpen || m.finderOpen || m.findOpen || m.recentOpen {
 		return m, nil
 	}
 	lay := computeLayout(m.width, m.height)
@@ -177,6 +194,9 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			return m.wheel(pane, 3), nil
 		}
 	case tea.MouseButtonLeft:
+		if pane == PaneAI && m.aiSession != nil {
+			return m.aiClick(msg, lay)
+		}
 		if msg.Action == tea.MouseActionPress {
 			return m.click(pane, msg.X, msg.Y, lay)
 		}

@@ -47,6 +47,8 @@ func (m Model) onTerminalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyCtrlT:
 		return m.newTerminalTab()
+	case tea.KeyCtrlW:
+		return m.closeTerminalTab()
 	case tea.KeyCtrlRight, tea.KeyCtrlN:
 		return m.cycleTerminalTab(1), nil
 	case tea.KeyCtrlLeft, tea.KeyCtrlP:
@@ -236,6 +238,52 @@ func (m Model) newTerminalTab() (tea.Model, tea.Cmd) {
 	m.termFollow = true
 	m.termOutput.SetContent("")
 	m.termOutput.GotoTop()
+	m.focus = PaneTerminal
+	return m, nil
+}
+
+// closeTerminalTab removes the active shell tab. The last tab is cleared
+// instead of removed, so the panel always keeps one shell.
+func (m Model) closeTerminalTab() (tea.Model, tea.Cmd) {
+	if len(m.termTabs) == 0 {
+		return m, nil
+	}
+	index := m.termIndex
+	if index < 0 || index >= len(m.termTabs) {
+		index = 0
+	}
+	if m.running && m.runTarget == targetTerminal && m.termRunIndex == index {
+		m = m.stopRun()
+		m.termRunIndex = -1
+	}
+	m = m.saveTermTab()
+	remaining := append(append([]terminalTab(nil), m.termTabs[:index]...), m.termTabs[index+1:]...)
+	if m.running && m.runTarget == targetTerminal && m.termRunIndex > index {
+		m.termRunIndex--
+	}
+	if len(remaining) == 0 {
+		m.termTabs = []terminalTab{{title: "shell 1", follow: true, histPos: -1}}
+		m.termIndex = 0
+		m.termLines = nil
+		m.termFollow = true
+		m.termInput = ""
+		m.termCursor = 0
+		m.termHistory = nil
+		m.termHistPos = -1
+		m.termState = stateIdle
+		m.termOutput.SetContent("")
+		m.termOutput.GotoTop()
+		m.focus = PaneTerminal
+		return m, nil
+	}
+	for i := range remaining {
+		remaining[i].title = fmt.Sprintf("shell %d", i+1)
+	}
+	m.termTabs = remaining
+	if index >= len(remaining) {
+		index = len(remaining) - 1
+	}
+	m = m.loadTermTab(index)
 	m.focus = PaneTerminal
 	return m, nil
 }

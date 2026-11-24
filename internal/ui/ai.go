@@ -279,6 +279,42 @@ func (m Model) aiWheel(delta, x, y int) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// aiClick focuses the AI panel and forwards a left click to a running agent
+// that asked for mouse reporting. Agents without mouse mode only get focus.
+func (m Model) aiClick(msg tea.MouseMsg, lay layout) (tea.Model, tea.Cmd) {
+	m.focus = PaneAI
+	m = m.reflowPreview(false)
+	if m.aiSession == nil {
+		return m, nil
+	}
+	previewW, _ := lay.MainSplit()
+	ax := clamp(msg.X-previewW-1, 1, max(1, m.aiCols))
+	ay := clamp(msg.Y-1, 1, max(1, m.aiScreenH))
+	if ax > 223 {
+		ax = 223
+	}
+	if ay > 223 {
+		ay = 223
+	}
+	mode := m.aiSession.Screen().Mode()
+	release := msg.Action == tea.MouseActionRelease
+	switch {
+	case mode&vt10x.ModeMouseSgr != 0:
+		final := 'M'
+		if release {
+			final = 'm'
+		}
+		_ = m.aiSession.Write([]byte(fmt.Sprintf("\x1b[<0;%d;%d%c", ax, ay, final)))
+	case mode&vt10x.ModeMouseMask != 0:
+		code := 32
+		if release {
+			code = 35
+		}
+		_ = m.aiSession.Write([]byte{0x1b, '[', 'M', byte(code), byte(32 + ax), byte(32 + ay)})
+	}
+	return m, nil
+}
+
 func (m Model) onAISessionKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, m.keys.Detach) {
 		return m.stopAISession("detached from " + providerName(m.aiSessionID)), nil

@@ -233,6 +233,7 @@ go build -o bento.exe ./cmd/bento
 						<table>
 							<tbody>
 								<tr><th><kbd>tab</kbd> <kbd>shift+tab</kbd></th><td>Next or previous box</td></tr>
+								<tr><th><kbd>1</kbd>–<kbd>6</kbd></th><td>Jump straight to Main, AI, Files, History, Build, or Terminal</td></tr>
 								<tr><th><kbd>ctrl+p</kbd></th><td>Find a file in the project</td></tr>
 								<tr><th><kbd>ctrl+f</kbd></th><td>Find in the open file</td></tr>
 								<tr><th><kbd>ctrl+a</kbd></th><td>Open or close the AI panel</td></tr>
@@ -260,6 +261,9 @@ go build -o bento.exe ./cmd/bento
 						<table>
 							<tbody>
 								<tr><th><kbd>enter</kbd></th><td>Open a file or folder</td></tr>
+								<tr><th><kbd>R</kbd></th><td>Rename the selection</td></tr>
+								<tr><th><kbd>m</kbd> <kbd>y</kbd></th><td>Move or copy it to another path</td></tr>
+								<tr><th><kbd>d</kbd></th><td>Delete it after a confirmation</td></tr>
 							</tbody>
 						</table>
 						<h3>History</h3>
@@ -281,6 +285,8 @@ go build -o bento.exe ./cmd/bento
 						<table>
 							<tbody>
 								<tr><th><kbd>enter</kbd></th><td>Run the line</td></tr>
+								<tr><th><kbd>ctrl+t</kbd> <kbd>ctrl+w</kbd></th><td>New shell tab or close this one</td></tr>
+								<tr><th><kbd>ctrl+n</kbd> <kbd>ctrl+p</kbd></th><td>Next or previous shell tab</td></tr>
 								<tr><th><kbd>ctrl+c</kbd></th><td>Stop the command</td></tr>
 								<tr><th><kbd>↑</kbd> <kbd>↓</kbd></th><td>Earlier commands</td></tr>
 								<tr><th><kbd>esc</kbd></th><td>Clear, then back to Build</td></tr>
@@ -304,8 +310,11 @@ go build -o bento.exe ./cmd/bento
 					list, quit, and close; a click runs one.
 				</p>
 				<p class="muted">
-					While an agent session runs, every key goes to the agent, including <kbd>q</kbd> and
-					<kbd>ctrl+a</kbd>; <kbd>ctrl+\</kbd> detaches and gives Bento its keys back.
+					While an agent session runs, keys go to the agent. <kbd>tab</kbd>,
+					<kbd>shift+tab</kbd>, <kbd>1</kbd>–<kbd>6</kbd>, and <kbd>ctrl+a</kbd> still leave the
+					panel, so you can switch boxes without the mouse; <kbd>ctrl+\</kbd> detaches and gives
+					Bento every key back. Clicking inside the agent's screen is forwarded to it when the
+					agent asked for mouse reporting.
 				</p>
 				<p class="muted">
 					<kbd>ctrl+p</kbd> filters the project's files as you type; <kbd>enter</kbd> opens the
@@ -341,6 +350,12 @@ go build -o bento.exe ./cmd/bento
 					The <code>+ new file</code> tab, or <kbd>n</kbd>, opens a path prompt and puts the new
 					file straight into the editor; parent directories are created. Every write stays
 					inside the project. A binary file, a commit, and a patch are read-only.
+				</p>
+				<p>
+					The Files panel can also manage the tree: <kbd>R</kbd> renames, <kbd>m</kbd> moves,
+					<kbd>y</kbd> copies, and <kbd>d</kbd> deletes after a confirmation. Destinations are
+					project-relative, directories copy recursively, and an existing path is never
+					overwritten. A rename or move keeps the preview on the file.
 				</p>
 			</div>
 
@@ -392,9 +407,10 @@ UU  unmerged</pre>
 				</p>
 				<p>
 					Each shell has its own tab, input, history, and scrollback. <kbd>ctrl+t</kbd> opens a new
-					shell; <kbd>ctrl+n</kbd> and <kbd>ctrl+p</kbd> (or the numbered tabs and <code>+</code>)
-					switch between them. Only one command runs at a time, so starting one stops the previous
-					command.
+					shell, <kbd>ctrl+w</kbd> closes the current one, and <kbd>ctrl+n</kbd> and
+					<kbd>ctrl+p</kbd> (or the numbered tabs and <code>+</code>) switch between them. Closing
+					the last tab clears it instead of removing the panel. Only one command runs at a time,
+					so starting one stops the previous command.
 				</p>
 				<p>
 					Output is captured as text: colour, cursor, and erase sequences are dropped so a command
@@ -459,19 +475,20 @@ UU  unmerged</pre>
 				<p>
 					<kbd>↑</kbd> <kbd>↓</kbd> pick an agent, <kbd>enter</kbd> starts an installed one or
 					installs a missing one, <kbd>r</kbd> rescans PATH, and <kbd>esc</kbd> returns to the
-					preview. While an agent runs, the mouse wheel is forwarded to it; agents without mouse
-					reporting receive <kbd>pgup</kbd> and <kbd>pgdn</kbd> so their conversation still
-					scrolls. Install output streams into the panel; <kbd>esc</kbd> cancels a running install
-					and closes the log afterwards. A successful install rescans and the title shows how many
-					agents are ready.
+					preview. While an agent runs, the mouse wheel and clicks inside its screen are forwarded
+					to it; agents without mouse reporting receive <kbd>pgup</kbd> and <kbd>pgdn</kbd> so
+					their conversation still scrolls. Install output streams into the panel; <kbd>esc</kbd>
+					cancels a running install and closes the log afterwards. A successful install rescans and
+					the title shows how many agents are ready.
 				</p>
 				<p>
 					A session runs on a real pseudo-terminal with its own terminal emulator, so the agent
-					draws its own interface and keeps working the way it does in a normal terminal. Every key
-					goes to the agent while the panel is focused, including <kbd>q</kbd> and
-					<kbd>ctrl+a</kbd>. <kbd>ctrl+\</kbd> detaches: the session closes, Bento's footer comes
-					back, and <kbd>q</kbd> quits again. The status bar shows the agent and the detach hint
-					while a session runs.
+					draws its own interface and keeps working the way it does in a normal terminal. Keys go
+					to the agent while the panel is focused, but the pane shortcuts still work:
+					<kbd>tab</kbd>, <kbd>shift+tab</kbd>, <kbd>1</kbd>–<kbd>6</kbd>, and
+					<kbd>ctrl+a</kbd> leave the panel, so the mouse is never required. <kbd>ctrl+\</kbd>
+					detaches: the session closes, Bento's footer comes back, and <kbd>q</kbd> quits again. The
+					status bar shows the agent and the detach hint while a session runs.
 				</p>
 				<p class="muted">
 					The panel resizes the pseudo-terminal and its emulator together when the window changes.

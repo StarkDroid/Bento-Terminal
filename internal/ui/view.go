@@ -24,6 +24,9 @@ func (m Model) View() string {
 	if m.newFileOpen {
 		return m.newFileView()
 	}
+	if m.fileOpOpen {
+		return m.fileOpView()
+	}
 	if m.finderOpen {
 		return m.finderView()
 	}
@@ -752,7 +755,7 @@ func (m Model) footerHints(p Pane) []footerHint {
 			{"ctrl+a", "ai"}, {"?", "keys"}, {"tab", "panes"},
 		}
 	case PaneFiles:
-		return []footerHint{{"↑↓", ""}, {"enter", ""}, {"ctrl+p", "find"}, {"?", "keys"}}
+		return []footerHint{{"↑↓", ""}, {"enter", ""}, {"R d", "manage"}, {"ctrl+p", "find"}, {"?", "keys"}}
 	case PaneHistory:
 		return []footerHint{{"↑↓", ""}, {"←→", "tab"}, {"?", "keys"}}
 	case PaneBuild:
@@ -768,8 +771,8 @@ func (m Model) footerHints(p Pane) []footerHint {
 		}
 	case PaneTerminal:
 		return []footerHint{
-			{"enter", "run"}, {"ctrl+c", "stop"}, {"esc", "back"},
-			{"ctrl+t", "new shell"}, {"ctrl+n/p", "shell"}, {"?", "keys"},
+			{"enter", "run"}, {"ctrl+c", "stop"}, {"ctrl+t", "new"},
+			{"ctrl+w", "close"}, {"ctrl+n/p", "shell"}, {"?", "keys"},
 		}
 	case PaneAI:
 		if m.aiSession != nil {

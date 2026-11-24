@@ -145,11 +145,19 @@ func TestAISessionHidesFooterAndForwardsKeys(t *testing.T) {
 	}
 	next, _ = m.Update(keyMsg("ctrl+a"))
 	m = next.(Model)
-	if m.aiSession != fake {
-		t.Fatal("ctrl+a belongs to the agent while it runs")
+	if m.aiOpen {
+		t.Fatal("ctrl+a should close the AI panel while an agent runs")
 	}
-	if fake.written.String() != "q\x01" {
-		t.Fatalf("ctrl+a encoded as %q", fake.written.String())
+	if m.aiSession != fake {
+		t.Fatal("closing the panel should keep the agent session alive")
+	}
+	if fake.written.String() != "q" {
+		t.Fatalf("ctrl+a should not reach the agent, got %q", fake.written.String())
+	}
+	next, _ = m.Update(keyMsg("ctrl+a"))
+	m = next.(Model)
+	if !m.aiOpen || m.focus != PaneAI {
+		t.Fatalf("ctrl+a should reopen the panel: open=%v focus=%d", m.aiOpen, m.focus)
 	}
 
 	next, _ = m.Update(keyMsg("ctrl+\\"))
