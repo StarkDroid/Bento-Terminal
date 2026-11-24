@@ -2,6 +2,8 @@
 
 Bento terminal is a full-screen workspace for one project, in the terminal: preview and edit files, read the tree, commits and working-tree changes, run builds, open a shell, and run a coding agent beside the preview — all in one keyboard-first bento layout. It is written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and runs in the macOS Terminal or Windows Terminal (Menlo, SF Mono, Cascadia Mono; no Nerd Font).
 
+[![Bento terminal — Featured on Product Hunt](https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1321479&theme=light)](https://www.producthunt.com/posts/bento-terminal)
+
 [![CI](https://img.shields.io/github/actions/workflow/status/StarkDroid/Bento-Terminal/ci.yml?branch=main&style=flat-square&label=build)](https://github.com/StarkDroid/Bento-Terminal/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/StarkDroid/Bento-Terminal?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/releases/latest)
 [![npm](https://img.shields.io/badge/npm-bento--terminal-CB3837?style=flat-square&logo=npm&logoColor=white)](https://www.npmjs.com/package/bento-terminal)
