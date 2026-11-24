@@ -409,8 +409,10 @@ UU  unmerged</pre>
 					Each shell has its own tab, input, history, and scrollback. <kbd>ctrl+t</kbd> opens a new
 					shell, <kbd>ctrl+w</kbd> closes the current one, and <kbd>ctrl+n</kbd> and
 					<kbd>ctrl+p</kbd> (or the numbered tabs and <code>+</code>) switch between them. Closing
-					the last tab clears it instead of removing the panel. Only one command runs at a time,
-					so starting one stops the previous command.
+					the last tab clears it instead of removing the panel. The number of tabs is capped to
+					what the pane can actually show at the current window width: the <code>+</code> tab goes
+					dim when it is full, and widening the window or closing a tab frees a slot. Only one
+					command runs at a time, so starting one stops the previous command.
 				</p>
 				<p>
 					Output is captured as text: colour, cursor, and erase sequences are dropped so a command

@@ -17,6 +17,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.termNote = ""
 		return m.reflowPreview(false), nil
 	case tea.KeyMsg:
 		return m.onKey(msg)

@@ -558,7 +558,11 @@ func (m Model) terminalTitle(width int) string {
 	for i := range m.termTabs {
 		left = append(left, tabPiece(fmt.Sprintf("%d", i+1), i == m.termIndex, focused))
 	}
-	left = append(left, tabPiece("+", false, focused))
+	if m.terminalTabsFull(width) {
+		left = append(left, tabPieceDisabled(focused))
+	} else {
+		left = append(left, tabPiece("+", false, focused))
+	}
 
 	var right []piece
 	switch {
@@ -770,6 +774,9 @@ func (m Model) footerHints(p Pane) []footerHint {
 			{"r", "rerun"}, {"←→", "tab"}, {"?", "keys"},
 		}
 	case PaneTerminal:
+		if m.termNote != "" {
+			return []footerHint{{"", m.termNote}}
+		}
 		return []footerHint{
 			{"enter", "run"}, {"ctrl+c", "stop"}, {"ctrl+t", "new"},
 			{"ctrl+w", "close"}, {"ctrl+n/p", "shell"}, {"?", "keys"},

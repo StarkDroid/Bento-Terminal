@@ -114,6 +114,18 @@ func tabPiece(label string, active, focused bool) piece {
 	return chip(bg, []piece{{view: style.Render(label), width: lipgloss.Width(label)}})
 }
 
+// tabPieceDisabled draws the + tab when the pane is too narrow for another
+// tab. It keeps the same cell width as a normal tab so the title does not
+// shift when the limit is reached.
+func tabPieceDisabled(focused bool) piece {
+	fg := colorMoss
+	if focused {
+		fg = colorSandDim
+	}
+	style := lipgloss.NewStyle().Foreground(fg).Background(colorPanel)
+	return chip(colorPanel, []piece{{view: style.Render("+"), width: 1}})
+}
+
 func borderStyle(focused bool) lipgloss.Style {
 	color := colorBorderDim
 	if focused {

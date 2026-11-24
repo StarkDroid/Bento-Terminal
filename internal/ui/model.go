@@ -151,6 +151,7 @@ type Model struct {
 	termCursor      int
 	termHistory     []string
 	termHistPos     int
+	termNote        string
 
 	aiOpen      bool
 	aiCursor    int
