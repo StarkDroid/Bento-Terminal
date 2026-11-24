@@ -348,10 +348,13 @@ func (m Model) wheel(pane Pane, delta int) Model {
 		}
 	case PaneFiles:
 		if m.tree != nil {
-			m = m.moveFile(delta)
+			// The tree and history move their selection rather than a
+			// viewport, so the wheel is inverted to match the panes that
+			// scroll content.
+			m = m.moveFile(-delta)
 		}
 	case PaneHistory:
-		m = m.moveHistory(delta)
+		m = m.moveHistory(-delta)
 	case PaneBuild:
 		if m.buildTab == buildTabOutput {
 			m = m.scrollOutput(delta)

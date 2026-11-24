@@ -8,6 +8,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hinshun/vt10x"
+
+	"github.com/StarkDroid/Bento-Terminal/internal/git"
 )
 
 func TestPaneNumberKeysJump(t *testing.T) {
@@ -312,4 +314,58 @@ func selectRow(t *testing.T, m *Model, name string) {
 		}
 	}
 	t.Fatalf("row %q not found", name)
+}
+
+func TestWheelDirectionInFilesAndHistory(t *testing.T) {
+	m, _ := previewSample(t)
+	m.width, m.height = 120, 32
+	lay := computeLayout(m.width, m.height)
+
+	m.focus = PaneFiles
+	if len(m.tree.Rows()) < 2 {
+		t.Fatal("sample tree needs at least two rows")
+	}
+	m.fileCursor = 1
+	next, _ := m.Update(tea.MouseMsg{
+		X: lay.Main.W + 2, Y: lay.FilesBodyTop(),
+		Button: tea.MouseButtonWheelDown, Action: tea.MouseActionPress,
+	})
+	m = next.(Model)
+	if m.fileCursor != 0 {
+		t.Fatalf("wheel down over the tree should move up, cursor=%d", m.fileCursor)
+	}
+	next, _ = m.Update(tea.MouseMsg{
+		X: lay.Main.W + 2, Y: lay.FilesBodyTop(),
+		Button: tea.MouseButtonWheelUp, Action: tea.MouseActionPress,
+	})
+	m = next.(Model)
+	if m.fileCursor != 1 {
+		t.Fatalf("wheel up over the tree should move down, cursor=%d", m.fileCursor)
+	}
+
+	m.historyTab = histTabCommits
+	m.commitCursor = 0
+	m.gitSnap = git.Snapshot{
+		Repo: true,
+		Commits: []git.Commit{
+			{Hash: "aaaa111", Subject: "one"},
+			{Hash: "bbbb222", Subject: "two"},
+		},
+	}
+	next, _ = m.Update(tea.MouseMsg{
+		X: lay.Main.W + 2, Y: lay.HistoryBodyTop(),
+		Button: tea.MouseButtonWheelUp, Action: tea.MouseActionPress,
+	})
+	m = next.(Model)
+	if m.commitCursor != 1 {
+		t.Fatalf("wheel up over history should move down, cursor=%d", m.commitCursor)
+	}
+	next, _ = m.Update(tea.MouseMsg{
+		X: lay.Main.W + 2, Y: lay.HistoryBodyTop(),
+		Button: tea.MouseButtonWheelDown, Action: tea.MouseActionPress,
+	})
+	m = next.(Model)
+	if m.commitCursor != 0 {
+		t.Fatalf("wheel down over history should move up, cursor=%d", m.commitCursor)
+	}
 }
