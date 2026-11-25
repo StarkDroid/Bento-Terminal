@@ -14,7 +14,6 @@ Bento terminal is a full-screen workspace for one project, in the terminal: prev
 [![Go Reference](https://pkg.go.dev/badge/github.com/StarkDroid/Bento-Terminal.svg)](https://pkg.go.dev/github.com/StarkDroid/Bento-Terminal)
 [![License](https://img.shields.io/github/license/StarkDroid/Bento-Terminal?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal)
-[![Go Report Card](https://goreportcard.com/badge/github.com/StarkDroid/Bento-Terminal?style=flat-square)](https://goreportcard.com/report/github.com/StarkDroid/Bento-Terminal)
 [![Stars](https://img.shields.io/github/stars/StarkDroid/Bento-Terminal?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/stargazers)
 [![Issues](https://img.shields.io/github/issues/StarkDroid/Bento-Terminal?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/issues)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/pulls)
