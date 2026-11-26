@@ -2,6 +2,8 @@
 
 Bento terminal is a full-screen workspace for one project, in the terminal: preview and edit files, read the tree, commits and working-tree changes, run builds, open a shell, and run a coding agent beside the preview — all in one keyboard-first bento layout. It is written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and runs in the macOS Terminal or Windows Terminal (Menlo, SF Mono, Cascadia Mono; no Nerd Font).
 
+[![Bento terminal — Featured on Product Hunt](https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1321479&theme=light)](https://www.producthunt.com/posts/bento-terminal)
+
 [![CI](https://img.shields.io/github/actions/workflow/status/StarkDroid/Bento-Terminal/ci.yml?branch=main&style=flat-square&label=build)](https://github.com/StarkDroid/Bento-Terminal/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/StarkDroid/Bento-Terminal?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/releases/latest)
 [![npm](https://img.shields.io/badge/npm-bento--terminal-CB3837?style=flat-square&logo=npm&logoColor=white)](https://www.npmjs.com/package/bento-terminal)
@@ -12,7 +14,6 @@ Bento terminal is a full-screen workspace for one project, in the terminal: prev
 [![Go Reference](https://pkg.go.dev/badge/github.com/StarkDroid/Bento-Terminal.svg)](https://pkg.go.dev/github.com/StarkDroid/Bento-Terminal)
 [![License](https://img.shields.io/github/license/StarkDroid/Bento-Terminal?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal)
-[![Go Report Card](https://goreportcard.com/badge/github.com/StarkDroid/Bento-Terminal?style=flat-square)](https://goreportcard.com/report/github.com/StarkDroid/Bento-Terminal)
 [![Stars](https://img.shields.io/github/stars/StarkDroid/Bento-Terminal?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/stargazers)
 [![Issues](https://img.shields.io/github/issues/StarkDroid/Bento-Terminal?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/issues)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome?style=flat-square)](https://github.com/StarkDroid/Bento-Terminal/pulls)
@@ -72,11 +73,13 @@ status bar; press `u` to run the update command for your install method
 ## What it does
 
 - **Preview and edit.** Highlighting, folding, and a save in place.
-- **Every change.** Modified, staged, untracked, and conflicted paths, with patches.
-- **Your shell, in tabs.** Any command, run inside the project; `ctrl+t` opens another shell tab with its own history and scrollback.
+- **Every change.** Modified, staged, untracked, and conflicted paths, with patches. Click a path (or press `enter`) to open its diff in Main; the title counts added and removed lines and the patch reloads as the file changes.
+- **Your shell, in tabs.** Any command, run inside the project; `ctrl+t` opens another shell tab with its own history and scrollback, and `ctrl+w` closes it. Tabs are capped to what the pane can show, so widen the window or close one to add more.
+- **Files, handled.** `R` renames, `m` moves, `y` copies, and `d` deletes from the tree; a delete asks first.
 - **Builds without setup.** Detected tests, builds, and lint commands, with Commands and Output tabs.
 - **Coding agents.** `ctrl+a` lists Claude Code, OpenCode, Gemini CLI, Codex CLI, Copilot, Crush, Aider, and Cursor; install one or start it beside the preview.
 
+- **Jump straight there.** `1`–`6` focus Main, AI, Files, History, Build, and Terminal; `tab` still walks the layout.
 - **Find fast.** `ctrl+p` filters the project's files; `ctrl+f` searches the open file.
 - **Pick up where you left off.** Bento remembers recent projects, reopens the file you were reading, and keeps its caret and scroll.
 

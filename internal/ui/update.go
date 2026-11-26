@@ -17,6 +17,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.termNote = ""
 		return m.reflowPreview(false), nil
 	case tea.KeyMsg:
 		return m.onKey(msg)
@@ -41,7 +42,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.fileScroll = 0
 		return m, nil
 	case gitLoadedMsg:
-		return m.applyGit(msg.snap), nil
+		m = m.applyGit(msg.snap)
+		m, cmd := m.refreshDiff()
+		return m, cmd
+	case diffLoadedMsg:
+		if m.previewKind != previewDiff || m.previewDiffPath != msg.path {
+			return m, nil
+		}
+		if msg.err != nil {
+			m.previewRaw = msg.err.Error()
+		} else {
+			m.previewRaw = msg.body
+		}
+		return m.reflowPreview(false), nil
 	case buildLoadedMsg:
 		m.autoCmds = msg.result.Auto
 		m.manualCmds = msg.result.Manual
@@ -88,6 +101,9 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.newFileOpen {
 		return m.onNewFileKey(msg)
 	}
+	if m.fileOpOpen {
+		return m.onFileOpKey(msg)
+	}
 	if m.finderOpen {
 		return m.onFinderKey(msg)
 	}
@@ -97,9 +113,23 @@ func (m Model) onKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.recentOpen {
 		return m.onRecentKey(msg)
 	}
-	// A running agent owns every key while its panel has focus, except the
-	// detach chord.
+	// A running agent owns its panel's keys, but Bento keeps the keys that
+	// leave the panel: tab, shift+tab, the pane numbers, and ctrl+a.
 	if m.aiSession != nil && m.focus == PaneAI && !m.paletteOpen && !m.settingsOpen {
+		if key.Matches(msg, m.keys.Next) {
+			m.focus = m.nextPane(1)
+			return m.reflowPreview(false), nil
+		}
+		if key.Matches(msg, m.keys.Prev) {
+			m.focus = m.nextPane(-1)
+			return m.reflowPreview(false), nil
+		}
+		if key.Matches(msg, m.keys.ToggleAI) {
+			return m.toggleAI()
+		}
+		if a, ok := paneJump(msg); ok {
+			return m.runAction(a.id)
+		}
 		return m.onAISessionKey(msg)
 	}
 	if m.previewEditing {
@@ -150,7 +180,7 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if m.settingsOpen {
 		return m.settingsClick(msg)
 	}
-	if m.paletteOpen || m.newFileOpen || m.finderOpen || m.findOpen || m.recentOpen {
+	if m.paletteOpen || m.newFileOpen || m.fileOpOpen || m.finderOpen || m.findOpen || m.recentOpen {
 		return m, nil
 	}
 	lay := computeLayout(m.width, m.height)
@@ -177,6 +207,9 @@ func (m Model) onMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			return m.wheel(pane, 3), nil
 		}
 	case tea.MouseButtonLeft:
+		if pane == PaneAI && m.aiSession != nil {
+			return m.aiClick(msg, lay)
+		}
 		if msg.Action == tea.MouseActionPress {
 			return m.click(pane, msg.X, msg.Y, lay)
 		}
@@ -315,10 +348,13 @@ func (m Model) wheel(pane Pane, delta int) Model {
 		}
 	case PaneFiles:
 		if m.tree != nil {
-			m = m.moveFile(delta)
+			// The tree and history move their selection rather than a
+			// viewport, so the wheel is inverted to match the panes that
+			// scroll content.
+			m = m.moveFile(-delta)
 		}
 	case PaneHistory:
-		m = m.moveHistory(delta)
+		m = m.moveHistory(-delta)
 	case PaneBuild:
 		if m.buildTab == buildTabOutput {
 			m = m.scrollOutput(delta)
@@ -382,6 +418,7 @@ func (m Model) openChange() (tea.Model, tea.Cmd) {
 	m.previewTitle = f.Path
 	m.previewPath = ""
 	m = m.resetPreviewState()
+	m.previewDiffPath = f.Path
 	if err != nil {
 		m.previewRaw = err.Error()
 	} else {
@@ -395,6 +432,7 @@ func (m Model) openChange() (tea.Model, tea.Cmd) {
 // patch replaces a file in the preview.
 func (m Model) resetPreviewState() Model {
 	m.previewNumbered = false
+	m.previewDiffPath = ""
 	m.previewLang = syntax.Language{}
 	m.previewSyntax = false
 	m.previewEditing = false
@@ -797,6 +835,22 @@ func (m Model) appendOut(line string) Model {
 		m.output.GotoBottom()
 	}
 	return m
+}
+
+// refreshDiff reloads an open patch after the git snapshot changes, so the
+// diff keeps following edits made while it is on screen. When the path is no
+// longer modified it falls back to the same empty state git.Diff uses.
+func (m Model) refreshDiff() (Model, tea.Cmd) {
+	if m.previewKind != previewDiff || m.previewDiffPath == "" {
+		return m, nil
+	}
+	for _, f := range m.gitSnap.Status.Files {
+		if f.Path == m.previewDiffPath {
+			return m, loadDiffCmd(m.root, f)
+		}
+	}
+	m.previewRaw = "(no changes to show)"
+	return m.reflowPreview(false), nil
 }
 
 func (m Model) applyGit(snap git.Snapshot) Model {

@@ -53,6 +53,16 @@ const (
 	buildTabOutput
 )
 
+// fileOpKind is the file operation a prompt is asking for.
+type fileOpKind int
+
+const (
+	fileOpRename fileOpKind = iota
+	fileOpMove
+	fileOpCopy
+	fileOpDelete
+)
+
 // terminalTab is one terminal buffer. The active tab is mirrored in the
 // Model's term* fields so rendering and input keep their old shape.
 type terminalTab struct {
@@ -141,6 +151,7 @@ type Model struct {
 	termCursor      int
 	termHistory     []string
 	termHistPos     int
+	termNote        string
 
 	aiOpen      bool
 	aiCursor    int
@@ -172,6 +183,7 @@ type Model struct {
 	previewKind      previewKind
 	previewTitle     string
 	previewPath      string
+	previewDiffPath  string
 	previewRaw       string
 	previewNumbered  bool
 	previewLang      syntax.Language
@@ -194,6 +206,12 @@ type Model struct {
 	newFileOpen bool
 	newFilePath string
 	newFileErr  string
+
+	fileOpOpen   bool
+	fileOpKind   fileOpKind
+	fileOpSource string
+	fileOpInput  string
+	fileOpErr    string
 
 	finderOpen        bool
 	finderInput       string

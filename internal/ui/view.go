@@ -24,6 +24,9 @@ func (m Model) View() string {
 	if m.newFileOpen {
 		return m.newFileView()
 	}
+	if m.fileOpOpen {
+		return m.fileOpView()
+	}
 	if m.finderOpen {
 		return m.finderView()
 	}
@@ -90,7 +93,7 @@ func (m Model) renderMain(width, height int) string {
 		title = paintTitle(" ⎇ "+m.previewTitle, innerW, focused)
 		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
 	case previewDiff:
-		title = paintTitle(" ± "+m.previewTitle, innerW, focused)
+		title = paintTitle(m.diffTitle(), innerW, focused)
 		body = windowLines(m.previewLines, m.preview.YOffset, innerW, bodyH)
 	default:
 		body = m.homeBody(innerW, bodyH)
@@ -324,6 +327,17 @@ func (m Model) renderHistory(width, height int) string {
 	return renderPanel(m.historyTitle(bodyW), strings.Join(lines, "\n"), width, height, focused)
 }
 
+// diffTitle is the Main title for a working-tree patch: the path plus the
+// added and removed line counts.
+func (m Model) diffTitle() string {
+	title := " ± " + m.previewTitle
+	added, removed := diffStat(m.previewRaw)
+	if added > 0 || removed > 0 {
+		title += fmt.Sprintf("  +%d −%d", added, removed)
+	}
+	return title
+}
+
 // historyTitle draws the History and Changes tabs, with a change count on the
 // right while Changes is visible.
 func (m Model) historyTitle(width int) string {
@@ -555,7 +569,11 @@ func (m Model) terminalTitle(width int) string {
 	for i := range m.termTabs {
 		left = append(left, tabPiece(fmt.Sprintf("%d", i+1), i == m.termIndex, focused))
 	}
-	left = append(left, tabPiece("+", false, focused))
+	if m.terminalTabsFull(width) {
+		left = append(left, tabPieceDisabled(focused))
+	} else {
+		left = append(left, tabPiece("+", false, focused))
+	}
 
 	var right []piece
 	switch {
@@ -752,9 +770,9 @@ func (m Model) footerHints(p Pane) []footerHint {
 			{"ctrl+a", "ai"}, {"?", "keys"}, {"tab", "panes"},
 		}
 	case PaneFiles:
-		return []footerHint{{"↑↓", ""}, {"enter", ""}, {"ctrl+p", "find"}, {"?", "keys"}}
+		return []footerHint{{"↑↓", ""}, {"enter", ""}, {"R d", "manage"}, {"ctrl+p", "find"}, {"?", "keys"}}
 	case PaneHistory:
-		return []footerHint{{"↑↓", ""}, {"←→", "tab"}, {"?", "keys"}}
+		return []footerHint{{"↑↓", ""}, {"←→", "tab"}, {"enter", "diff"}, {"?", "keys"}}
 	case PaneBuild:
 		if m.buildTab == buildTabOutput {
 			return []footerHint{
@@ -767,9 +785,12 @@ func (m Model) footerHints(p Pane) []footerHint {
 			{"r", "rerun"}, {"←→", "tab"}, {"?", "keys"},
 		}
 	case PaneTerminal:
+		if m.termNote != "" {
+			return []footerHint{{"", m.termNote}}
+		}
 		return []footerHint{
-			{"enter", "run"}, {"ctrl+c", "stop"}, {"esc", "back"},
-			{"ctrl+t", "new shell"}, {"ctrl+n/p", "shell"}, {"?", "keys"},
+			{"enter", "run"}, {"ctrl+c", "stop"}, {"ctrl+t", "new"},
+			{"ctrl+w", "close"}, {"ctrl+n/p", "shell"}, {"?", "keys"},
 		}
 	case PaneAI:
 		if m.aiSession != nil {

@@ -52,7 +52,7 @@ func (m Model) updateCommand() upd.Method {
 }
 
 func (m Model) anyOverlayOpen() bool {
-	return m.updateOpen || m.newFileOpen || m.finderOpen || m.findOpen ||
+	return m.updateOpen || m.newFileOpen || m.fileOpOpen || m.finderOpen || m.findOpen ||
 		m.recentOpen || m.paletteOpen || m.settingsOpen
 }
 

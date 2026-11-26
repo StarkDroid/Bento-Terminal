@@ -30,8 +30,13 @@ type keyMap struct {
 	Settings  key.Binding
 	Update    key.Binding
 	NewTerm   key.Binding
+	CloseTab  key.Binding
 	NextTerm  key.Binding
 	PrevTerm  key.Binding
+	Rename    key.Binding
+	Delete    key.Binding
+	Copy      key.Binding
+	Move      key.Binding
 	Help      key.Binding
 	Close     key.Binding
 	Quit      key.Binding
@@ -66,8 +71,13 @@ func newKeys() keyMap {
 		Settings:  key.NewBinding(key.WithKeys(","), key.WithHelp(",", "settings")),
 		Update:    key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "update")),
 		NewTerm:   key.NewBinding(key.WithKeys("ctrl+t"), key.WithHelp("ctrl+t", "new shell")),
+		CloseTab:  key.NewBinding(key.WithKeys("ctrl+w"), key.WithHelp("ctrl+w", "close shell")),
 		NextTerm:  key.NewBinding(key.WithKeys("ctrl+right", "ctrl+n"), key.WithHelp("ctrl+→/n", "next shell")),
 		PrevTerm:  key.NewBinding(key.WithKeys("ctrl+left", "ctrl+p"), key.WithHelp("ctrl+←/p", "previous shell")),
+		Rename:    key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "rename")),
+		Delete:    key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
+		Copy:      key.NewBinding(key.WithKeys("y"), key.WithHelp("y", "copy")),
+		Move:      key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "move")),
 		Help:      key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "commands")),
 		Close:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close commands")),
 		Quit:      key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),

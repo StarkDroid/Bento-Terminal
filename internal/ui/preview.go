@@ -70,6 +70,22 @@ func wrappedLines(content string, width int) []string {
 	return out
 }
 
+// diffStat counts added and removed lines in a patch. The --- and +++ file
+// headers are skipped so only real content lines are counted.
+func diffStat(content string) (added, removed int) {
+	for _, line := range strings.Split(content, "\n") {
+		switch {
+		case strings.HasPrefix(line, "--- "), strings.HasPrefix(line, "+++ "):
+			continue
+		case strings.HasPrefix(line, "+"):
+			added++
+		case strings.HasPrefix(line, "-"):
+			removed++
+		}
+	}
+	return added, removed
+}
+
 // diffLines colours a patch: additions palm, removals coral, hunks reef, and
 // file headers moss.
 func diffLines(content string, width int) []string {

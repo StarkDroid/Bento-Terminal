@@ -20,6 +20,12 @@ type gitLoadedMsg struct {
 	snap git.Snapshot
 }
 
+type diffLoadedMsg struct {
+	path string
+	body string
+	err  error
+}
+
 type buildLoadedMsg struct {
 	result build.Result
 }
@@ -79,6 +85,13 @@ func loadTreeCmd(root string) tea.Cmd {
 func loadGitCmd(root string) tea.Cmd {
 	return func() tea.Msg {
 		return gitLoadedMsg{snap: git.Load(root)}
+	}
+}
+
+func loadDiffCmd(root string, f git.FileStatus) tea.Cmd {
+	return func() tea.Msg {
+		body, err := git.Diff(root, f)
+		return diffLoadedMsg{path: f.Path, body: body, err: err}
 	}
 }
 

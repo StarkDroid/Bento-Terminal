@@ -25,6 +25,10 @@ const (
 	actFileCollapse
 	actFileExpand
 	actFileOpen
+	actFileRename
+	actFileMove
+	actFileCopy
+	actFileDelete
 
 	actHistoryUp
 	actHistoryDown
@@ -47,6 +51,7 @@ const (
 	actTermRun
 	actTermCancel
 	actTermClear
+	actTermClose
 
 	actMainUp
 	actMainDown
@@ -76,6 +81,13 @@ const (
 	actAIRescan
 	actAIBack
 	actAIStop
+
+	actPaneMain
+	actPaneAI
+	actPaneFiles
+	actPaneHistory
+	actPaneBuild
+	actPaneTerminal
 )
 
 // action is one keyboard command. Binding supplies the keys and their label;
@@ -118,6 +130,10 @@ func (m Model) paneActions(p Pane) []action {
 			{actFileCollapse, m.keys.Left, "close directory"},
 			{actFileExpand, m.keys.Right, "open directory"},
 			{actFileOpen, m.keys.Enter, "preview file"},
+			{actFileRename, m.keys.Rename, "rename the selection"},
+			{actFileMove, m.keys.Move, "move the selection"},
+			{actFileCopy, m.keys.Copy, "copy the selection"},
+			{actFileDelete, m.keys.Delete, "delete the selection"},
 		}
 	case PaneHistory:
 		return []action{
@@ -175,6 +191,7 @@ func (m Model) terminalActions() []action {
 		{actTermRun, m.keys.Enter, "run the typed command"},
 		{actTermCancel, m.keys.Interrupt, "stop the running command"},
 		{actTermClear, m.keys.Close, "clear the input or go back to Build"},
+		{actTermClose, m.keys.CloseTab, "close this shell tab"},
 		{actNextTerm, m.keys.NextTerm, "next shell tab"},
 		{actPrevTerm, m.keys.PrevTerm, "previous shell tab"},
 	}
@@ -215,6 +232,20 @@ func (m Model) aiActions() []action {
 	}
 }
 
+// paneJumpActions are the number keys that focus a pane directly. They work
+// everywhere the pane shortcuts work, including while an agent owns the AI
+// panel.
+func paneJumpActions() []action {
+	return []action{
+		{actPaneMain, key.NewBinding(key.WithKeys("1"), key.WithHelp("1", "main pane")), "focus the Main pane"},
+		{actPaneAI, key.NewBinding(key.WithKeys("2"), key.WithHelp("2", "AI pane")), "focus the AI pane"},
+		{actPaneFiles, key.NewBinding(key.WithKeys("3"), key.WithHelp("3", "files pane")), "focus the Files pane"},
+		{actPaneHistory, key.NewBinding(key.WithKeys("4"), key.WithHelp("4", "history pane")), "focus the History pane"},
+		{actPaneBuild, key.NewBinding(key.WithKeys("5"), key.WithHelp("5", "build pane")), "focus the Build pane"},
+		{actPaneTerminal, key.NewBinding(key.WithKeys("6"), key.WithHelp("6", "terminal pane")), "focus the Terminal pane"},
+	}
+}
+
 func (m Model) globalActions() []action {
 	list := []action{
 		{actNext, m.keys.Next, "focus next pane"},
@@ -228,6 +259,7 @@ func (m Model) globalActions() []action {
 		{actNewTerm, m.keys.NewTerm, "new shell tab"},
 		{actQuit, m.keys.Quit, "quit Bento terminal"},
 	}
+	list = append(list, paneJumpActions()...)
 	if m.updateAvailable() {
 		list = append(list, action{actUpdate, m.keys.Update, "update Bento"})
 	}
@@ -300,6 +332,14 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		}
 	case actFileOpen:
 		return m.openSelection()
+	case actFileRename:
+		return m.openFileOp(fileOpRename), nil
+	case actFileMove:
+		return m.openFileOp(fileOpMove), nil
+	case actFileCopy:
+		return m.openFileOp(fileOpCopy), nil
+	case actFileDelete:
+		return m.openFileOp(fileOpDelete), nil
 
 	case actHistoryUp:
 		return m.moveHistory(-1), nil
@@ -360,6 +400,8 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 		m.termInput = ""
 		m.termCursor = 0
 		return m, nil
+	case actTermClose:
+		return m.closeTerminalTab()
 
 	case actMainUp:
 		return m.movePreview(-1), nil
@@ -399,6 +441,18 @@ func (m Model) runAction(id actionID) (tea.Model, tea.Cmd) {
 
 	case actAIToggle:
 		return m.toggleAI()
+	case actPaneMain:
+		return m.jumpPane(PaneMain)
+	case actPaneAI:
+		return m.jumpPane(PaneAI)
+	case actPaneFiles:
+		return m.jumpPane(PaneFiles)
+	case actPaneHistory:
+		return m.jumpPane(PaneHistory)
+	case actPaneBuild:
+		return m.jumpPane(PaneBuild)
+	case actPaneTerminal:
+		return m.jumpPane(PaneTerminal)
 	case actAIUp:
 		return m.moveAI(-1), nil
 	case actAIDown:

@@ -114,3 +114,92 @@ func TestCtrlTOpensTerminalTabFromAnyPane(t *testing.T) {
 		t.Fatalf("tabs=%d focus=%d", len(m.termTabs), m.focus)
 	}
 }
+
+func TestTerminalTabLimitTracksPaneWidth(t *testing.T) {
+	m, _ := previewSample(t)
+	m.width, m.height = 72, 22
+	lay := computeLayout(m.width, m.height)
+	if !lay.OK {
+		t.Fatal("the minimum layout should fit")
+	}
+	capacity := m.maxTerminalTabs(lay.Terminal.W - 2)
+	if capacity < 1 {
+		t.Fatalf("capacity = %d", capacity)
+	}
+
+	for len(m.termTabs) < capacity {
+		next, _ := m.newTerminalTab()
+		m = next.(Model)
+	}
+	if len(m.termTabs) != capacity {
+		t.Fatalf("tabs=%d capacity=%d", len(m.termTabs), capacity)
+	}
+	if !m.terminalTabsFull(lay.Terminal.W - 2) {
+		t.Fatal("a full pane should report no room")
+	}
+
+	next, _ := m.newTerminalTab()
+	m = next.(Model)
+	if len(m.termTabs) != capacity {
+		t.Fatalf("opening past the limit added a tab: %d", len(m.termTabs))
+	}
+	if !strings.Contains(m.termNote, "no room") {
+		t.Fatalf("refusal note = %q", m.termNote)
+	}
+	plain := stripANSI(m.View())
+	if !strings.Contains(plain, "no room") {
+		t.Fatalf("the footer should explain the limit\n%s", plain)
+	}
+
+	// A wider window has room for at least one more tab.
+	m.width = 160
+	m.termNote = ""
+	next, _ = m.newTerminalTab()
+	m = next.(Model)
+	if len(m.termTabs) != capacity+1 {
+		t.Fatalf("a wider pane should fit another tab: %d", len(m.termTabs))
+	}
+}
+
+func TestTerminalTabLimitNeverFallsWithWidth(t *testing.T) {
+	m, _ := previewSample(t)
+	previous := 0
+	for width := 16; width <= 160; width++ {
+		capacity := m.maxTerminalTabs(width)
+		if capacity < 1 {
+			t.Fatalf("width %d returned %d", width, capacity)
+		}
+		if capacity < previous {
+			t.Fatalf("capacity fell from %d to %d at width %d", previous, capacity, width)
+		}
+		previous = capacity
+	}
+	if previous < 5 {
+		t.Fatalf("a wide pane should fit several tabs, got %d", previous)
+	}
+}
+
+func TestClosingTabClearsTheLimitNote(t *testing.T) {
+	m, _ := previewSample(t)
+	m.width, m.height = 72, 22
+	lay := computeLayout(m.width, m.height)
+	capacity := m.maxTerminalTabs(lay.Terminal.W - 2)
+	for len(m.termTabs) < capacity {
+		next, _ := m.newTerminalTab()
+		m = next.(Model)
+	}
+	next, _ := m.newTerminalTab()
+	m = next.(Model)
+	if m.termNote == "" {
+		t.Fatal("expected a refusal note")
+	}
+
+	next, _ = m.closeTerminalTab()
+	m = next.(Model)
+	if m.termNote != "" {
+		t.Fatalf("closing a tab should clear the note, got %q", m.termNote)
+	}
+	if m.terminalTabsFull(lay.Terminal.W - 2) {
+		t.Fatal("closing a tab should free a slot")
+	}
+}

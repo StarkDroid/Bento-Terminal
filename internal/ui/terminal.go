@@ -15,6 +15,7 @@ const maxTermLines = 2000
 // onTerminalKey owns every key while the terminal panel is focused, so typing
 // a command never triggers a pane shortcut.
 func (m Model) onTerminalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	m.termNote = ""
 	switch msg.Type {
 	case tea.KeyEnter:
 		return m.runTerminal()
@@ -47,6 +48,8 @@ func (m Model) onTerminalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyCtrlT:
 		return m.newTerminalTab()
+	case tea.KeyCtrlW:
+		return m.closeTerminalTab()
 	case tea.KeyCtrlRight, tea.KeyCtrlN:
 		return m.cycleTerminalTab(1), nil
 	case tea.KeyCtrlLeft, tea.KeyCtrlP:
@@ -202,6 +205,7 @@ func (m Model) switchTerminalTab(index int) Model {
 	if index < 0 || index >= len(m.termTabs) || index == m.termIndex {
 		return m
 	}
+	m.termNote = ""
 	m = m.saveTermTab()
 	m = m.loadTermTab(index)
 	m.focus = PaneTerminal
@@ -219,7 +223,59 @@ func (m Model) cycleTerminalTab(delta int) Model {
 	return m.switchTerminalTab(index)
 }
 
+// terminalTabChipWidth is the cell width of the numbered tab for a 1-based
+// index: one cell of fill on each side of the number.
+func terminalTabChipWidth(index int) int {
+	return len(fmt.Sprintf("%d", index)) + 2
+}
+
+// terminalRightWidth is the width of the label at the right of the Terminal
+// title. The tab limit reserves it so a new tab never pushes the label out.
+func (m Model) terminalRightWidth() int {
+	switch {
+	case m.running && m.runTarget == targetTerminal && m.termRunIndex == m.termIndex:
+		return len(" running ")
+	case m.running && m.runTarget == targetTerminal:
+		return len(fmt.Sprintf(" shell %d running ", m.termRunIndex+1))
+	}
+	return len(" $SHELL ")
+}
+
+// maxTerminalTabs is how many numbered shell tabs fit in the title beside the
+// glyph, the right label, and the + tab. A pane always allows at least one.
+func (m Model) maxTerminalTabs(width int) int {
+	avail := width - m.runGlyph(m.termState, false).width - len(" Terminal ") - m.terminalRightWidth() - 3
+	used := 0
+	count := 0
+	for i := 1; ; i++ {
+		next := terminalTabChipWidth(i)
+		if used+next > avail {
+			break
+		}
+		used += next
+		count++
+	}
+	if count < 1 {
+		return 1
+	}
+	return count
+}
+
+// terminalTabsFull reports whether another shell tab would not fit the panel
+// at this width.
+func (m Model) terminalTabsFull(width int) bool {
+	return len(m.termTabs) >= m.maxTerminalTabs(width)
+}
+
 func (m Model) newTerminalTab() (tea.Model, tea.Cmd) {
+	if lay := computeLayout(m.width, m.height); lay.OK {
+		capacity := m.maxTerminalTabs(lay.Terminal.W - 2)
+		if len(m.termTabs) >= capacity {
+			m.termNote = fmt.Sprintf("no room · %d shell tabs max", capacity)
+			return m, nil
+		}
+	}
+	m.termNote = ""
 	m = m.saveTermTab()
 	m.termTabs = append(m.termTabs, terminalTab{
 		title:   fmt.Sprintf("shell %d", len(m.termTabs)+1),
@@ -236,6 +292,53 @@ func (m Model) newTerminalTab() (tea.Model, tea.Cmd) {
 	m.termFollow = true
 	m.termOutput.SetContent("")
 	m.termOutput.GotoTop()
+	m.focus = PaneTerminal
+	return m, nil
+}
+
+// closeTerminalTab removes the active shell tab. The last tab is cleared
+// instead of removed, so the panel always keeps one shell.
+func (m Model) closeTerminalTab() (tea.Model, tea.Cmd) {
+	if len(m.termTabs) == 0 {
+		return m, nil
+	}
+	m.termNote = ""
+	index := m.termIndex
+	if index < 0 || index >= len(m.termTabs) {
+		index = 0
+	}
+	if m.running && m.runTarget == targetTerminal && m.termRunIndex == index {
+		m = m.stopRun()
+		m.termRunIndex = -1
+	}
+	m = m.saveTermTab()
+	remaining := append(append([]terminalTab(nil), m.termTabs[:index]...), m.termTabs[index+1:]...)
+	if m.running && m.runTarget == targetTerminal && m.termRunIndex > index {
+		m.termRunIndex--
+	}
+	if len(remaining) == 0 {
+		m.termTabs = []terminalTab{{title: "shell 1", follow: true, histPos: -1}}
+		m.termIndex = 0
+		m.termLines = nil
+		m.termFollow = true
+		m.termInput = ""
+		m.termCursor = 0
+		m.termHistory = nil
+		m.termHistPos = -1
+		m.termState = stateIdle
+		m.termOutput.SetContent("")
+		m.termOutput.GotoTop()
+		m.focus = PaneTerminal
+		return m, nil
+	}
+	for i := range remaining {
+		remaining[i].title = fmt.Sprintf("shell %d", i+1)
+	}
+	m.termTabs = remaining
+	if index >= len(remaining) {
+		index = len(remaining) - 1
+	}
+	m = m.loadTermTab(index)
 	m.focus = PaneTerminal
 	return m, nil
 }
