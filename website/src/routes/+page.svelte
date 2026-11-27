@@ -51,15 +51,15 @@
 		<dl class="features" onpointermove={glow}>
 			<div class="feature">
 				<dt>Preview &amp; edit</dt>
-				<dd>Syntax highlighting, folding, and an editor that saves in place.</dd>
+				<dd>Syntax highlighting, folding, an editor that saves in place, and rename, move, copy, or delete in the tree.</dd>
 			</div>
 			<div class="feature">
 				<dt>Changes</dt>
-				<dd>Every modified, staged, untracked, and conflicted path, with its patch.</dd>
+				<dd>Every modified, staged, untracked, and conflicted path. Open one and the patch follows edits live.</dd>
 			</div>
 			<div class="feature">
 				<dt>Terminal</dt>
-				<dd>Any command, run through your own shell inside the project.</dd>
+				<dd>Any command, run through your own shell inside the project, in tabs you can close.</dd>
 			</div>
 			<div class="feature">
 				<dt>Builds</dt>
@@ -67,7 +67,7 @@
 			</div>
 			<div class="feature">
 				<dt>AI panel</dt>
-				<dd>Install and run a coding agent beside the preview, with its own keys and terminal.</dd>
+				<dd>Install and run a coding agent beside the preview, with its own keys, mouse, and terminal.</dd>
 			</div>
 		</dl>
 	</section>
