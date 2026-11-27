@@ -148,10 +148,10 @@ choco install bento-terminal       # Windows
 go install github.com/StarkDroid/Bento-Terminal/cmd/bento@latest</pre>
 				<p class="muted">
 					Linux releases also attach <code>.deb</code> and <code>.rpm</code>
-					packages. npm is live. WinGet is not on the 0.9.0 release yet; it has an
-					open 0.7.0 PR. Chocolatey is live on 0.7.0, and the 0.9.0 package is in
-					review. On Windows, use the PowerShell installer below, Scoop, or
-					Chocolatey.
+					packages. npm is live. WinGet is not on the 0.10.0 release yet; it has an
+					open 0.7.0 PR. Chocolatey is live on 0.7.0; the 0.9.0 package is in
+					moderation and 0.10.0 has not been submitted yet. On Windows, use the
+					PowerShell installer below, Scoop, or Chocolatey.
 				</p>
 
 				<p class="muted">
